@@ -1,0 +1,55 @@
+{
+  "name": "Coupon",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "Coupon code"
+    },
+    "discount_type": {
+      "type": "string",
+      "enum": [
+        "percentage",
+        "fixed"
+      ],
+      "default": "percentage"
+    },
+    "discount_value": {
+      "type": "number"
+    },
+    "min_order": {
+      "type": "number",
+      "default": 0
+    },
+    "max_uses": {
+      "type": "number"
+    },
+    "used_count": {
+      "type": "number",
+      "default": 0
+    },
+    "expiry_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "expired"
+      ],
+      "default": "active"
+    },
+    "applicable_service_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "code",
+    "discount_value"
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "name": "mit-salon-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "db:setup": "tsx scripts/setup-database.ts",
+    "db:test": "tsx scripts/test-connection.ts",
+    "db:update-images": "tsx scripts/update-images.ts",
+    "db:seed-full": "tsx scripts/seed-full-catalog.ts",
+    "db:migrate": "tsx scripts/apply-schema-additions.ts",
+    "db:migrate-staff-roles": "tsx scripts/migrate-staff-roles.ts"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "mysql2": "^3.14.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.5",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}

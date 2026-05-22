@@ -1,0 +1,62 @@
+{
+  "name": "Employee",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "stylist",
+        "receptionist",
+        "manager"
+      ],
+      "default": "stylist"
+    },
+    "branch_id": {
+      "type": "string",
+      "description": "Assigned branch"
+    },
+    "service_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Services this employee can perform"
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "bio": {
+      "type": "string"
+    },
+    "rating": {
+      "type": "number",
+      "description": "Average rating"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "blocked"
+      ],
+      "default": "active"
+    },
+    "availability": {
+      "type": "object",
+      "description": "Weekly availability schedule"
+    }
+  },
+  "required": [
+    "name",
+    "email"
+  ]
+}

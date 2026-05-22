@@ -1,0 +1,55 @@
+{
+  "name": "Service",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Service name"
+    },
+    "description": {
+      "type": "string"
+    },
+    "price": {
+      "type": "number",
+      "description": "Price in dollars"
+    },
+    "duration_minutes": {
+      "type": "number",
+      "description": "Duration in minutes"
+    },
+    "category_id": {
+      "type": "string",
+      "description": "ServiceCategory ID"
+    },
+    "branch_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Branch IDs where available"
+    },
+    "employee_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Employee IDs who provide this"
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "title",
+    "price",
+    "duration_minutes"
+  ]
+}

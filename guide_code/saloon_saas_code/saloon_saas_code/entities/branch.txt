@@ -1,0 +1,46 @@
+{
+  "name": "Branch",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Branch name"
+    },
+    "address": {
+      "type": "string",
+      "description": "Full address"
+    },
+    "city": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "image_url": {
+      "type": "string",
+      "description": "Branch photo"
+    },
+    "working_hours": {
+      "type": "object",
+      "description": "Working hours per day e.g. {monday: {open: '09:00', close: '20:00', closed: false}}"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    },
+    "description": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "address"
+  ]
+}

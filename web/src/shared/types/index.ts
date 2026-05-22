@@ -1,0 +1,124 @@
+export type Status = 'active' | 'inactive';
+export type BookingStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'no_show';
+export type PaymentStatus = 'unpaid' | 'paid' | 'refunded';
+export type UserRole = 'customer' | 'admin';
+
+export interface BaseEntity {
+  id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface User extends BaseEntity {
+  email: string;
+  full_name: string;
+  phone?: string;
+  role: UserRole;
+}
+
+export interface Branch extends BaseEntity {
+  name: string;
+  address: string;
+  city?: string;
+  phone?: string;
+  email?: string;
+  image_url?: string;
+  description?: string;
+  status: Status;
+}
+
+export interface ServiceCategory extends BaseEntity {
+  name: string;
+  description?: string;
+  image_url?: string;
+  status: Status;
+}
+
+export interface Service extends BaseEntity {
+  title: string;
+  description?: string;
+  price: number;
+  duration_minutes: number;
+  category_id: string;
+  branch_ids: string[];
+  employee_ids: string[];
+  image_url?: string;
+  status: Status;
+}
+
+export interface Employee extends BaseEntity {
+  name: string;
+  email: string;
+  phone?: string;
+  role: 'stylist' | 'receptionist' | 'manager';
+  branch_id: string;
+  service_ids: string[];
+  image_url?: string;
+  bio?: string;
+  rating?: number;
+  status: 'active' | 'inactive' | 'blocked';
+}
+
+export interface Booking extends BaseEntity {
+  customer_email: string;
+  customer_name: string;
+  branch_id: string;
+  branch_name: string;
+  service_id: string;
+  service_title: string;
+  employee_id: string;
+  employee_name: string;
+  date: string;
+  time_slot: string;
+  duration_minutes: number;
+  price: number;
+  discount: number;
+  final_price: number;
+  coupon_code?: string;
+  status: BookingStatus;
+  payment_status: PaymentStatus;
+  notes?: string;
+}
+
+export interface Coupon extends BaseEntity {
+  code: string;
+  discount_type: 'percentage' | 'fixed';
+  discount_value: number;
+  min_order: number;
+  max_uses?: number;
+  used_count: number;
+  expiry_date?: string;
+  status: 'active' | 'inactive' | 'expired';
+}
+
+export interface Package extends BaseEntity {
+  name: string;
+  description?: string;
+  price: number;
+  service_ids: string[];
+  total_sessions: number;
+  validity_days: number;
+  image_url?: string;
+  status: Status;
+}
+
+export interface Notification extends BaseEntity {
+  user_email?: string;
+  title: string;
+  message: string;
+  type: 'booking' | 'payment' | 'reminder' | 'system';
+  read: boolean;
+  reference_id?: string;
+}
+
+export interface Review extends BaseEntity {
+  customer_email: string;
+  customer_name: string;
+  booking_id?: string;
+  service_id?: string;
+  employee_id?: string;
+  branch_id?: string;
+  rating: number;
+  comment?: string;
+  status: 'pending' | 'approved' | 'rejected';
+}

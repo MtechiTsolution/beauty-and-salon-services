@@ -1,0 +1,26 @@
+{
+  "name": "mit-salon-saas",
+  "private": true,
+  "workspaces": [
+    "admin",
+    "customer",
+    "backend",
+    "shared"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev -w mit-salon-backend",
+    "dev:api": "npm run dev:backend",
+    "dev:customer": "npm run dev -w mit-salon-customer",
+    "dev:admin": "npm run dev -w mit-salon-admin",
+    "dev": "npm run dev:customer",
+    "db:test": "npm run db:test -w mit-salon-backend",
+    "db:setup": "npm run db:setup -w mit-salon-backend",
+    "db:update-images": "npm run db:update-images -w mit-salon-backend",
+    "db:seed-full": "npm run db:seed-full -w mit-salon-backend",
+    "db:migrate": "npm run db:migrate -w mit-salon-backend",
+    "db:migrate-staff-roles": "npm run db:migrate-staff-roles -w mit-salon-backend",
+    "build:customer": "npm run build -w mit-salon-customer",
+    "build:admin": "npm run build -w mit-salon-admin",
+    "build": "npm run build:customer && npm run build:admin"
+  }
+}

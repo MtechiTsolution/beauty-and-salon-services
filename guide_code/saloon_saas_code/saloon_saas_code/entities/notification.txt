@@ -1,0 +1,37 @@
+{
+  "name": "Notification",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "booking",
+        "payment",
+        "reminder",
+        "system"
+      ],
+      "default": "system"
+    },
+    "read": {
+      "type": "boolean",
+      "default": false
+    },
+    "reference_id": {
+      "type": "string",
+      "description": "Related booking/payment ID"
+    }
+  },
+  "required": [
+    "title",
+    "message"
+  ]
+}

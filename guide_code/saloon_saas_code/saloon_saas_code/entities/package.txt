@@ -1,0 +1,45 @@
+{
+  "name": "Package",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "price": {
+      "type": "number"
+    },
+    "service_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "total_sessions": {
+      "type": "number",
+      "description": "Number of sessions included"
+    },
+    "validity_days": {
+      "type": "number",
+      "description": "Package valid for X days"
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "name",
+    "price",
+    "total_sessions"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "@mit-salon/shared",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./api": "./src/api/index.ts",
+    "./types": "./src/types/index.ts",
+    "./lib/*": "./src/lib/*",
+    "./components/*": "./src/components/*",
+    "./hooks/*": "./src/hooks/*",
+    "./styles": "./src/styles/index.css"
+  }
+}
