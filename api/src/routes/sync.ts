@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getCatalogSyncVersion, onCatalogChange } from '../lib/catalogSync.js';
+import { SyncPayload, getCatalogSyncVersion, onCatalogChange } from '../lib/catalogSync.js';
 
 export const syncRouter = Router();
 
@@ -16,11 +16,17 @@ syncRouter.get('/events', (req, res) => {
   res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders();
 
-  const send = (payload: { version: number; at: number }) => {
+  const send = (payload: SyncPayload) => {
     res.write(`data: ${JSON.stringify(payload)}\n\n`);
   };
 
-  send(getCatalogSyncVersion());
+  const initial = getCatalogSyncVersion();
+  send({
+    version: initial.version,
+    at: initial.at,
+    scope: 'catalog',
+    chatVersion: initial.chatVersion,
+  });
 
   const unsubscribe = onCatalogChange(send);
 

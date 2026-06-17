@@ -9,13 +9,19 @@ function paramId(value: string | string[]): string {
   return Array.isArray(value) ? value[0] : value;
 }
 
-async function loadEmployee(id: string) {
+async function loadEmployee(id: string, scopeBranchId?: string) {
   const rows = await query<Record<string, unknown>[]>('SELECT * FROM employees WHERE id = ?', [id]);
   if (!rows[0]) return null;
-  const svcRows = await query<{ service_id: string }[]>(
-    'SELECT service_id FROM employee_services WHERE employee_id = ?',
-    [id],
-  );
+  if (scopeBranchId && String(rows[0].branch_id) !== scopeBranchId) return null;
+
+  const svcSql = scopeBranchId
+    ? `SELECT es.service_id FROM employee_services es
+       INNER JOIN service_branches sb ON sb.service_id = es.service_id AND sb.branch_id = ?
+       WHERE es.employee_id = ?`
+    : 'SELECT service_id FROM employee_services WHERE employee_id = ?';
+  const svcParams = scopeBranchId ? [scopeBranchId, id] : [id];
+  const svcRows = await query<{ service_id: string }[]>(svcSql, svcParams);
+
   return rowDates({
     ...rows[0],
     rating: rows[0].rating != null ? Number(rows[0].rating) : undefined,
@@ -44,7 +50,8 @@ employeesRouter.get(
     }
     sql += ' ORDER BY name';
     const rows = await query<{ id: string }[]>(sql, params);
-    let list = (await Promise.all(rows.map((r) => loadEmployee(r.id)))).filter(Boolean);
+    const branchId = typeof branch_id === 'string' ? branch_id.trim() : '';
+    let list = (await Promise.all(rows.map((r) => loadEmployee(r.id, branchId || undefined)))).filter(Boolean);
     if (bookable === 'true') {
       list = list.filter((e) => e && isBookableStaffRole(String(e.role)));
     }

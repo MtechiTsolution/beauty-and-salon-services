@@ -168,7 +168,7 @@ CREATE TABLE notifications (
   user_email VARCHAR(255),
   title VARCHAR(255) NOT NULL,
   message TEXT NOT NULL,
-  type ENUM('booking', 'payment', 'reminder', 'system') NOT NULL DEFAULT 'system',
+  type ENUM('booking', 'payment', 'reminder', 'system', 'announcement') NOT NULL DEFAULT 'system',
   `read` TINYINT(1) NOT NULL DEFAULT 0,
   reference_id VARCHAR(36),
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

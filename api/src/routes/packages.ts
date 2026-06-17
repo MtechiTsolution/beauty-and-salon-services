@@ -3,25 +3,43 @@ import { asyncHandler } from '../middleware/asyncHandler.js';
 import { query } from '../db.js';
 import { newId, rowDates } from '../utils.js';
 
-async function loadPackage(id: string) {
+async function loadPackage(id: string, scopeBranchId?: string) {
   const rows = await query<Record<string, unknown>[]>('SELECT * FROM packages WHERE id = ?', [id]);
   if (!rows[0]) return null;
-  const svcRows = await query<{ service_id: string }[]>(
-    'SELECT service_id FROM package_services WHERE package_id = ?',
-    [id],
-  );
   const brRows = await query<{ branch_id: string }[]>(
     'SELECT branch_id FROM package_branches WHERE package_id = ?',
     [id],
   );
+  const branch_ids = brRows.map((r) => r.branch_id);
+  if (scopeBranchId && !branch_ids.includes(scopeBranchId)) return null;
+
+  const svcSql = scopeBranchId
+    ? `SELECT ps.service_id FROM package_services ps
+       INNER JOIN service_branches sb ON sb.service_id = ps.service_id AND sb.branch_id = ?
+       WHERE ps.package_id = ?`
+    : 'SELECT service_id FROM package_services WHERE package_id = ?';
+  const svcParams = scopeBranchId ? [scopeBranchId, id] : [id];
+  const svcRows = await query<{ service_id: string }[]>(svcSql, svcParams);
+
   return rowDates({
     ...rows[0],
     price: Number(rows[0].price),
     total_sessions: Number(rows[0].total_sessions),
     validity_days: Number(rows[0].validity_days),
     service_ids: svcRows.map((r) => r.service_id),
-    branch_ids: brRows.map((r) => r.branch_id),
+    branch_ids: scopeBranchId ? [scopeBranchId] : branch_ids,
   });
+}
+
+async function loadPackagesForBranch(branchId: string) {
+  const rows = await query<{ id: string }[]>(
+    `SELECT DISTINCT p.id FROM packages p
+     INNER JOIN package_branches pb ON pb.package_id = p.id AND pb.branch_id = ?
+     ORDER BY p.name`,
+    [branchId],
+  );
+  const list = await Promise.all(rows.map((r) => loadPackage(r.id, branchId)));
+  return list.filter(Boolean);
 }
 
 async function setRelations(packageId: string, service_ids?: string[], branch_ids?: string[]) {
@@ -49,10 +67,14 @@ export const packagesRouter = Router();
 
 packagesRouter.get(
   '/',
-  asyncHandler(async (_req, res) => {
-    const rows = await query<{ id: string }[]>('SELECT id FROM packages ORDER BY name');
-    const list = await Promise.all(rows.map((r) => loadPackage(r.id)));
-    res.json(list.filter(Boolean));
+  asyncHandler(async (req, res) => {
+    const branchId = typeof req.query.branch_id === 'string' ? req.query.branch_id.trim() : '';
+    const list = branchId
+      ? await loadPackagesForBranch(branchId)
+      : (await Promise.all(
+          (await query<{ id: string }[]>('SELECT id FROM packages ORDER BY name')).map((r) => loadPackage(r.id)),
+        )).filter(Boolean);
+    res.json(list);
   }),
 );
 

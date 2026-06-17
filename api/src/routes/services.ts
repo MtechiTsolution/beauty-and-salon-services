@@ -4,24 +4,42 @@ import { serviceDeleteBlockers } from '../lib/deleteGuards.js';
 import { query } from '../db.js';
 import { newId, rowDates } from '../utils.js';
 
-async function loadService(id: string) {
+async function loadService(id: string, scopeBranchId?: string) {
   const rows = await query<Record<string, unknown>[]>('SELECT * FROM services WHERE id = ?', [id]);
   if (!rows[0]) return null;
   const branchRows = await query<{ branch_id: string }[]>(
     'SELECT branch_id FROM service_branches WHERE service_id = ?',
     [id],
   );
-  const empRows = await query<{ employee_id: string }[]>(
-    'SELECT employee_id FROM employee_services WHERE service_id = ?',
-    [id],
-  );
+  const branch_ids = branchRows.map((r) => r.branch_id);
+  if (scopeBranchId && !branch_ids.includes(scopeBranchId)) return null;
+
+  const empSql = scopeBranchId
+    ? `SELECT es.employee_id FROM employee_services es
+       INNER JOIN employees e ON e.id = es.employee_id
+       WHERE es.service_id = ? AND e.branch_id = ?`
+    : 'SELECT employee_id FROM employee_services WHERE service_id = ?';
+  const empParams = scopeBranchId ? [id, scopeBranchId] : [id];
+  const empRows = await query<{ employee_id: string }[]>(empSql, empParams);
+
   return rowDates({
     ...rows[0],
     price: Number(rows[0].price),
     duration_minutes: Number(rows[0].duration_minutes),
-    branch_ids: branchRows.map((r) => r.branch_id),
+    branch_ids: scopeBranchId ? [scopeBranchId] : branch_ids,
     employee_ids: empRows.map((r) => r.employee_id),
   });
+}
+
+async function loadServicesForBranch(branchId: string) {
+  const rows = await query<{ id: string }[]>(
+    `SELECT DISTINCT s.id FROM services s
+     INNER JOIN service_branches sb ON sb.service_id = s.id AND sb.branch_id = ?
+     ORDER BY s.title`,
+    [branchId],
+  );
+  const list = await Promise.all(rows.map((r) => loadService(r.id, branchId)));
+  return list.filter(Boolean);
 }
 
 async function loadAllServices() {
@@ -48,9 +66,10 @@ export const servicesRouter = Router();
 
 servicesRouter.get(
   '/',
-  asyncHandler(async (_req, res) => {
-    const services = await loadAllServices();
-    res.json(services.filter(Boolean));
+  asyncHandler(async (req, res) => {
+    const branchId = typeof req.query.branch_id === 'string' ? req.query.branch_id.trim() : '';
+    const services = branchId ? await loadServicesForBranch(branchId) : (await loadAllServices()).filter(Boolean);
+    res.json(services);
   }),
 );
 

@@ -1,3 +1,8 @@
+import {
+  effectiveMaxUses,
+  isCouponFullyUsed,
+  isCouponPastExpiry,
+} from '../../../shared/src/lib/coupon-lifecycle.js';
 import { query } from '../db.js';
 import { rowDates } from '../utils.js';
 
@@ -22,12 +27,35 @@ function mapCouponRow(row: Record<string, unknown>) {
   return out;
 }
 
+/** Persist `expired` on all active coupons past their expiry date. */
+export async function expireCouponsPastDate(): Promise<void> {
+  await query(
+    `UPDATE coupons SET status = 'expired'
+     WHERE status = 'active'
+       AND expiry_date IS NOT NULL
+       AND expiry_date < CURDATE()`,
+  );
+}
+
+export async function markCouponExpired(couponId: string): Promise<void> {
+  await query(`UPDATE coupons SET status = 'expired' WHERE id = ?`, [couponId]);
+}
+
 export async function findActiveCouponByCode(code: string) {
+  await expireCouponsPastDate();
   const rows = await query<Record<string, unknown>[]>(
     `SELECT * FROM coupons WHERE UPPER(code) = UPPER(?) AND status = 'active'`,
     [code.trim()],
   );
-  return rows[0] ? mapCouponRow(rows[0]) : null;
+  const row = rows[0];
+  if (!row) return null;
+
+  if (isCouponPastExpiry(row.expiry_date as string | undefined)) {
+    await markCouponExpired(String(row.id));
+    return null;
+  }
+
+  return mapCouponRow(row);
 }
 
 export async function customerHasUsedCoupon(customerEmail: string, code: string): Promise<boolean> {
@@ -43,6 +71,36 @@ export async function customerHasUsedCoupon(customerEmail: string, code: string)
   return rows.length > 0;
 }
 
+export async function listAvailableCouponsForCustomer(
+  customerEmail: string,
+  orderAmount?: number,
+): Promise<Record<string, unknown>[]> {
+  await expireCouponsPastDate();
+  const rows = await query<Record<string, unknown>[]>(
+    `SELECT * FROM coupons WHERE status = 'active' ORDER BY code ASC`,
+  );
+
+  const available: Record<string, unknown>[] = [];
+  for (const row of rows) {
+    if (isCouponPastExpiry(row.expiry_date as string | undefined)) {
+      await markCouponExpired(String(row.id));
+      continue;
+    }
+    if (isCouponFullyUsed(Number(row.used_count ?? 0), row.max_uses as number | null | undefined)) {
+      continue;
+    }
+    if (await customerHasUsedCoupon(customerEmail, String(row.code))) {
+      continue;
+    }
+    const minOrder = Number(row.min_order ?? 0);
+    if (orderAmount != null && orderAmount < minOrder) {
+      continue;
+    }
+    available.push(mapCouponRow(row));
+  }
+  return available;
+}
+
 export async function validateCouponForCustomer(
   code: string,
   customerEmail: string,
@@ -53,13 +111,7 @@ export async function validateCouponForCustomer(
     return { ok: false, reason: 'not_found' };
   }
 
-  if (row.expiry_date && new Date(String(row.expiry_date)) < new Date()) {
-    return { ok: false, reason: 'expired' };
-  }
-
-  const maxUses = row.max_uses != null ? Number(row.max_uses) : null;
-  const usedCount = Number(row.used_count ?? 0);
-  if (maxUses != null && usedCount >= maxUses) {
+  if (isCouponFullyUsed(Number(row.used_count ?? 0), row.max_uses as number | null | undefined)) {
     return { ok: false, reason: 'max_uses' };
   }
 
@@ -80,12 +132,26 @@ export function couponRejectMessage(reason: CouponValidateReason): string {
     not_found: 'Invalid or inactive coupon code',
     expired: 'This coupon has expired',
     already_used: 'You have already used this coupon. Each customer can use a coupon only once.',
-    max_uses: 'This coupon has reached its maximum number of uses',
+    max_uses: 'This coupon has already been used and is no longer available',
     min_order: 'Order amount is below the minimum required for this coupon',
   };
   return messages[reason];
 }
 
 export async function redeemCoupon(couponId: string): Promise<void> {
-  await query('UPDATE coupons SET used_count = used_count + 1 WHERE id = ?', [couponId]);
+  await query(
+    `UPDATE coupons
+     SET used_count = used_count + 1,
+         status = CASE
+           WHEN used_count + 1 >= COALESCE(NULLIF(max_uses, 0), 1) THEN 'inactive'
+           ELSE status
+         END
+     WHERE id = ?`,
+    [couponId],
+  );
+}
+
+export function normalizeCouponMaxUses(maxUses: unknown): number {
+  const n = Number(maxUses);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : effectiveMaxUses(null);
 }

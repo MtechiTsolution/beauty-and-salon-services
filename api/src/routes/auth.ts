@@ -60,6 +60,10 @@ authRouter.post('/register', asyncHandler(async (req, res) => {
     [id, email, hash, full_name, phone ?? null, 'customer'],
   );
   const rows = await query<UserRow[]>('SELECT * FROM users WHERE id = ?', [id]);
+  const { notifyCustomerOfAllAvailableCoupons } = await import('../lib/couponNotifications.js');
+  void notifyCustomerOfAllAvailableCoupons(email).catch((err) =>
+    console.error('Coupon welcome notify failed:', err),
+  );
   res.status(201).json(toUser(rows[0]));
 }));
 

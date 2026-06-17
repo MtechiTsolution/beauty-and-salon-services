@@ -12,7 +12,7 @@ async function main() {
   const conn = await mysql.createConnection({ ...dbConfig, multipleStatements: true });
   await conn.query(sql);
   await conn.end();
-  console.log('Schema additions applied (package_services, package_branches, staff_payouts).');
+  console.log('Schema additions applied (package_services, package_branches, staff_payouts, notification announcements).');
 }
 
 main().catch((e) => {

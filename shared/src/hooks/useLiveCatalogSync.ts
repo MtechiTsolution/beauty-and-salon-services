@@ -1,61 +1,117 @@
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { invalidateAllCatalogQueries } from '../lib/catalog-query-keys';
+import { getApiBase } from '../lib/api-base';
+import {
+  invalidateAllCatalogQueries,
+  refetchActiveCatalogQueries,
+  refetchChatQueries,
+} from '../lib/catalog-query-keys';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '/api';
-const POLL_MS = 3000;
+const POLL_MS = 2000;
+const CHAT_POLL_MS = 1500;
+
+type SyncPayload = {
+  version: number;
+  chatVersion?: number;
+  at?: number;
+  scope?: 'catalog' | 'chat';
+  chatId?: string;
+};
 
 function syncEventsUrl() {
-  return `${API_BASE.replace(/\/$/, '')}/sync/events`;
+  return `${getApiBase()}/sync/events`;
 }
 
 function syncVersionUrl() {
-  return `${API_BASE.replace(/\/$/, '')}/sync/version`;
+  return `${getApiBase()}/sync/version`;
 }
 
 export function useLiveCatalogSync() {
   const queryClient = useQueryClient();
-  const lastVersion = useRef<number | null>(null);
+  const lastCatalogVersion = useRef<number | null>(null);
+  const lastChatVersion = useRef<number | null>(null);
 
   useEffect(() => {
     let disposed = false;
     let es: EventSource | null = null;
     let pollTimer: ReturnType<typeof setInterval> | null = null;
 
-    const applyChange = async () => {
-      if (!disposed) await invalidateAllCatalogQueries(queryClient);
+    const applyCatalogChange = async () => {
+      if (disposed) return;
+      await invalidateAllCatalogQueries(queryClient);
+      await refetchActiveCatalogQueries(queryClient);
     };
 
-    const onVersionPayload = (payload: { version: number }) => {
-      if (lastVersion.current === null) {
-        lastVersion.current = payload.version;
+    const applyChatChange = async (chatId?: string) => {
+      if (disposed) return;
+      await refetchChatQueries(queryClient, chatId);
+    };
+
+    const onSyncPayload = (payload: SyncPayload) => {
+      if (payload.scope === 'chat') {
+        if (lastChatVersion.current === null) {
+          lastChatVersion.current = payload.version;
+          return;
+        }
+        if (payload.version !== lastChatVersion.current) {
+          lastChatVersion.current = payload.version;
+          void applyChatChange(payload.chatId);
+        }
         return;
       }
-      if (payload.version !== lastVersion.current) {
-        lastVersion.current = payload.version;
-        void applyChange();
+
+      if (lastCatalogVersion.current === null) {
+        lastCatalogVersion.current = payload.version;
+        if (payload.chatVersion != null) {
+          lastChatVersion.current = payload.chatVersion;
+        }
+        return;
+      }
+      if (payload.version !== lastCatalogVersion.current) {
+        lastCatalogVersion.current = payload.version;
+        void applyCatalogChange();
+      }
+      if (
+        payload.chatVersion != null &&
+        lastChatVersion.current !== null &&
+        payload.chatVersion !== lastChatVersion.current
+      ) {
+        lastChatVersion.current = payload.chatVersion;
+        void applyChatChange();
+      }
+    };
+
+    const pollVersion = async () => {
+      if (disposed) return;
+      try {
+        const res = await fetch(syncVersionUrl());
+        if (!res.ok) return;
+        const body = (await res.json()) as SyncPayload;
+        onSyncPayload({ ...body, scope: 'catalog' });
+        if (body.chatVersion != null) {
+          onSyncPayload({
+            version: body.chatVersion,
+            scope: 'chat',
+          });
+        }
+      } catch {
+        /* backend offline */
       }
     };
 
     const startPolling = () => {
       if (pollTimer) return;
-      pollTimer = setInterval(async () => {
-        if (disposed) return;
-        try {
-          const res = await fetch(syncVersionUrl());
-          if (!res.ok) return;
-          onVersionPayload((await res.json()) as { version: number });
-        } catch { /* offline */ }
-      }, POLL_MS);
+      void pollVersion();
+      pollTimer = setInterval(() => void pollVersion(), POLL_MS);
     };
 
     try {
       es = new EventSource(syncEventsUrl());
       es.onmessage = (event) => {
         try {
-          onVersionPayload(JSON.parse(event.data) as { version: number });
+          onSyncPayload(JSON.parse(event.data) as SyncPayload);
         } catch {
-          void applyChange();
+          void applyCatalogChange();
         }
       };
       es.onerror = () => {
@@ -67,8 +123,13 @@ export function useLiveCatalogSync() {
       startPolling();
     }
 
+    startPolling();
+
     const onVisibility = () => {
-      if (document.visibilityState === 'visible') void applyChange();
+      if (document.visibilityState === 'visible') {
+        void applyCatalogChange();
+        void applyChatChange();
+      }
     };
     document.addEventListener('visibilitychange', onVisibility);
 
@@ -79,4 +140,45 @@ export function useLiveCatalogSync() {
       document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [queryClient]);
+}
+
+/** Faster chat-only polling fallback for open conversation panels. */
+export function useLiveChatSync(chatId: string, enabled = true) {
+  const queryClient = useQueryClient();
+  const lastChatVersion = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!enabled || !chatId) return;
+
+    let disposed = false;
+    let timer: ReturnType<typeof setInterval> | null = null;
+
+    const poll = async () => {
+      if (disposed) return;
+      try {
+        const res = await fetch(syncVersionUrl());
+        if (!res.ok) return;
+        const body = (await res.json()) as { chatVersion?: number };
+        if (body.chatVersion == null) return;
+        if (lastChatVersion.current === null) {
+          lastChatVersion.current = body.chatVersion;
+          return;
+        }
+        if (body.chatVersion !== lastChatVersion.current) {
+          lastChatVersion.current = body.chatVersion;
+          await refetchChatQueries(queryClient, chatId);
+        }
+      } catch {
+        /* offline */
+      }
+    };
+
+    void poll();
+    timer = setInterval(() => void poll(), CHAT_POLL_MS);
+
+    return () => {
+      disposed = true;
+      if (timer) clearInterval(timer);
+    };
+  }, [chatId, enabled, queryClient]);
 }

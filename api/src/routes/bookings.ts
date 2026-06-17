@@ -1,6 +1,13 @@
 import { Router } from 'express';
 import { asyncHandler } from '../middleware/asyncHandler.js';
 import { query } from '../db.js';
+import { createChatForBooking } from '../lib/booking-chat.js';
+import {
+  notifyBookingCreated,
+  notifyBookingPaymentChange,
+  notifyBookingStatusChange,
+  type BookingNotificationRow,
+} from '../lib/notifications.js';
 import { newId, rowDates } from '../utils.js';
 
 function mapBooking(row: Record<string, unknown>) {
@@ -21,12 +28,16 @@ export const bookingsRouter = Router();
 bookingsRouter.get(
   '/',
   asyncHandler(async (req, res) => {
-    const { customer_email, date, employee_id, status } = req.query;
+    const { customer_email, date, employee_id, status, branch_id } = req.query;
     let sql = 'SELECT * FROM bookings WHERE 1=1';
     const params: unknown[] = [];
     if (customer_email) {
       sql += ' AND customer_email = ?';
       params.push(customer_email);
+    }
+    if (branch_id && typeof branch_id === 'string') {
+      sql += ' AND branch_id = ?';
+      params.push(branch_id);
     }
     if (date) {
       sql += ' AND booking_date = ?';
@@ -60,13 +71,18 @@ bookingsRouter.post(
   asyncHandler(async (req, res) => {
     const b = req.body;
 
-    const { assertNoStaffSlotConflict, assertSlotNotInPast } = await import('../lib/bookingConflict.js');
-    assertSlotNotInPast(String(b.date), String(b.time_slot));
-    await assertNoStaffSlotConflict({
+    const durationMinutes = Number(b.duration_minutes);
+    if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
+      return res.status(400).json({ message: 'duration_minutes must be a positive number' });
+    }
+
+    const { assertActiveBookingSchedule } = await import('../lib/bookingConflict.js');
+    await assertActiveBookingSchedule({
       employeeId: String(b.employee_id),
       date: String(b.date),
       timeSlot: String(b.time_slot),
-      durationMinutes: Number(b.duration_minutes) || 30,
+      durationMinutes,
+      status: String(b.status ?? 'pending'),
     });
 
     if (b.coupon_code) {
@@ -115,7 +131,19 @@ bookingsRouter.post(
       ],
     );
     const rows = await query<Record<string, unknown>[]>('SELECT * FROM bookings WHERE id = ?', [id]);
-    res.status(201).json(mapBooking(rows[0]));
+    const created = rows[0];
+    await notifyBookingCreated(created as BookingNotificationRow);
+    await createChatForBooking({
+      id: String(created.id),
+      customer_email: String(created.customer_email),
+      customer_name: String(created.customer_name),
+      branch_id: String(created.branch_id),
+      branch_name: String(created.branch_name),
+      service_title: String(created.service_title),
+      booking_date: created.booking_date as string | Date,
+      time_slot: String(created.time_slot),
+    });
+    res.status(201).json(mapBooking(created));
   }),
 );
 
@@ -123,6 +151,79 @@ bookingsRouter.patch(
   '/:id',
   asyncHandler(async (req, res) => {
     const b = req.body;
+    const beforeRows = await query<Record<string, unknown>[]>(
+      'SELECT * FROM bookings WHERE id = ?',
+      [req.params.id],
+    );
+    if (!beforeRows[0]) return res.status(404).json({ message: 'Not found' });
+    const before = beforeRows[0];
+
+    if (b.status === 'cancelled') {
+      const currentStatus = String(before.status);
+      if (!['pending', 'confirmed'].includes(currentStatus)) {
+        return res.status(400).json({ message: 'This booking cannot be cancelled' });
+      }
+      const { resolvePaymentStatusOnCancel } = await import('../../../shared/src/lib/booking-payment.js');
+      const refunded = resolvePaymentStatusOnCancel(String(before.payment_status), true);
+      if (refunded) {
+        b.payment_status = refunded;
+      }
+    }
+
+    if (b.payment_status !== undefined && b.payment_status !== before.payment_status) {
+      const previous = String(before.payment_status);
+      const next = String(b.payment_status);
+      if (previous === 'paid' && next === 'refunded' && b.status === 'cancelled') {
+        /* auto-refund on cancellation */
+      } else if (previous === 'paid') {
+        return res.status(400).json({ message: 'Payment cannot be changed once marked as paid' });
+      } else if (previous === 'refunded') {
+        return res.status(400).json({ message: 'Refunded payments cannot be changed' });
+      } else if (previous === 'unpaid' && next !== 'paid') {
+        return res.status(400).json({ message: 'Unpaid bookings can only be marked as paid' });
+      }
+    }
+
+    const nextStatus = b.status !== undefined ? String(b.status) : String(before.status);
+    const nextEmployeeId =
+      b.employee_id !== undefined ? String(b.employee_id) : String(before.employee_id);
+    const nextDate =
+      b.date !== undefined
+        ? String(b.date)
+        : String(before.booking_date).slice(0, 10);
+    const nextTimeSlot =
+      b.time_slot !== undefined ? String(b.time_slot) : String(before.time_slot);
+    const nextDuration =
+      b.duration_minutes !== undefined
+        ? Number(b.duration_minutes)
+        : Number(before.duration_minutes);
+
+    if (b.duration_minutes !== undefined && (!Number.isFinite(nextDuration) || nextDuration <= 0)) {
+      return res.status(400).json({ message: 'duration_minutes must be a positive number' });
+    }
+
+    const scheduleTouched =
+      b.employee_id !== undefined ||
+      b.date !== undefined ||
+      b.time_slot !== undefined ||
+      b.duration_minutes !== undefined;
+    const reactivated =
+      b.status !== undefined &&
+      nextStatus !== 'cancelled' &&
+      String(before.status) === 'cancelled';
+
+    if (nextStatus !== 'cancelled' && (scheduleTouched || reactivated)) {
+      const { assertActiveBookingSchedule } = await import('../lib/bookingConflict.js');
+      await assertActiveBookingSchedule({
+        employeeId: nextEmployeeId,
+        date: nextDate,
+        timeSlot: nextTimeSlot,
+        durationMinutes: nextDuration || 30,
+        status: nextStatus,
+        excludeBookingId: req.params.id,
+      });
+    }
+
     const fields: string[] = [];
     const values: unknown[] = [];
     const map: Record<string, string> = {
@@ -131,6 +232,8 @@ bookingsRouter.patch(
       payment_method: 'payment_method',
       notes: 'notes',
       date: 'booking_date',
+      time_slot: 'time_slot',
+      duration_minutes: 'duration_minutes',
       employee_id: 'employee_id',
       employee_name: 'employee_name',
     };
@@ -145,7 +248,13 @@ bookingsRouter.patch(
     await query(`UPDATE bookings SET ${fields.join(', ')} WHERE id = ?`, values);
     const rows = await query<Record<string, unknown>[]>('SELECT * FROM bookings WHERE id = ?', [req.params.id]);
     if (!rows[0]) return res.status(404).json({ message: 'Not found' });
-    res.json(mapBooking(rows[0]));
+    const updated = rows[0];
+
+    const bookingRow = updated as BookingNotificationRow;
+    await notifyBookingStatusChange(bookingRow, String(before.status));
+    await notifyBookingPaymentChange(bookingRow, String(before.payment_status));
+
+    res.json(mapBooking(updated));
   }),
 );
 

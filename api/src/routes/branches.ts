@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { asyncHandler } from '../middleware/asyncHandler.js';
-import { branchDeleteBlockers } from '../lib/deleteGuards.js';
+import { branchDeleteBlockers, deleteBranchDependencies } from '../lib/deleteGuards.js';
 import { query } from '../db.js';
 import { newId, rowDates } from '../utils.js';
 
@@ -8,7 +8,12 @@ export const branchesRouter = Router();
 
 branchesRouter.get(
   '/',
-  asyncHandler(async (_req, res) => {
+  asyncHandler(async (req, res) => {
+    const branchId = typeof req.query.branch_id === 'string' ? req.query.branch_id.trim() : '';
+    if (branchId) {
+      const rows = await query<Record<string, unknown>[]>('SELECT * FROM branches WHERE id = ?', [branchId]);
+      return res.json(rows.map(rowDates));
+    }
     const rows = await query<Record<string, unknown>[]>('SELECT * FROM branches ORDER BY name');
     res.json(rows.map(rowDates));
   }),
@@ -83,6 +88,7 @@ branchesRouter.delete(
     if (blockMessage) {
       return res.status(409).json({ message: blockMessage });
     }
+    await deleteBranchDependencies(req.params.id);
     await query('DELETE FROM branches WHERE id = ?', [req.params.id]);
     res.status(204).send();
   }),

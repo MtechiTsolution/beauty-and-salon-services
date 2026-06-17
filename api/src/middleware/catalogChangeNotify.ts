@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
-import { notifyCatalogChange } from '../lib/catalogSync.js';
+import { notifyCatalogChange, notifyChatChange } from '../lib/catalogSync.js';
 
 const MUTATION_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
 
@@ -16,6 +16,11 @@ function shouldNotify(req: Request, statusCode: number) {
   if (!MUTATION_METHODS.has(req.method)) return false;
   if (shouldSkip(req.path)) return false;
   return statusCode >= 200 && statusCode < 300;
+}
+
+function chatIdFromPath(path: string): string | null {
+  const match = path.match(/^\/api\/chats\/([^/]+)\/(messages|read)$/);
+  return match?.[1] ?? null;
 }
 
 /**
@@ -39,7 +44,13 @@ export function catalogChangeNotifyMiddleware(req: Request, res: Response, next:
   };
 
   const maybeNotify = () => {
-    if (shouldNotify(req, statusCode)) notifyCatalogChange();
+    if (!shouldNotify(req, statusCode)) return;
+    const chatId = chatIdFromPath(req.path);
+    if (chatId) {
+      notifyChatChange(chatId);
+      return;
+    }
+    notifyCatalogChange();
   };
 
   res.json = function json(body?: unknown) {

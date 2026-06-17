@@ -4,5 +4,9 @@ dist/
 api/.env
 backend/.env
 customer/.env
+customer/.env.development.local
 admin/.env
+admin/.env.development.local
 *.log
+backend/uploads/
+api/uploads/

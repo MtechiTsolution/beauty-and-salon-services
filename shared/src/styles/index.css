@@ -37,6 +37,37 @@
     --sidebar-border: 35 15% 88%;
     --sidebar-ring: 30 45% 30%;
   }
+
+  .dark {
+    --background: 30 10% 7%;
+    --foreground: 40 15% 92%;
+    --card: 30 10% 10%;
+    --card-foreground: 40 15% 92%;
+    --popover: 30 10% 10%;
+    --popover-foreground: 40 15% 92%;
+    --primary: 38 60% 55%;
+    --primary-foreground: 30 10% 7%;
+    --secondary: 30 10% 15%;
+    --secondary-foreground: 40 15% 92%;
+    --muted: 30 10% 15%;
+    --muted-foreground: 35 10% 55%;
+    --accent: 38 60% 55%;
+    --accent-foreground: 30 10% 7%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 30 10% 18%;
+    --input: 30 10% 18%;
+    --ring: 38 60% 55%;
+    --sidebar-background: 30 10% 9%;
+    --sidebar-foreground: 40 15% 92%;
+    --sidebar-primary: 38 60% 55%;
+    --sidebar-primary-foreground: 30 10% 7%;
+    --sidebar-accent: 30 10% 14%;
+    --sidebar-accent-foreground: 40 15% 92%;
+    --sidebar-border: 30 10% 18%;
+    --sidebar-ring: 38 60% 55%;
+  }
+
   * {
     @apply border-border;
   }
@@ -158,4 +189,22 @@
 
 .star-rating-picker-btn:hover .star-icon-empty {
   stroke: hsl(var(--primary) / 0.45) !important;
+}
+
+/* Image crop dialog */
+.image-crop-dialog.mit-dialog-content {
+  display: flex !important;
+  flex-direction: column !important;
+  max-height: min(92vh, 640px) !important;
+}
+
+.image-crop-stage {
+  height: min(50vh, 360px);
+  width: 100%;
+}
+
+.image-crop-zoom {
+  height: 0.35rem;
+  cursor: pointer;
+  accent-color: hsl(var(--primary));
 }

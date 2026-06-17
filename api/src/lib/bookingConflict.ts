@@ -1,3 +1,5 @@
+import { slotFitsServiceDuration } from '../../../shared/src/lib/booking-slots.js';
+import { TIME_SLOTS } from '../../../shared/src/lib/constants.js';
 import { query } from '../db.js';
 
 function slotToMinutes(timeSlot: string): number {
@@ -67,4 +69,31 @@ export async function assertNoStaffSlotConflict(params: {
     err.status = 409;
     throw err;
   }
+}
+
+/** Skip conflict checks for cancelled bookings; validate schedule otherwise. */
+export async function assertActiveBookingSchedule(params: {
+  employeeId: string;
+  date: string;
+  timeSlot: string;
+  durationMinutes: number;
+  status: string;
+  excludeBookingId?: string;
+}): Promise<void> {
+  if (params.status === 'cancelled') return;
+  assertSlotNotInPast(params.date, params.timeSlot);
+  if (!slotFitsServiceDuration(params.timeSlot, params.durationMinutes, TIME_SLOTS)) {
+    const err = new Error(
+      'This appointment is too long to finish before closing. Please choose an earlier time.',
+    ) as Error & { status: number };
+    err.status = 400;
+    throw err;
+  }
+  await assertNoStaffSlotConflict({
+    employeeId: params.employeeId,
+    date: params.date,
+    timeSlot: params.timeSlot,
+    durationMinutes: params.durationMinutes,
+    excludeBookingId: params.excludeBookingId,
+  });
 }

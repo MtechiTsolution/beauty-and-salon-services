@@ -33,6 +33,7 @@ export interface ServiceCategory extends BaseEntity {
   name: string;
   description?: string;
   image_url?: string;
+  branch_id?: string;
   status: Status;
 }
 
@@ -110,7 +111,7 @@ export interface Notification extends BaseEntity {
   user_email?: string;
   title: string;
   message: string;
-  type: 'booking' | 'payment' | 'reminder' | 'system';
+  type: 'booking' | 'payment' | 'reminder' | 'system' | 'announcement';
   read: boolean;
   reference_id?: string;
 }
@@ -125,6 +126,11 @@ export interface Review extends BaseEntity {
   rating: number;
   comment?: string;
   status: 'pending' | 'approved' | 'rejected';
+  /** Joined from booking when listing reviews */
+  service_title?: string;
+  branch_name?: string;
+  employee_name?: string;
+  booking_date?: string;
 }
 
 export type PayoutStatus = 'pending' | 'paid' | 'cancelled';
@@ -138,4 +144,29 @@ export interface StaffPayout extends BaseEntity {
   period_end: string;
   status: PayoutStatus;
   notes?: string;
+}
+
+export interface BookingChat extends BaseEntity {
+  booking_id: string;
+  customer_email: string;
+  customer_name: string;
+  branch_id: string;
+  branch_name: string;
+  service_title?: string;
+  booking_date?: string;
+  time_slot?: string;
+  booking_status?: BookingStatus;
+  payment_status?: PaymentStatus;
+  final_price?: number;
+  unread_customer?: number;
+  unread_salon?: number;
+}
+
+export interface ChatMessage extends BaseEntity {
+  chat_id: string;
+  sender_role: 'customer' | 'salon';
+  sender_name: string;
+  body: string;
+  read_by_customer: boolean;
+  read_by_salon: boolean;
 }

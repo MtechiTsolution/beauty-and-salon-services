@@ -12,6 +12,8 @@
     "dev:api": "npm run dev:backend",
     "dev:customer": "npm run dev -w mit-salon-customer",
     "dev:admin": "npm run dev -w mit-salon-admin",
+    "dev:lan:setup": "node scripts/setup-lan-env.mjs",
+    "dev:lan": "npm run dev:lan:setup",
     "dev": "npm run dev:customer",
     "db:test": "npm run db:test -w mit-salon-backend",
     "db:setup": "npm run db:setup -w mit-salon-backend",

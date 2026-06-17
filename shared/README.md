@@ -10,7 +10,7 @@
 ## Contents
 
 - `src/types` — TypeScript models
-- `src/services/api` — HTTP + mock API
+- `src/services/api` — HTTP client (real backend API only)
 - `src/components` — shared UI (dialog, select, inputs, etc.)
 - `src/lib` — utilities, staff roles, catalog sync keys
 - `src/styles/index.css` — global + dialog/select styles

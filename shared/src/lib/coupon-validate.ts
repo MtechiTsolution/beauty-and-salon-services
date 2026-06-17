@@ -1,3 +1,8 @@
+import {
+  effectiveMaxUses,
+  isCouponFullyUsed,
+  isCouponPastExpiry,
+} from './coupon-lifecycle';
 import type { Booking, Coupon } from '../types';
 
 export type CouponValidateReason =
@@ -15,7 +20,7 @@ export const COUPON_VALIDATE_MESSAGES: Record<CouponValidateReason, string> = {
   not_found: 'Invalid or inactive coupon code',
   expired: 'This coupon has expired',
   already_used: 'You have already used this coupon. Each customer can use a coupon only once.',
-  max_uses: 'This coupon has reached its maximum number of uses',
+  max_uses: 'This coupon has already been used and is no longer available',
   min_order: 'Your order does not meet the minimum amount for this coupon',
 };
 
@@ -47,11 +52,11 @@ export function validateCouponForCustomer(
     return { ok: false, reason: 'not_found' };
   }
 
-  if (coupon.expiry_date && new Date(coupon.expiry_date) < new Date()) {
+  if (coupon.status === 'expired' || isCouponPastExpiry(coupon.expiry_date)) {
     return { ok: false, reason: 'expired' };
   }
 
-  if (coupon.max_uses != null && coupon.used_count >= coupon.max_uses) {
+  if (isCouponFullyUsed(coupon.used_count, coupon.max_uses)) {
     return { ok: false, reason: 'max_uses' };
   }
 

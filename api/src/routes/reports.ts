@@ -6,10 +6,25 @@ export const reportsRouter = Router();
 
 reportsRouter.get(
   '/summary',
-  asyncHandler(async (_req, res) => {
-  const bookings = await query<Record<string, unknown>[]>('SELECT * FROM bookings');
-  const branches = await query<{ id: string; name: string }[]>('SELECT id, name FROM branches');
-  const services = await query<{ id: string; title: string }[]>('SELECT id, title FROM services');
+  asyncHandler(async (req, res) => {
+  const branchId = typeof req.query.branch_id === 'string' ? req.query.branch_id.trim() : '';
+  let bookings = await query<Record<string, unknown>[]>('SELECT * FROM bookings');
+  if (branchId) {
+    bookings = bookings.filter((b) => String(b.branch_id) === branchId);
+  }
+  let branches = await query<{ id: string; name: string }[]>('SELECT id, name FROM branches');
+  if (branchId) {
+    branches = branches.filter((b) => b.id === branchId);
+  }
+  let services = await query<{ id: string; title: string }[]>('SELECT id, title FROM services');
+  if (branchId) {
+    const serviceRows = await query<{ service_id: string }[]>(
+      'SELECT service_id FROM service_branches WHERE branch_id = ?',
+      [branchId],
+    );
+    const serviceIds = new Set(serviceRows.map((r) => r.service_id));
+    services = services.filter((s) => serviceIds.has(s.id));
+  }
 
   const paid = bookings.filter((b) => b.payment_status === 'paid');
   const totalRevenue = paid.reduce((s, b) => s + Number(b.final_price), 0);

@@ -1,5 +1,11 @@
 export const APP_NAME = 'MIT Salon';
 
+export const SALON_SUPPORT = {
+  phone: '+1 (555) 123-4567',
+  email: 'hello@mitsalon.com',
+  hours: 'Mon–Sat 9:00 AM – 7:00 PM · Sun 10:00 AM – 5:00 PM',
+} as const;
+
 export const TIME_SLOTS = [
   '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
   '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
