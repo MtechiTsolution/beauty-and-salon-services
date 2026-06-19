@@ -1,6 +1,40 @@
-import type { Area } from 'react-easy-crop';
+export type Area = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
 
-export type { Area };
+export type PercentCrop = Area & { unit: '%' };
+
+/** Map a display-sized pixel crop to the image's natural pixel dimensions. */
+export function displayCropToNaturalArea(
+  image: HTMLImageElement,
+  displayCrop: Area,
+): Area {
+  const scaleX = image.naturalWidth / image.width;
+  const scaleY = image.naturalHeight / image.height;
+  return {
+    x: displayCrop.x * scaleX,
+    y: displayCrop.y * scaleY,
+    width: displayCrop.width * scaleX,
+    height: displayCrop.height * scaleY,
+  };
+}
+
+/** Map a percentage crop to the image's natural pixel dimensions. */
+export function percentCropToNaturalArea(
+  crop: PercentCrop,
+  naturalWidth: number,
+  naturalHeight: number,
+): Area {
+  return {
+    x: (crop.x / 100) * naturalWidth,
+    y: (crop.y / 100) * naturalHeight,
+    width: (crop.width / 100) * naturalWidth,
+    height: (crop.height / 100) * naturalHeight,
+  };
+}
 
 const MIME_EXT: Record<string, string> = {
   'image/jpeg': 'jpg',

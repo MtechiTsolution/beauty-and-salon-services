@@ -46,7 +46,7 @@ export function ImageUploadField({
   entityName,
   entityDescription,
   optional,
-  hint = 'JPEG, PNG, WebP, or GIF up to 5 MB. You can crop after selecting.',
+  hint = 'JPEG, PNG, WebP, or GIF up to 5 MB. Drag each side to crop, then click Crop & use.',
   previewClassName,
   cropAspect,
   className,

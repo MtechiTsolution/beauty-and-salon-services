@@ -18,15 +18,19 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
 export const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
+    hideClose?: boolean;
+  }
+>(({ className, children, hideClose = false, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content ref={ref} className={cn('mit-dialog-content', className)} {...props}>
       {children}
-      <DialogPrimitive.Close type="button" className="mit-dialog-close" aria-label="Close dialog">
-        <X className="h-4 w-4" />
-      </DialogPrimitive.Close>
+      {!hideClose ? (
+        <DialogPrimitive.Close type="button" className="mit-dialog-close" aria-label="Close dialog">
+          <X className="h-4 w-4" />
+        </DialogPrimitive.Close>
+      ) : null}
     </DialogPrimitive.Content>
   </DialogPortal>
 ));

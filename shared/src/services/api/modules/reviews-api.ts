@@ -16,10 +16,10 @@ function buildQuery(params: Record<string, string | undefined>) {
 
 export const reviewsApi = {
   ...crud,
-  async list(filters?: SalonScopeParams & { customer_email?: string; booking_id?: string }): Promise<Review[]> {
+  async list(filters?: SalonScopeParams & { customer_email?: string; booking_id?: string; service_id?: string }): Promise<Review[]> {
     return apiRequest<Review[]>(`/reviews${buildQuery(filters ?? {})}`);
   },
-  async create(data: Omit<Review, 'id' | 'created_at' | 'updated_at'>): Promise<Review> {
+  async create(data: Omit<Review, 'id' | 'created_at' | 'updated_at'> & { booking_id?: string }): Promise<Review> {
     return apiRequest<Review>('/reviews', { method: 'POST', body: JSON.stringify(data) });
   },
   async createAsAdmin(data: {

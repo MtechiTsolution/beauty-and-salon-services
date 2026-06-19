@@ -59,9 +59,9 @@ export function CoverImage({
   );
   const maxOffset = entityImagePoolSize(imageKind);
   const ultimateFallback = defaultEntityImage(imageKind);
-  const displaySrc = loading === 'eager' && resolved.startsWith('http') ? mobileImageUrl(resolved) : resolved;
-  const displayFallback =
-    loading === 'eager' && ultimateFallback.startsWith('http') ? mobileImageUrl(ultimateFallback) : ultimateFallback;
+  const isHttp = (value: string) => value.startsWith('http');
+  const displaySrc = isHttp(resolved) ? mobileImageUrl(resolved) : resolved;
+  const displayFallback = isHttp(ultimateFallback) ? mobileImageUrl(ultimateFallback) : ultimateFallback;
 
   const objectClass =
     imageKind === 'branch' || imageKind === 'staff'
@@ -76,7 +76,11 @@ export function CoverImage({
       loading={loading}
       fetchPriority={fetchPriority}
       decoding={decoding}
-      sizes={loading === 'eager' ? '100vw' : undefined}
+      sizes={
+        loading === 'eager'
+          ? '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw'
+          : '(max-width: 640px) 92vw, (max-width: 1024px) 48vw, 32vw'
+      }
       onError={(e) => {
         const img = e.currentTarget;
         if (offset < maxOffset - 1) {

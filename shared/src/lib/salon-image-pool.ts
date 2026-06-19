@@ -15,7 +15,7 @@ export function optimizeImageUrl(url: string, maxWidth = 900): string {
     parsed.searchParams.set('auto', 'format');
     parsed.searchParams.set('fit', 'crop');
     if (!parsed.searchParams.has('q')) {
-      parsed.searchParams.set('q', '80');
+      parsed.searchParams.set('q', '85');
     }
     return parsed.toString();
   } catch {
@@ -23,11 +23,25 @@ export function optimizeImageUrl(url: string, maxWidth = 900): string {
   }
 }
 
-export function mobileImageUrl(url: string): string {
-  if (typeof window !== 'undefined' && window.innerWidth < 768) {
-    return optimizeImageUrl(url, 720);
+/** Pick a width suited to the viewport (retina-aware on phones). */
+export function mobileImageUrl(url: string, options?: { fullBleed?: boolean }): string {
+  if (!url?.trim()) return url;
+
+  if (typeof window === 'undefined') {
+    return optimizeImageUrl(url, options?.fullBleed ? 1400 : 1080);
   }
-  return optimizeImageUrl(url, 1080);
+
+  const viewportWidth = window.innerWidth;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+
+  if (viewportWidth < 768) {
+    const target = options?.fullBleed
+      ? Math.min(Math.round(viewportWidth * dpr), 1600)
+      : Math.min(Math.round(viewportWidth * dpr * 0.95), 1200);
+    return optimizeImageUrl(url, Math.max(target, 900));
+  }
+
+  return optimizeImageUrl(url, options?.fullBleed ? 1600 : 1200);
 }
 
 function uniquePool(slugs: string[]): readonly string[] {

@@ -26,6 +26,10 @@ export interface Branch extends BaseEntity {
   email?: string;
   image_url?: string;
   description?: string;
+  /** Daily opening time in HH:mm (24-hour). */
+  opening_time?: string;
+  /** Daily closing time in HH:mm (24-hour). */
+  closing_time?: string;
   status: Status;
 }
 

@@ -198,13 +198,13 @@ export function BookingChatPanel({
 
   return (
 
-    <Card className={cn('flex h-full min-h-[28rem] flex-col border-border/80 shadow-md', className)}>
+    <Card className={cn('flex h-full min-h-0 max-h-full flex-col border-border/80 shadow-md', className)}>
 
       <CardHeader className="shrink-0 border-b border-border/60 pb-4">
 
         <div className="flex items-start justify-between gap-3">
 
-          <CardTitle className="font-heading text-lg">{chat.branch_name}</CardTitle>
+          <CardTitle className="font-heading text-lg">{chat.service_title}</CardTitle>
 
           {chatWs && (
 
@@ -246,13 +246,11 @@ export function BookingChatPanel({
 
         <p className="text-sm text-muted-foreground">
 
-          {chat.service_title} · {chat.booking_date} at {chat.time_slot}
+          {chat.booking_date} at {chat.time_slot}
 
         </p>
 
         <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
-
-          <span className="text-muted-foreground">{chat.customer_name}</span>
 
           {chat.booking_status && <StatusBadge status={chat.booking_status} />}
 
@@ -260,19 +258,13 @@ export function BookingChatPanel({
 
         </div>
 
-        <p className="mt-1 text-xs text-muted-foreground">
-
-          Chat with salon reception — ask about your appointment, timing, or services.
-
-        </p>
-
       </CardHeader>
 
 
 
       <CardContent className="flex min-h-0 flex-1 flex-col gap-4 p-4">
 
-        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-xl border border-border/60 bg-muted/20 p-4">
+        <div className="booking-chat-messages min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain rounded-xl border border-border/60 bg-muted/20 p-4">
 
           {isLoading ? (
 
@@ -314,14 +306,7 @@ export function BookingChatPanel({
 
                   >
 
-                    <p className={cn('mb-1 text-xs font-semibold', isMine ? 'text-primary-foreground/90' : 'text-muted-foreground')}>
-
-                      {m.sender_name}
-
-                    </p>
-
                     <p className="whitespace-pre-wrap break-words">{m.body}</p>
-
                     <p className={cn('mt-1.5 text-[10px]', isMine ? 'text-primary-foreground/70' : 'text-muted-foreground')}>
 
                       {formatMessageTime(m.created_at)}
@@ -418,19 +403,15 @@ export function BookingChatPanel({
 
           </div>
 
-          <p className="mt-2 px-1 text-[11px] text-muted-foreground">
-
-            Press <kbd className="rounded border border-border/80 bg-muted/50 px-1 py-0.5 font-sans text-[10px]">Enter</kbd>{' '}
-
-            to send ·{' '}
-
-            <kbd className="rounded border border-border/80 bg-muted/50 px-1 py-0.5 font-sans text-[10px]">Shift</kbd>+
-
-            <kbd className="rounded border border-border/80 bg-muted/50 px-1 py-0.5 font-sans text-[10px]">Enter</kbd>{' '}
-
-            for a new line
-
-          </p>
+          {viewerRole === 'salon' && (
+            <p className="mt-2 px-1 text-[11px] text-muted-foreground">
+              Press <kbd className="rounded border border-border/80 bg-muted/50 px-1 py-0.5 font-sans text-[10px]">Enter</kbd>{' '}
+              to send ·{' '}
+              <kbd className="rounded border border-border/80 bg-muted/50 px-1 py-0.5 font-sans text-[10px]">Shift</kbd>+
+              <kbd className="rounded border border-border/80 bg-muted/50 px-1 py-0.5 font-sans text-[10px]">Enter</kbd>{' '}
+              for a new line
+            </p>
+          )}
 
         </div>
 

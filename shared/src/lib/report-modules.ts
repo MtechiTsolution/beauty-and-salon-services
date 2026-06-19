@@ -107,6 +107,8 @@ export const REPORT_MODULES: ReportModuleMeta[] = [
       { key: 'city', header: 'City' },
       { key: 'phone', header: 'Phone' },
       { key: 'email', header: 'Email' },
+      { key: 'opening_time', header: 'Opening time' },
+      { key: 'closing_time', header: 'Closing time' },
       { key: 'status', header: 'Status' },
       { key: 'created_at', header: 'Created at' },
     ],
