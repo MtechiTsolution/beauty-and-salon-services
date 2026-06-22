@@ -1,0 +1,146 @@
+import { useAuth } from '@/features/auth/context/AuthContext';
+import { AppLogo } from '@mit-salon/shared/components/AppLogo';
+import { APP_NAME, SALON_SUPPORT } from '@mit-salon/shared/lib/constants';
+import { landingFeatures } from '@/features/welcome/lib/landing-content';
+import { Clock, Mail, Phone } from 'lucide-react';
+import { Link } from 'react-router-dom';
+
+const footerAnchors = [
+  { label: 'Features', href: '#features' },
+  { label: 'Services', href: '#services' },
+  { label: 'Packages', href: '#packages' },
+  { label: 'Locations', href: '#locations' },
+  { label: 'Reviews', href: '#reviews' },
+];
+
+const supportHourLines = SALON_SUPPORT.hours.split(' · ');
+
+export function LandingFooter() {
+  const { isAuthenticated } = useAuth();
+
+  return (
+    <footer className="landing-footer border-t border-border/70">
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 md:py-16 max-md:px-4 max-md:py-8">
+        <div className="grid gap-12 lg:grid-cols-12 lg:items-start lg:gap-14 max-md:gap-8">
+          <div className="text-center lg:col-span-4 lg:text-left max-md:text-left">
+            <AppLogo
+              size="md"
+              showText
+              textClassName="font-heading text-2xl font-bold text-foreground max-md:text-xl"
+              className="justify-center lg:justify-start max-md:justify-start"
+            />
+            <p className="footer-body-text mx-auto mt-5 max-w-sm text-muted-foreground lg:mx-0 max-md:mx-0 max-md:mt-3 max-md:text-sm max-md:leading-relaxed">
+              {APP_NAME} is your complete salon companion — discover locations, book appointments, chat with
+              reception, and manage every visit with confidence.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 sm:gap-12 lg:col-span-5 max-md:grid-cols-2 max-md:gap-6 max-md:gap-y-6">
+            <div className="text-center sm:text-left max-md:text-left">
+              <p className="footer-section-title max-md:text-base">Explore</p>
+              <ul className="mt-5 space-y-3 max-md:mt-2.5 max-md:space-y-1.5">
+                {footerAnchors.map((item) => (
+                  <li key={item.href}>
+                    <a href={item.href} className="footer-link max-md:text-sm">
+                      {item.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="text-center sm:text-left max-md:text-left">
+              <p className="footer-section-title max-md:text-base">Platform</p>
+              <ul className="mt-5 space-y-3 max-md:mt-2.5 max-md:space-y-1.5">
+                {landingFeatures.slice(0, 5).map((f) => (
+                  <li key={f.title}>
+                    <Link
+                      to={isAuthenticated ? f.path : '/register'}
+                      className="footer-link max-md:text-sm"
+                    >
+                      {f.title}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <div className="text-center lg:col-span-3 lg:text-left max-md:text-left max-md:rounded-xl max-md:border max-md:border-border/60 max-md:bg-card/40 max-md:p-4 max-md:shadow-sm">
+            <p className="footer-section-title max-md:text-base">Contact</p>
+            <ul className="mt-5 space-y-4 max-md:mt-3 max-md:space-y-3">
+              <li>
+                <a
+                  href={`tel:${SALON_SUPPORT.phone.replace(/\D/g, '')}`}
+                  className="footer-link footer-contact-row block max-md:flex max-md:items-center max-md:gap-2.5 max-md:text-sm"
+                >
+                  <span className="footer-contact-icon hidden max-md:flex max-md:h-5 max-md:w-4 max-md:shrink-0 max-md:items-center max-md:justify-center">
+                    <Phone className="h-4 w-4 text-primary" aria-hidden />
+                  </span>
+                  <span className="min-w-0">{SALON_SUPPORT.phone}</span>
+                </a>
+              </li>
+              <li>
+                <a
+                  href={`mailto:${SALON_SUPPORT.email}`}
+                  className="footer-link footer-contact-row block break-all max-md:flex max-md:items-center max-md:gap-2.5 max-md:break-normal max-md:text-sm sm:break-normal"
+                >
+                  <span className="footer-contact-icon hidden max-md:flex max-md:h-5 max-md:w-4 max-md:shrink-0 max-md:items-center max-md:justify-center">
+                    <Mail className="h-4 w-4 text-primary" aria-hidden />
+                  </span>
+                  <span className="min-w-0">{SALON_SUPPORT.email}</span>
+                </a>
+              </li>
+              <li className="footer-body-text text-muted-foreground">
+                <span className="max-md:hidden">{SALON_SUPPORT.hours}</span>
+                <div className="footer-contact-hours hidden max-md:flex max-md:items-start max-md:gap-2.5">
+                  <span className="footer-contact-icon flex h-5 w-4 shrink-0 items-center justify-center">
+                    <Clock className="h-4 w-4 text-primary" aria-hidden />
+                  </span>
+                  <div className="min-w-0 flex-1 space-y-1 text-xs leading-snug">
+                    {supportHourLines.map((line) => (
+                      <p key={line}>{line}</p>
+                    ))}
+                  </div>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="landing-footer-bottom footer-bottom-bar mt-12 flex flex-col items-center justify-between gap-5 pt-8 text-center sm:flex-row lg:text-left max-md:mt-8 max-md:gap-4 max-md:pt-6">
+          <p className="footer-copyright max-md:text-xs max-md:text-muted-foreground">
+            © {new Date().getFullYear()} {APP_NAME}. All rights reserved.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 lg:justify-end max-md:grid max-md:w-full max-md:grid-cols-3 max-md:gap-2 max-md:gap-x-2">
+            {isAuthenticated ? (
+              <>
+                <Link to="/book" className="footer-link footer-mobile-action max-md:text-center max-md:text-sm">
+                  Book
+                </Link>
+                <Link to="/explore" className="footer-link footer-mobile-action max-md:text-center max-md:text-sm">
+                  Explore
+                </Link>
+                <Link to="/contact" className="footer-link footer-mobile-action max-md:text-center max-md:text-sm">
+                  Contact
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="footer-link footer-mobile-action max-md:text-center max-md:text-sm">
+                  Sign in
+                </Link>
+                <Link to="/register" className="footer-link footer-mobile-action max-md:text-center max-md:text-sm">
+                  Register
+                </Link>
+                <Link to="/contact" className="footer-link footer-mobile-action max-md:text-center max-md:text-sm">
+                  Contact
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}

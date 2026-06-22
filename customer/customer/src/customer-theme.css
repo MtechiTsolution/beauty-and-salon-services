@@ -1,0 +1,78 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+/* Customer brand tokens — colors for text, buttons, stages (unchanged) */
+:root {
+  --font-heading: 'Cormorant Garamond', Georgia, serif;
+  --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+
+  --background: 40 33% 97%;
+  --foreground: 330 15% 15%;
+  --card: 0 0% 100%;
+  --card-foreground: 330 15% 15%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 330 15% 15%;
+
+  --primary: 336 62% 42%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 336 30% 94%;
+  --secondary-foreground: 336 45% 30%;
+  --muted: 336 20% 93%;
+  --muted-foreground: 330 10% 42%;
+
+  --accent: 38 75% 55%;
+  --accent-foreground: 30 35% 12%;
+
+  --destructive: 0 74% 52%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 336 20% 88%;
+  --input: 336 18% 88%;
+  --ring: 336 62% 42%;
+  --radius: 0.75rem;
+}
+
+.dark {
+  --background: 330 18% 8%;
+  --foreground: 40 28% 94%;
+  --card: 330 16% 11%;
+  --card-foreground: 40 28% 94%;
+  --popover: 330 16% 11%;
+  --popover-foreground: 40 28% 94%;
+
+  --primary: 336 58% 62%;
+  --primary-foreground: 330 18% 8%;
+  --secondary: 330 14% 16%;
+  --secondary-foreground: 40 28% 94%;
+  --muted: 330 12% 16%;
+  --muted-foreground: 336 12% 68%;
+
+  --accent: 38 72% 58%;
+  --accent-foreground: 30 35% 10%;
+
+  --destructive: 0 72% 58%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 330 12% 20%;
+  --input: 330 12% 20%;
+  --ring: 336 58% 62%;
+}
+
+.customer-btn-glow {
+  box-shadow: 0 4px 14px hsl(var(--primary) / 0.22);
+}
+
+.customer-accent-btn {
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
+.customer-accent-btn:hover {
+  background-color: hsl(var(--accent) / 0.9);
+}
+
+.customer-primary-btn {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.customer-primary-btn:hover {
+  background-color: hsl(var(--primary) / 0.9);
+}

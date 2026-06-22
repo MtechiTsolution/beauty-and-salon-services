@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link rel="icon" type="image/jpeg" href="https://images.unsplash.com/photo-1562322140-8baeececf3df?w=64&h=64&fit=crop&q=80&auto=format" />
+    <link
+      rel="preload"
+      as="image"
+      href="https://images.unsplash.com/photo-1595476108010-b4d1f102b1b1?w=720&h=1080&fit=crop&q=80&auto=format"
+      fetchpriority="high"
+    />
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('mit-salon-theme');
+          if (t === 'dark') document.documentElement.classList.add('dark');
+        } catch (e) {}
+      })();
+    </script>
+    <title>MIT Salon — Book Appointment</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

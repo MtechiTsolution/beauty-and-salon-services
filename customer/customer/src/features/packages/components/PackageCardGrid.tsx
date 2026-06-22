@@ -1,0 +1,91 @@
+import { CustomerPackageCard } from '@/features/packages/components/CustomerPackageCard';
+import { PackageBookDialog } from '@/features/packages/components/PackageBookDialog';
+import { getBranchesForPackage } from '@/features/packages/lib/package-branches';
+import { branchesApi, servicesApi } from '@mit-salon/shared/api';
+import type { Branch, Package, Service } from '@mit-salon/shared/types';
+import { useQuery } from '@tanstack/react-query';
+import { Gift } from 'lucide-react';
+import { useMemo, useState } from 'react';
+
+type PackageCardGridProps = {
+  packages: Package[];
+  showBookButton?: boolean;
+  bookHref?: string;
+  emptyMessage?: string;
+  columns?: '2' | '3';
+};
+
+function packageLocationLabel(pkg: Package, branches: Branch[], services: Service[]): string | null {
+  const available = getBranchesForPackage(pkg, branches, services);
+  if (available.length === 0) return null;
+  return `Available at ${available.length} salon${available.length === 1 ? '' : 's'}`;
+}
+
+export function PackageCardGrid({
+  packages,
+  showBookButton = true,
+  bookHref,
+  emptyMessage = 'No packages available yet. Check back soon — our team adds new offers regularly.',
+  columns = '3',
+}: PackageCardGridProps) {
+  const [bookingPackage, setBookingPackage] = useState<Package | null>(null);
+
+  const { data: branches = [] } = useQuery({
+    queryKey: ['branches-package-grid'],
+    queryFn: () => branchesApi.list(),
+  });
+
+  const { data: services = [] } = useQuery({
+    queryKey: ['services-package-grid'],
+    queryFn: () => servicesApi.list(),
+  });
+
+  const availabilityByPackageId = useMemo(() => {
+    const map = new Map<string, string | null>();
+    for (const pkg of packages) {
+      map.set(pkg.id, packageLocationLabel(pkg, branches, services));
+    }
+    return map;
+  }, [packages, branches, services]);
+
+  if (packages.length === 0) {
+    return (
+      <div className="customer-package-empty rounded-2xl border border-dashed border-border/80 bg-muted/20 px-6 py-16 text-center">
+        <Gift className="mx-auto h-12 w-12 text-muted-foreground/50" />
+        <p className="mt-4 max-w-md mx-auto text-sm leading-relaxed text-muted-foreground">{emptyMessage}</p>
+      </div>
+    );
+  }
+
+  const gridClass =
+    columns === '2'
+      ? 'grid grid-cols-1 gap-6 md:grid-cols-2'
+      : 'grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3';
+
+  return (
+    <>
+      <div className={gridClass}>
+        {packages.map((pkg) => (
+          <CustomerPackageCard
+            key={pkg.id}
+            pkg={pkg}
+            locationLabel={availabilityByPackageId.get(pkg.id)}
+            showBookButton={showBookButton}
+            bookHref={bookHref}
+            onBook={() => setBookingPackage(pkg)}
+          />
+        ))}
+      </div>
+
+      {bookHref == null && (
+        <PackageBookDialog
+          pkg={bookingPackage}
+          open={bookingPackage != null}
+          onOpenChange={(next) => {
+            if (!next) setBookingPackage(null);
+          }}
+        />
+      )}
+    </>
+  );
+}
