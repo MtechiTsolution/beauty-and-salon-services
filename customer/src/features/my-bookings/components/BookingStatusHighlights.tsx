@@ -86,8 +86,8 @@ function StatusTile({
           <Icon className="h-4 w-4" />
         </div>
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-wide opacity-80">{title}</p>
-          <p className="truncate text-sm font-bold leading-tight md:text-base">{label}</p>
+          <p className="booking-status-tile-label text-[11px] font-semibold uppercase tracking-wide opacity-80">{title}</p>
+          <p className="booking-status-tile-value truncate text-sm font-bold leading-tight md:text-base">{label}</p>
         </div>
       </div>
     </div>

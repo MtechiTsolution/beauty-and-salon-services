@@ -7,7 +7,7 @@ import { branchImageHints } from '@mit-salon/shared/lib/branch-image-hints';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent } from '@mit-salon/shared/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
-import { Clock, MapPin, Sparkles } from 'lucide-react';
+import { Clock, MapPin, MapPinned, Scissors } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function ExplorePage() {
@@ -33,24 +33,53 @@ export default function ExplorePage() {
 
   return (
     <div className="customer-page">
-      <section className="border-b bg-card/60 backdrop-blur-sm">
-        <div className="customer-container-wide py-12 md:py-16">
-          <span className="inline-flex items-center gap-2 rounded-full bg-accent/15 px-4 py-1.5 text-sm font-medium text-accent">
-            <Sparkles className="h-4 w-4" /> Discover MIT Salon
-          </span>
-          <h1 className="font-heading mt-4 text-4xl font-bold tracking-tight md:text-5xl">
-            Our locations & services
-          </h1>
-          <p className="mt-3 max-w-2xl text-lg text-muted-foreground">
-            {activeBranches.length} premium locations and {activeServices.length} treatments — book your visit in minutes.
-          </p>
-          <Button asChild size="lg" className="mt-8 rounded-full px-8">
-            <Link to="/book">Start booking</Link>
-          </Button>
+      <section className="customer-explore-hero">
+        <div className="customer-package-page-header customer-explore-hero-card rounded-2xl border border-border/70 bg-card shadow-sm">
+          <div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex items-start gap-4 md:gap-5">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary md:h-14 md:w-14">
+                <MapPinned className="h-6 w-6 md:h-7 md:w-7" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold uppercase tracking-wider text-primary">Explore MIT Salon</p>
+                <h1 className="mt-1 font-heading text-3xl font-bold tracking-tight md:text-4xl lg:text-[2.75rem] lg:leading-tight">
+                  Locations & services
+                </h1>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground md:text-base lg:mt-3 lg:text-lg">
+                  Browse every salon location and treatment we offer — choose your favourite spot and book your visit
+                  in minutes.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center xl:shrink-0 xl:flex-col xl:items-end 2xl:flex-row 2xl:items-center">
+              <div className="flex flex-wrap gap-2">
+                {activeBranches.length > 0 && (
+                  <div className="customer-package-count-pill">
+                    <MapPin className="h-4 w-4 text-primary" />
+                    <span>
+                      {activeBranches.length} location{activeBranches.length === 1 ? '' : 's'}
+                    </span>
+                  </div>
+                )}
+                {activeServices.length > 0 && (
+                  <div className="customer-package-count-pill">
+                    <Scissors className="h-4 w-4 text-primary" />
+                    <span>
+                      {activeServices.length} treatment{activeServices.length === 1 ? '' : 's'}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <Button asChild size="lg" className="shrink-0 rounded-full px-8 shadow-sm">
+                <Link to="/book">Start booking</Link>
+              </Button>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="customer-container-wide py-12 md:py-16">
+      <div className="customer-container-wide pb-12 md:pb-16">
+      <section className="mt-12 md:mt-16">
         <h2 className="font-heading text-2xl font-bold md:text-3xl">All locations</h2>
         <p className="mt-2 text-muted-foreground">Choose the salon nearest to you when you book.</p>
         <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -91,7 +120,7 @@ export default function ExplorePage() {
         )}
       </section>
 
-      <section className="customer-container-wide py-12 md:py-16">
+      <section className="mt-12 md:mt-16">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="font-heading text-2xl font-bold md:text-3xl">Value packages</h2>
@@ -109,44 +138,43 @@ export default function ExplorePage() {
         </div>
       </section>
 
-      <section className="border-t bg-muted/30 py-12 md:py-16">
-        <div className="customer-container-wide">
-          <h2 className="font-heading text-2xl font-bold md:text-3xl">Popular services</h2>
-          <p className="mt-2 text-muted-foreground">Expert care tailored to your style.</p>
-          <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {activeServices.map((s) => (
-              <Card key={s.id} className="customer-card-hover overflow-hidden border-0 shadow-md">
-                <div className="aspect-[4/3] overflow-hidden">
-                  <CoverImage
-                    src={s.image_url}
-                    alt={s.title}
-                    kind="service"
-                    entityId={s.id}
-                    entityName={s.title}
-                    entityDescription={s.description}
-                    className="h-full w-full"
-                  />
+      <section className="mt-12 border-t border-border/60 pt-12 md:mt-16 md:pt-16">
+        <h2 className="font-heading text-2xl font-bold md:text-3xl">Popular services</h2>
+        <p className="mt-2 text-muted-foreground">Expert care tailored to your style.</p>
+        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {activeServices.map((s) => (
+            <Card key={s.id} className="customer-card-hover overflow-hidden border-0 shadow-md">
+              <div className="aspect-[4/3] overflow-hidden">
+                <CoverImage
+                  src={s.image_url}
+                  alt={s.title}
+                  kind="service"
+                  entityId={s.id}
+                  entityName={s.title}
+                  entityDescription={s.description}
+                  className="h-full w-full"
+                />
+              </div>
+              <CardContent className="p-6">
+                <h3 className="font-heading text-lg font-semibold">{s.title}</h3>
+                <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{s.description}</p>
+                <div className="mt-4 flex items-center justify-between">
+                  <span className="text-xl font-bold text-primary">${s.price}</span>
+                  <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <Clock className="h-4 w-4" />
+                    {s.duration_minutes} min
+                  </span>
                 </div>
-                <CardContent className="p-6">
-                  <h3 className="font-heading text-lg font-semibold">{s.title}</h3>
-                  <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{s.description}</p>
-                  <div className="mt-4 flex items-center justify-between">
-                    <span className="text-xl font-bold text-primary">${s.price}</span>
-                    <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <Clock className="h-4 w-4" />
-                      {s.duration_minutes} min
-                    </span>
-                  </div>
-                  <ServiceCardReviews service={s} reviews={reviews} className="mt-4" />
-                  <Button asChild variant="outline" className="mt-4 w-full rounded-full">
-                    <Link to="/book">Book this service</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                <ServiceCardReviews service={s} reviews={reviews} className="mt-4" />
+                <Button asChild variant="outline" className="mt-4 w-full rounded-full">
+                  <Link to="/book">Book this service</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </section>
+      </div>
     </div>
   );
 }

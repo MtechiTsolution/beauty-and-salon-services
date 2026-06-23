@@ -1,5 +1,4 @@
 import { Button } from '@mit-salon/shared/components/ui/button';
-import { Card, CardContent } from '@mit-salon/shared/components/ui/card';
 import { Input } from '@mit-salon/shared/components/ui/input';
 import { Label } from '@mit-salon/shared/components/ui/label';
 import {
@@ -9,17 +8,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@mit-salon/shared/components/ui/select';
+import type { CouponValidateReason, CustomerCouponOption } from '@mit-salon/shared/lib/coupon-validate';
 import {
-  estimateCouponDiscount,
   formatCouponDiscountLabel,
   formatCouponExpiry,
 } from '@mit-salon/shared/lib/coupon-ui';
-import type { Coupon } from '@mit-salon/shared/types';
 import { CheckCircle2, Loader2, Tag, X } from 'lucide-react';
 import { useState } from 'react';
 
 type CouponPickerProps = {
-  coupons: Coupon[];
+  options: CustomerCouponOption[];
   isLoading?: boolean;
   orderAmount: number;
   selectedCode: string;
@@ -31,10 +29,34 @@ type CouponPickerProps = {
   signedIn: boolean;
 };
 
+function ineligibleHint(reason: CouponValidateReason): string {
+  switch (reason) {
+    case 'expired':
+      return 'Expired';
+    case 'already_used':
+      return 'Already used';
+    case 'max_uses':
+      return 'No longer available';
+    case 'min_order':
+      return 'Min. order not met';
+    default:
+      return 'Unavailable';
+  }
+}
+
+function formatOptionLabel(option: CustomerCouponOption): string {
+  const { coupon, eligible, reason } = option;
+  const discount = formatCouponDiscountLabel(coupon);
+  const expiry = formatCouponExpiry(coupon.expiry_date);
+  const parts = [`${coupon.code} — ${discount}`];
+  if (expiry) parts.push(`Expires ${expiry}`);
+  if (!eligible && reason) parts.push(`(${ineligibleHint(reason)})`);
+  return parts.join(' · ');
+}
+
 export function CouponPicker({
-  coupons,
+  options,
   isLoading,
-  orderAmount,
   selectedCode,
   appliedDiscount,
   onCodeChange,
@@ -47,11 +69,16 @@ export function CouponPicker({
   const [manualDraft, setManualDraft] = useState('');
 
   const isApplied = appliedDiscount > 0 && selectedCode.trim().length > 0;
-  const selectedCoupon = coupons.find(
-    (c) => c.code.toUpperCase() === selectedCode.trim().toUpperCase(),
-  );
+  const selectedCoupon = options.find(
+    (o) => o.coupon.code.toUpperCase() === selectedCode.trim().toUpperCase(),
+  )?.coupon;
+
+  const eligibleCount = options.filter((o) => o.eligible).length;
 
   const selectAndApply = (code: string) => {
+    const option = options.find((o) => o.coupon.code === code);
+    if (option && !option.eligible) return;
+
     setManualOpen(false);
     setManualDraft('');
     onCodeChange(code);
@@ -94,43 +121,50 @@ export function CouponPicker({
             </div>
           </div>
           <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-9 rounded-full border-green-300 bg-white"
-              onClick={handleClear}
-            >
-              Change coupon
-            </Button>
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-9 rounded-full border-green-300 bg-white"
+            onClick={handleClear}
+          >
+            Change coupon
+          </Button>
         </div>
       ) : (
         <>
-          {coupons.length > 0 && !manualOpen && (
-            <Select
-              value={undefined}
-              onValueChange={selectAndApply}
-              disabled={isLoading || isApplying}
-            >
-              <SelectTrigger className="customer-booking-field h-11 w-full">
-                <SelectValue
-                  placeholder={
-                    isLoading
-                      ? 'Loading coupons…'
-                      : isApplying
-                        ? 'Applying coupon…'
-                        : 'Choose a coupon to apply'
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {coupons.map((coupon) => (
-                  <SelectItem key={coupon.id} value={coupon.code}>
-                    {coupon.code} — {formatCouponDiscountLabel(coupon)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+          <Select
+            value=""
+            onValueChange={selectAndApply}
+            disabled={isLoading || isApplying || options.length === 0}
+          >
+            <SelectTrigger className="customer-booking-field h-11 w-full">
+              <SelectValue
+                placeholder={
+                  isLoading
+                    ? 'Loading coupons…'
+                    : isApplying
+                      ? 'Applying coupon…'
+                      : options.length === 0
+                        ? 'No coupons available'
+                        : eligibleCount > 0
+                          ? `Select a coupon (${eligibleCount} available)`
+                          : 'Select a coupon'
+                }
+              />
+            </SelectTrigger>
+            <SelectContent className="max-h-[min(16rem,50vh)]">
+              {options.map((option) => (
+                <SelectItem
+                  key={option.coupon.id}
+                  value={option.coupon.code}
+                  disabled={!option.eligible}
+                  className="text-sm"
+                >
+                  {formatOptionLabel(option)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           {manualOpen ? (
             <div className="space-y-2 rounded-xl border border-border/70 bg-muted/20 p-4">
@@ -138,21 +172,19 @@ export function CouponPicker({
                 <Label htmlFor="manual-coupon" className="text-sm font-medium">
                   Enter coupon code
                 </Label>
-                {coupons.length > 0 && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 shrink-0"
-                    aria-label="Close manual entry"
-                    onClick={() => {
-                      setManualOpen(false);
-                      setManualDraft('');
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  aria-label="Close manual entry"
+                  onClick={() => {
+                    setManualOpen(false);
+                    setManualDraft('');
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
               </div>
               <div className="flex gap-2">
                 <Input
@@ -185,62 +217,10 @@ export function CouponPicker({
               className="text-sm font-medium text-primary hover:underline"
               onClick={() => setManualOpen(true)}
             >
-              {coupons.length > 0 ? 'Have a code not listed? Enter manually' : 'Enter coupon code manually'}
+              Have a code not listed? Enter manually
             </button>
           )}
         </>
-      )}
-
-      {!isApplied && (
-        <div className="space-y-2">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Available for you
-          </p>
-          {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading your coupons…</p>
-          ) : coupons.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground">
-              No coupons available for this booking right now.
-            </p>
-          ) : (
-            <div className="grid gap-2 sm:grid-cols-2">
-              {coupons.map((coupon) => {
-                const preview = estimateCouponDiscount(coupon, orderAmount);
-                const expiry = formatCouponExpiry(coupon.expiry_date);
-                return (
-                  <Card
-                    key={coupon.id}
-                    className="cursor-pointer border border-border/80 transition-shadow hover:border-primary/40 hover:shadow-md"
-                    onClick={() => !isApplying && selectAndApply(coupon.code)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="font-mono text-sm font-bold tracking-wide">{coupon.code}</p>
-                          <p className="mt-0.5 text-sm font-medium text-primary">
-                            {formatCouponDiscountLabel(coupon)}
-                          </p>
-                        </div>
-                        {preview > 0 && (
-                          <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-                            −${preview.toFixed(2)}
-                          </span>
-                        )}
-                      </div>
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        {coupon.min_order > 0
-                          ? `Min. order $${coupon.min_order}`
-                          : 'No minimum order'}
-                        {expiry ? ` · Expires ${expiry}` : ''}
-                      </p>
-                      <p className="mt-2 text-xs font-medium text-primary">Tap to apply</p>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-        </div>
       )}
     </div>
   );

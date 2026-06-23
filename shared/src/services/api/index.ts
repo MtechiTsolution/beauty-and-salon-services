@@ -59,7 +59,7 @@ export { chatsApi } from './modules/chats-api';
 export { reviewsApi } from './modules/reviews-api';
 export { packagesApi };
 
-export type { CouponValidateResult } from '../../lib/coupon-validate';
+export type { CouponValidateResult, CustomerCouponOption } from '../../lib/coupon-validate';
 
 export const couponsApiExtra = {
   ...couponsApi,
@@ -67,6 +67,13 @@ export const couponsApiExtra = {
     const q = new URLSearchParams({ email: customerEmail });
     if (orderAmount != null) q.set('orderAmount', String(orderAmount));
     return apiRequest<Coupon[]>(`/coupons/available?${q.toString()}`);
+  },
+  listOptions(customerEmail: string, orderAmount?: number) {
+    const q = new URLSearchParams({ email: customerEmail });
+    if (orderAmount != null) q.set('orderAmount', String(orderAmount));
+    return apiRequest<import('../../lib/coupon-validate').CustomerCouponOption[]>(
+      `/coupons/options?${q.toString()}`,
+    );
   },
   validate(
     code: string,

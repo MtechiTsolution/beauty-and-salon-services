@@ -16,6 +16,12 @@ export type CouponValidateResult =
   | { ok: true; coupon: Coupon }
   | { ok: false; reason: CouponValidateReason };
 
+export type CustomerCouponOption = {
+  coupon: Coupon;
+  eligible: boolean;
+  reason?: CouponValidateReason;
+};
+
 export const COUPON_VALIDATE_MESSAGES: Record<CouponValidateReason, string> = {
   not_found: 'Invalid or inactive coupon code',
   expired: 'This coupon has expired',

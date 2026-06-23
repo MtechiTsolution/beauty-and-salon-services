@@ -251,9 +251,9 @@ export default function BookAppointmentPage() {
   const finalPrice = hasOffering ? Math.max(0, linePrice - discount) : 0;
   const paymentLabel = PAYMENT_METHODS.find((m) => m.id === paymentMethod)?.label ?? '';
 
-  const { data: availableCoupons = [], isLoading: couponsLoading } = useQuery({
-    queryKey: ['available-coupons', user?.email, linePrice],
-    queryFn: () => couponsApiExtra.listAvailable(user!.email, linePrice),
+  const { data: couponOptions = [], isLoading: couponsLoading } = useQuery({
+    queryKey: ['customer-coupon-options', user?.email, linePrice],
+    queryFn: () => couponsApiExtra.listOptions(user!.email, linePrice),
     enabled: !!user?.email && hasOffering && linePrice > 0,
   });
 
@@ -660,15 +660,15 @@ export default function BookAppointmentPage() {
     return (
       <div className="customer-page flex items-center justify-center px-4 py-20">
         <Card className="w-full max-w-lg border-0 shadow-xl">
-          <CardContent className="p-10 text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-              <CheckCircle2 className="h-10 w-10 text-green-600" />
+          <CardContent className="p-10 text-center max-md:p-6">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 max-md:h-14 max-md:w-14">
+              <CheckCircle2 className="h-10 w-10 text-green-600 max-md:h-8 max-md:w-8" />
             </div>
-            <h1 className="font-heading mt-6 text-3xl font-bold">You&apos;re all set!</h1>
-            <p className="mt-4 text-muted-foreground">
+            <h1 className="font-heading mt-6 text-3xl font-bold max-md:mt-4 max-md:text-2xl">You&apos;re all set!</h1>
+            <p className="mt-4 text-muted-foreground max-md:mt-3 max-md:text-sm">
               {branch?.name} · {lineTitle}
             </p>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground max-md:text-sm">
               with {employee?.name} on {date}
               {time && lineDuration > 0
                 ? ` · ${formatBookingTimeWindow(time, lineDuration)}`
@@ -677,27 +677,31 @@ export default function BookAppointmentPage() {
                   : ''}
             </p>
             {confirmedBooking && (
-              <div className="mx-auto mt-5 max-w-sm text-left">
+              <div className="customer-booking-confirm-status mx-auto mt-4 max-w-sm text-left max-md:mt-3">
                 <BookingStatusHighlights
                   bookingStatus={confirmedBooking.status}
                   paymentStatus={confirmedBooking.payment_status}
                 />
               </div>
             )}
-            <p className="mt-5 text-2xl font-bold text-primary">${finalPrice.toFixed(2)}</p>
+            <p className="mt-4 text-2xl font-bold text-primary max-md:mt-3">${finalPrice.toFixed(2)}</p>
             <p className="text-sm text-muted-foreground">{paymentLabel}</p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <div className="customer-booking-confirm-actions mt-8 flex flex-col gap-3 sm:flex-row max-md:mt-6">
               {confirmedBooking && (
-                <Button asChild className="flex-1 rounded-full" size="lg">
+                <Button
+                  asChild
+                  className="flex-1 rounded-full max-md:h-16 max-md:px-8 max-md:text-lg"
+                  size="lg"
+                >
                   <Link to={`/messages/booking/${confirmedBooking.id}`}>
-                    <MessageCircle className="mr-2 h-4 w-4" />
+                    <MessageCircle className="mr-2 h-4 w-4 max-md:h-6 max-md:w-6" />
                     Chat with salon
                   </Link>
                 </Button>
               )}
               <Button
                 asChild={!!confirmedBooking}
-                className="flex-1 rounded-full"
+                className="flex-1 rounded-full max-md:h-16 max-md:px-8 max-md:text-lg"
                 size="lg"
                 variant={confirmedBooking ? 'outline' : 'default'}
                 onClick={confirmedBooking ? undefined : () => navigate('/my-bookings')}
@@ -1215,7 +1219,7 @@ export default function BookAppointmentPage() {
                   </div>
                 </dl>
                 <CouponPicker
-                  coupons={availableCoupons}
+                  options={couponOptions}
                   isLoading={couponsLoading}
                   orderAmount={linePrice}
                   selectedCode={couponCode}
