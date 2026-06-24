@@ -3,7 +3,7 @@ import { StarRating } from '@mit-salon/shared/components/StarRating';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent } from '@mit-salon/shared/components/ui/card';
 import { canCustomerCancelBooking } from '@mit-salon/shared/lib/booking-customer';
-import { formatBookingTimeWindow } from '@mit-salon/shared/lib/booking-slots';
+import { formatBookingAppointmentTime } from '@mit-salon/shared/lib/booking-slots';
 import { reviewUnavailableMessage } from '@mit-salon/shared/lib/booking-reviews';
 import type { Booking, Review } from '@mit-salon/shared/types';
 import { cn } from '@mit-salon/shared/lib/utils';
@@ -95,9 +95,7 @@ export function BookingCard({
               </span>
               <span className="inline-flex items-center gap-1.5 font-medium">
                 <Clock className="h-4 w-4 text-primary" />
-                {b.duration_minutes > 0
-                  ? formatBookingTimeWindow(b.time_slot, b.duration_minutes)
-                  : b.time_slot}
+                {formatBookingAppointmentTime(b)}
               </span>
             </p>
           </div>

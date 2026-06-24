@@ -15,8 +15,8 @@ export const TIME_SLOTS = [
 export const BOOKING_STEPS = ['Branch', 'Service or package', 'Staff', 'Date & Time', 'Payment', 'Confirm'] as const;
 
 export const PAYMENT_METHODS = [
-  { id: 'card', label: 'Credit / Debit Card', description: 'Pay securely online (mock)' },
-  { id: 'wallet', label: 'Mobile Wallet', description: 'Apple Pay, Google Pay (mock)' },
+  { id: 'card', label: 'Credit / Debit Card', description: 'Pay securely online' },
+  { id: 'wallet', label: 'Mobile Wallet', description: 'Apple Pay, Google Pay' },
   { id: 'cash', label: 'Pay at Salon', description: 'Pay when you arrive' },
 ] as const;
 

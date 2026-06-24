@@ -4,7 +4,7 @@ import { ThemeToggle } from '@mit-salon/shared/components/ThemeToggle';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import {
   formatNotificationDate,
-  notificationBookingDetailPath,
+  notificationActionLink,
 } from '@mit-salon/shared/lib/notification-ui';
 import { cn } from '@mit-salon/shared/lib/utils';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -220,7 +220,7 @@ export function CustomerProfileDrawer({ open, onClose }: CustomerProfileDrawerPr
             ) : (
               <ul>
                 {notifications.map((n) => {
-                  const bookingPath = notificationBookingDetailPath(n);
+                  const action = notificationActionLink(n);
                   const content = (
                     <>
                       <p className="flex items-center gap-1.5 text-sm font-medium leading-snug">
@@ -231,6 +231,9 @@ export function CustomerProfileDrawer({ open, onClose }: CustomerProfileDrawerPr
                       <p className="mt-1 text-[10px] text-muted-foreground/70">
                         {formatNotificationDate(n.created_at)}
                       </p>
+                      {action && (
+                        <p className="mt-1.5 text-xs font-medium text-primary">{action.label}</p>
+                      )}
                     </>
                   );
                   return (
@@ -239,11 +242,11 @@ export function CustomerProfileDrawer({ open, onClose }: CustomerProfileDrawerPr
                       className={cn(
                         'customer-profile-popup-notification-item',
                         !n.read && 'customer-profile-popup-notification-item--unread',
-                        bookingPath && 'customer-profile-popup-notification-item--link',
+                        action && 'customer-profile-popup-notification-item--link',
                       )}
                     >
-                      {bookingPath ? (
-                        <Link to={bookingPath} className="block" onClick={onClose}>
+                      {action ? (
+                        <Link to={action.to} className="block" onClick={onClose}>
                           {content}
                         </Link>
                       ) : (

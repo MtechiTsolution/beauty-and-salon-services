@@ -9,7 +9,7 @@ import {
   customerCancelConfirmDescription,
   customerCancelConfirmTitle,
 } from '@mit-salon/shared/lib/booking-customer';
-import { formatBookingTimeWindow } from '@mit-salon/shared/lib/booking-slots';
+import { formatBookingAppointmentTime } from '@mit-salon/shared/lib/booking-slots';
 import type { Booking } from '@mit-salon/shared/types';
 import { CalendarDays, Clock, Loader2, MapPin, XCircle } from 'lucide-react';
 
@@ -30,10 +30,7 @@ export function CancelBookingConfirmDialog({
 }: CancelBookingConfirmDialogProps) {
   if (!booking) return null;
 
-  const timeLabel =
-    booking.duration_minutes > 0
-      ? formatBookingTimeWindow(booking.time_slot, booking.duration_minutes)
-      : booking.time_slot;
+  const timeLabel = formatBookingAppointmentTime(booking);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

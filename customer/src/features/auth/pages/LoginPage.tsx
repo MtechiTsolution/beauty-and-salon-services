@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 const ADMIN_APP_URL = import.meta.env.VITE_ADMIN_APP_URL ?? 'http://localhost:5174';
 
 export default function LoginPage() {
-  const { login, loginAsDemo } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/book';
@@ -39,11 +39,6 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const demoLogin = async () => {
-    await loginAsDemo('customer');
-    navigate('/book');
   };
 
   return (
@@ -71,18 +66,29 @@ export default function LoginPage() {
                 <Input id="email" type="email" className="h-11" value={email} onChange={(e) => setEmail(e.target.value)} required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Link
+                    to="/forgot-password"
+                    className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
                 <Input id="password" type="password" className="h-11" value={password} onChange={(e) => setPassword(e.target.value)} required />
               </div>
               <Button type="submit" className="customer-primary-btn customer-btn-glow h-11 w-full rounded-full" disabled={loading}>
                 {loading ? 'Signing in...' : 'Sign in'}
               </Button>
             </form>
-            <Button type="button" variant="outline" className="mt-3 h-10 w-full rounded-full text-sm" onClick={demoLogin}>
-              Demo Customer
-            </Button>
             <p className="mt-6 text-center text-sm text-muted-foreground">
               No account? <Link to="/register" className="font-medium text-primary underline">Create account</Link>
+            </p>
+            <p className="mt-3 text-center text-sm text-muted-foreground">
+              Own a salon?{' '}
+              <Link to="/register-salon" className="font-medium text-primary underline">
+                Register your salon
+              </Link>
             </p>
           </CardContent>
         </Card>

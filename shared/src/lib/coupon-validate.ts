@@ -10,7 +10,8 @@ export type CouponValidateReason =
   | 'expired'
   | 'already_used'
   | 'max_uses'
-  | 'min_order';
+  | 'min_order'
+  | 'not_applicable';
 
 export type CouponValidateResult =
   | { ok: true; coupon: Coupon }
@@ -28,6 +29,7 @@ export const COUPON_VALIDATE_MESSAGES: Record<CouponValidateReason, string> = {
   already_used: 'You have already used this coupon. Each customer can use a coupon only once.',
   max_uses: 'This coupon has already been used and is no longer available',
   min_order: 'Your order does not meet the minimum amount for this coupon',
+  not_applicable: 'This coupon does not apply to this booking, saloon, or customer',
 };
 
 export function customerAlreadyUsedCoupon(

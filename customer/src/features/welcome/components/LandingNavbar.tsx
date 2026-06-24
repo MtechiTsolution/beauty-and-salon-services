@@ -1,12 +1,16 @@
 import { useAuth } from '@/features/auth/context/AuthContext';
+import {
+  CUSTOMER_HOME_PATH,
+  handleCustomerHomeClick,
+} from '@/features/layout/customer-home-nav';
 import { useLandingNavbarScroll } from '@/features/welcome/hooks/useLandingNavbarScroll';
 import { AppLogo } from '@mit-salon/shared/components/AppLogo';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { cn } from '@mit-salon/shared/lib/utils';
 import { CalendarDays, LogIn, Menu, UserPlus, X } from 'lucide-react';
+import type { MouseEvent } from 'react';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-
+import { Link, useLocation } from 'react-router-dom';
 const anchorLinks = [
   { label: 'Features', href: '#features' },
   { label: 'Services', href: '#services' },
@@ -22,7 +26,13 @@ type LandingNavbarProps = {
 export function LandingNavbar({ className }: LandingNavbarProps) {
   const { isAuthenticated } = useAuth();
   const scrolled = useLandingNavbarScroll();
+  const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const onHomeClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    setMobileOpen(false);
+    handleCustomerHomeClick(event, location.pathname);
+  };
 
   return (
     <header
@@ -33,11 +43,10 @@ export function LandingNavbar({ className }: LandingNavbarProps) {
       )}
     >
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-3 px-4 sm:gap-4 sm:px-6 lg:h-[4.5rem]">
-        <button
-          type="button"
+        <Link
+          to={CUSTOMER_HOME_PATH}
           className="landing-navbar-brand shrink-0 touch-manipulation xl:hidden"
-          onClick={() => setMobileOpen(true)}
-          aria-label="Open menu"
+          onClick={onHomeClick}
         >
           <AppLogo
             size="sm"
@@ -48,9 +57,13 @@ export function LandingNavbar({ className }: LandingNavbarProps) {
             )}
             imageClassName={scrolled ? 'ring-border/60' : 'ring-white/20'}
           />
-        </button>
+        </Link>
 
-        <Link to="/landing" className="landing-navbar-brand hidden shrink-0 xl:block" onClick={() => setMobileOpen(false)}>
+        <Link
+          to={CUSTOMER_HOME_PATH}
+          className="landing-navbar-brand hidden shrink-0 xl:block"
+          onClick={onHomeClick}
+        >
           <AppLogo
             size="sm"
             showText

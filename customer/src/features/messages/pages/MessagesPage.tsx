@@ -4,6 +4,7 @@ import { StatusBadge } from '@mit-salon/shared/components/StatusBadge';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent } from '@mit-salon/shared/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
+import { formatBookingAppointmentTime } from '@mit-salon/shared/lib/booking-slots';
 import { MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -50,7 +51,13 @@ export default function MessagesPage() {
                     <div className="min-w-0 text-left">
                       <p className="font-heading font-semibold">{chat.service_title}</p>
                       <p className="mt-1 truncate text-sm text-muted-foreground">
-                        {chat.booking_date} at {chat.time_slot}
+                        {chat.booking_date}
+                        {chat.time_slot
+                          ? ` · ${formatBookingAppointmentTime({
+                              time_slot: chat.time_slot,
+                              duration_minutes: chat.duration_minutes,
+                            })}`
+                          : ''}
                       </p>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {chat.booking_status && <StatusBadge status={chat.booking_status} />}

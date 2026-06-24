@@ -1,4 +1,4 @@
-import { COUPON_NOTIFICATION_TITLE } from './coupon-notify';
+import { COUPON_NOTIFICATION_TITLE, isCouponNotification } from './coupon-notify';
 import type { Notification } from '../types';
 
 export const notificationTypeColors: Record<Notification['type'], string> = {
@@ -9,10 +9,66 @@ export const notificationTypeColors: Record<Notification['type'], string> = {
   announcement: 'bg-violet-100 text-violet-800',
 };
 
+/** Customer notification inbox filter tabs. */
+export type NotificationFilterCategory =
+  | 'all'
+  | 'bookings'
+  | 'payments'
+  | 'coupons'
+  | 'announcements'
+  | 'system';
+
+export const CUSTOMER_NOTIFICATION_FILTERS: { id: NotificationFilterCategory; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'bookings', label: 'Bookings' },
+  { id: 'payments', label: 'Payments' },
+  { id: 'coupons', label: 'Coupons' },
+  { id: 'announcements', label: 'Salon updates' },
+  { id: 'system', label: 'Other' },
+];
+
+export const ADMIN_NOTIFICATION_FILTERS: { id: NotificationFilterCategory; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'bookings', label: 'Bookings' },
+  { id: 'payments', label: 'Payments' },
+];
+
+export function notificationFilterCategory(
+  n: Notification,
+): Exclude<NotificationFilterCategory, 'all'> {
+  if (isCouponNotification(n)) return 'coupons';
+  if (isSalonAnnouncement(n)) return 'announcements';
+  if (n.type === 'booking') return 'bookings';
+  if (n.type === 'payment') return 'payments';
+  return 'system';
+}
+
+export function notificationCategoryLabel(n: Notification): string {
+  const category = notificationFilterCategory(n);
+  const match = CUSTOMER_NOTIFICATION_FILTERS.find((f) => f.id === category);
+  return match?.label ?? category;
+}
+
 export function notificationBookingDetailPath(n: Notification): string | null {
   if (!n.reference_id) return null;
+  if (isCouponNotification(n)) return null;
   if (n.type === 'booking' || n.type === 'payment') {
     return `/my-bookings/${n.reference_id}`;
+  }
+  return null;
+}
+
+export function notificationAdminBookingPath(referenceId: string): string {
+  return `/bookings?bookingId=${encodeURIComponent(referenceId)}`;
+}
+
+export function notificationAdminActionLink(n: Notification): { to: string; label: string } | null {
+  if (!n.reference_id) return null;
+  if (n.type === 'booking' || n.type === 'payment') {
+    return {
+      to: notificationAdminBookingPath(n.reference_id),
+      label: 'View booking',
+    };
   }
   return null;
 }

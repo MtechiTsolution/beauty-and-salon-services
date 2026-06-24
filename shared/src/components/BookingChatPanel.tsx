@@ -9,7 +9,7 @@ import { Textarea } from './ui/textarea';
 import { StatusBadge } from './StatusBadge';
 
 import type { BookingChat, ChatMessage } from '../types';
-
+import { formatBookingAppointmentTime } from '../lib/booking-slots';
 import { cn } from '../lib/utils';
 
 import { useOptionalChatWebSocket } from '../hooks/useChatWebSocket';
@@ -18,7 +18,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { format, parseISO } from 'date-fns';
 
-import { Loader2, Send, Wifi, WifiOff } from 'lucide-react';
+import { Loader2, Send } from 'lucide-react';
 
 import { useEffect, useRef, useState } from 'react';
 
@@ -83,6 +83,18 @@ export function BookingChatPanel({
   const [draft, setDraft] = useState('');
 
   const bottomRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const syncTextareaHeight = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = '0px';
+    const singleLineHeight = 44;
+    const maxHeight = 120;
+    const nextHeight = Math.min(maxHeight, Math.max(singleLineHeight, el.scrollHeight));
+    el.style.height = `${nextHeight}px`;
+    el.style.overflowY = el.scrollHeight > maxHeight ? 'auto' : 'hidden';
+  };
 
 
 
@@ -137,6 +149,10 @@ export function BookingChatPanel({
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
 
   }, [messages.length]);
+
+  useEffect(() => {
+    syncTextareaHeight();
+  }, [draft]);
 
 
 
@@ -204,57 +220,31 @@ export function BookingChatPanel({
 
         <div className="flex items-start justify-between gap-3">
 
-          <CardTitle className="font-heading text-lg">{chat.service_title}</CardTitle>
+          <div className="min-w-0 flex-1">
 
-          {chatWs && (
+            <CardTitle className="font-heading text-lg">{chat.service_title}</CardTitle>
 
-            <span
+            <p className="mt-1 text-sm text-muted-foreground">
 
-              className={cn(
+              {chat.booking_date}
+              {chat.time_slot
+                ? ` · ${formatBookingAppointmentTime({
+                    time_slot: chat.time_slot,
+                    duration_minutes: chat.duration_minutes,
+                  })}`
+                : ''}
 
-                'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium',
+            </p>
 
-                chatWs.connected
+          </div>
 
-                  ? 'bg-emerald-500/10 text-emerald-700'
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
 
-                  : 'bg-muted text-muted-foreground',
+            {chat.booking_status && <StatusBadge status={chat.booking_status} />}
 
-              )}
+            {chat.payment_status && <StatusBadge status={chat.payment_status} />}
 
-              title={chatWs.connected ? 'Live chat connected' : 'Reconnecting…'}
-
-            >
-
-              {chatWs.connected ? (
-
-                <Wifi className="h-3 w-3" aria-hidden />
-
-              ) : (
-
-                <WifiOff className="h-3 w-3" aria-hidden />
-
-              )}
-
-              {chatWs.connected ? 'Live' : 'Offline'}
-
-            </span>
-
-          )}
-
-        </div>
-
-        <p className="text-sm text-muted-foreground">
-
-          {chat.booking_date} at {chat.time_slot}
-
-        </p>
-
-        <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
-
-          {chat.booking_status && <StatusBadge status={chat.booking_status} />}
-
-          {chat.payment_status && <StatusBadge status={chat.payment_status} />}
+          </div>
 
         </div>
 
@@ -335,9 +325,10 @@ export function BookingChatPanel({
 
             <Textarea
 
-              rows={2}
+              ref={textareaRef}
+              rows={1}
 
-              className="min-h-[3.25rem] flex-1 resize-none rounded-xl border-border/60 bg-background/80 px-4 py-3 text-sm shadow-inner placeholder:text-muted-foreground/70 focus-visible:ring-2 focus-visible:ring-primary/25"
+              className="min-h-[2.75rem] max-h-[7.5rem] flex-1 resize-none overflow-y-hidden rounded-xl border-border/60 bg-background/80 px-4 py-2.5 text-sm leading-5 shadow-inner placeholder:text-muted-foreground/70 focus-visible:ring-2 focus-visible:ring-primary/25"
 
               placeholder="Type your message…"
 
@@ -402,16 +393,6 @@ export function BookingChatPanel({
             </Button>
 
           </div>
-
-          {viewerRole === 'salon' && (
-            <p className="mt-2 px-1 text-[11px] text-muted-foreground">
-              Press <kbd className="rounded border border-border/80 bg-muted/50 px-1 py-0.5 font-sans text-[10px]">Enter</kbd>{' '}
-              to send ·{' '}
-              <kbd className="rounded border border-border/80 bg-muted/50 px-1 py-0.5 font-sans text-[10px]">Shift</kbd>+
-              <kbd className="rounded border border-border/80 bg-muted/50 px-1 py-0.5 font-sans text-[10px]">Enter</kbd>{' '}
-              for a new line
-            </p>
-          )}
 
         </div>
 

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   filterSlotsForServiceDuration,
+  formatBookingAppointmentTime,
   formatBookingTimeWindow,
   formatBookingTimeWindowCompact,
   getAvailableSlots,
@@ -80,6 +81,19 @@ describe('isSlotBlockedForNewBooking', () => {
 describe('formatBookingTimeWindow', () => {
   it('formats start and end', () => {
     assert.equal(formatBookingTimeWindow('10:00', 120), '10:00 – 12:00');
+  });
+});
+
+describe('formatBookingAppointmentTime', () => {
+  it('shows start–end window when duration is set', () => {
+    assert.equal(
+      formatBookingAppointmentTime({ time_slot: '10:00', duration_minutes: 90 }),
+      '10:00 – 11:30',
+    );
+  });
+
+  it('falls back to start time only', () => {
+    assert.equal(formatBookingAppointmentTime({ time_slot: '10:00', duration_minutes: 0 }), '10:00');
   });
 });
 

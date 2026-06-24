@@ -1,6 +1,8 @@
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
+import ForgotPasswordPage from '@/features/auth/pages/ForgotPasswordPage';
 import LoginPage from '@/features/auth/pages/LoginPage';
 import RegisterPage from '@/features/auth/pages/RegisterPage';
+import RegisterSalonPage from '@/features/auth/pages/RegisterSalonPage';
 import BookAppointmentPage from '@/features/booking/pages/BookAppointmentPage';
 import ExplorePage from '@/features/explore/pages/ExplorePage';
 import PackagesPage from '@/features/packages/pages/PackagesPage';
@@ -26,11 +28,13 @@ export function AppRouter() {
         <Route path="/" element={<WelcomePage />} />
         <Route path="/landing" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/register-salon" element={<RegisterSalonPage />} />
 
-        <Route element={<ProtectedRoute />}>
-          <Route element={<CustomerLayout />}>
-            <Route path="/book" element={<BookAppointmentPage />} />
+        <Route element={<CustomerLayout />}>
+          <Route path="/book" element={<BookAppointmentPage />} />
+          <Route element={<ProtectedRoute />}>
             <Route path="/explore" element={<ExplorePage />} />
             <Route path="/packages" element={<PackagesPage />} />
             <Route path="/services" element={<ServicesPage />} />

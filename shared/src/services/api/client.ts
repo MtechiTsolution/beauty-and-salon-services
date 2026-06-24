@@ -1,10 +1,10 @@
 import { getApiBase } from '../../lib/api-base';
+import { getSessionUserId } from '../../lib/session-storage';
 
 const API_BASE = getApiBase();
 
 function authHeaders(): Record<string, string> {
-  if (typeof localStorage === 'undefined') return {};
-  const userId = localStorage.getItem('mit_salon_user_id');
+  const userId = getSessionUserId();
   return userId ? { 'X-User-Id': userId } : {};
 }
 

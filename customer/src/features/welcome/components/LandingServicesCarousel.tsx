@@ -1,4 +1,3 @@
-import { useAuth } from '@/features/auth/context/AuthContext';
 import { CarouselItem } from '@/components/ui/carousel';
 import { LandingCarouselShell } from '@/features/welcome/components/LandingCarouselShell';
 import { LandingCoverImage } from '@/features/welcome/components/LandingCoverImage';
@@ -15,9 +14,8 @@ type LandingServicesCarouselProps = {
 };
 
 export function LandingServicesCarousel({ services, reviews = [] }: LandingServicesCarouselProps) {
-  const { isAuthenticated } = useAuth();
   const activeServices = services.filter((s) => s.status === 'active').slice(0, 12);
-  const bookHref = isAuthenticated ? '/book' : '/register';
+  const bookHref = '/book';
 
   if (activeServices.length === 0) return null;
 

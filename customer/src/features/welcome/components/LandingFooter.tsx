@@ -1,9 +1,14 @@
 import { useAuth } from '@/features/auth/context/AuthContext';
+import {
+  CUSTOMER_HOME_PATH,
+  handleCustomerHomeClick,
+} from '@/features/layout/customer-home-nav';
 import { AppLogo } from '@mit-salon/shared/components/AppLogo';
 import { APP_NAME, SALON_SUPPORT } from '@mit-salon/shared/lib/constants';
 import { landingFeatures } from '@/features/welcome/lib/landing-content';
 import { Clock, Mail, Phone } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import type { MouseEvent } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 
 const footerAnchors = [
   { label: 'Features', href: '#features' },
@@ -17,18 +22,29 @@ const supportHourLines = SALON_SUPPORT.hours.split(' · ');
 
 export function LandingFooter() {
   const { isAuthenticated } = useAuth();
+  const location = useLocation();
+
+  const onHomeClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    handleCustomerHomeClick(event, location.pathname);
+  };
 
   return (
     <footer className="landing-footer border-t border-border/70">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 md:py-16 max-md:px-4 max-md:py-8">
         <div className="grid gap-12 lg:grid-cols-12 lg:items-start lg:gap-14 max-md:gap-8">
           <div className="text-center lg:col-span-4 lg:text-left max-md:text-left">
-            <AppLogo
-              size="md"
-              showText
-              textClassName="font-heading text-2xl font-bold text-foreground max-md:text-xl"
-              className="justify-center lg:justify-start max-md:justify-start"
-            />
+            <Link
+              to={CUSTOMER_HOME_PATH}
+              onClick={onHomeClick}
+              className="inline-flex justify-center lg:justify-start max-md:justify-start"
+            >
+              <AppLogo
+                size="md"
+                showText
+                textClassName="font-heading text-2xl font-bold text-foreground max-md:text-xl"
+                className="justify-center lg:justify-start max-md:justify-start"
+              />
+            </Link>
             <p className="footer-body-text mx-auto mt-5 max-w-sm text-muted-foreground lg:mx-0 max-md:mx-0 max-md:mt-3 max-md:text-sm max-md:leading-relaxed">
               {APP_NAME} is your complete salon companion — discover locations, book appointments, chat with
               reception, and manage every visit with confidence.
@@ -130,8 +146,14 @@ export function LandingFooter() {
                 <Link to="/login" className="footer-link footer-mobile-action max-md:text-center max-md:text-sm">
                   Sign in
                 </Link>
+                <Link to="/book" className="footer-link footer-mobile-action max-md:text-center max-md:text-sm">
+                  Book now
+                </Link>
                 <Link to="/register" className="footer-link footer-mobile-action max-md:text-center max-md:text-sm">
                   Register
+                </Link>
+                <Link to="/register-salon" className="footer-link footer-mobile-action max-md:text-center max-md:text-sm">
+                  List your salon
                 </Link>
                 <Link to="/contact" className="footer-link footer-mobile-action max-md:text-center max-md:text-sm">
                   Contact

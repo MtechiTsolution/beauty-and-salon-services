@@ -1,6 +1,9 @@
 import { customerNavLinks } from '@/features/layout/customer-nav-links';
-import { AppLogo } from '@mit-salon/shared/components/AppLogo';
-import { Button } from '@mit-salon/shared/components/ui/button';
+import {
+  CUSTOMER_HOME_PATH,
+  handleCustomerHomeClick,
+} from '@/features/layout/customer-home-nav';
+import { AppLogo } from '@mit-salon/shared/components/AppLogo';import { Button } from '@mit-salon/shared/components/ui/button';
 import { cn } from '@mit-salon/shared/lib/utils';
 import { X } from 'lucide-react';
 import { useEffect } from 'react';
@@ -51,10 +54,17 @@ export function CustomerMobileDrawer({ open, onClose }: CustomerMobileDrawerProp
       />
       <aside className="customer-drawer-panel">
         <div className="customer-drawer-header">
-          <div className="min-w-0 flex-1">
+          <Link
+            to={CUSTOMER_HOME_PATH}
+            onClick={(event) => {
+              handleCustomerHomeClick(event, location.pathname);
+              onClose();
+            }}
+            className="min-w-0 flex-1 rounded-lg text-left transition hover:bg-muted/40"
+          >
             <AppLogo size="md" showText textClassName="text-lg text-foreground" />
             <p className="mt-1 truncate text-xs text-muted-foreground">Salon booking & care</p>
-          </div>
+          </Link>
           <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Close">
             <X className="h-5 w-5" />
           </Button>

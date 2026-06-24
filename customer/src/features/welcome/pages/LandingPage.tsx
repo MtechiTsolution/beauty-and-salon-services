@@ -4,7 +4,6 @@ import { LandingBranchesCarousel } from '@/features/welcome/components/LandingBr
 import { LandingFeatureGrid } from '@/features/welcome/components/LandingFeatureGrid';
 import { LandingFooter } from '@/features/welcome/components/LandingFooter';
 import { LandingHeroCarousel } from '@/features/welcome/components/LandingHeroCarousel';
-import { LandingHowItWorks } from '@/features/welcome/components/LandingHowItWorks';
 import { LandingNavbar } from '@/features/welcome/components/LandingNavbar';
 import { LandingPackagesCarousel } from '@/features/welcome/components/LandingPackagesCarousel';
 import { LandingServicesCarousel } from '@/features/welcome/components/LandingServicesCarousel';
@@ -71,7 +70,6 @@ export default function LandingPage() {
         />
       </div>
       <LandingFeatureGrid />
-      <LandingHowItWorks />
       <LandingServicesCarousel services={services} reviews={reviews} />
       <LandingPackagesCarousel packages={activePackages} branches={branches} services={services} />
       <LandingBranchesCarousel branches={branches} />

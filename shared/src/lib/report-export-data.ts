@@ -14,7 +14,7 @@ import type {
   User,
 } from '../types';
 
-export type ReportExportParams = { from?: string; to?: string };
+export type ReportExportParams = { from?: string; to?: string; branch_id?: string };
 
 function inDateRange(value: string | undefined, from?: string, to?: string): boolean {
   if (!from && !to) return true;

@@ -1,21 +1,34 @@
 import { customerNavLinks } from '@/features/layout/customer-nav-links';
+import {
+  CUSTOMER_HOME_PATH,
+  handleCustomerHomeClick,
+} from '@/features/layout/customer-home-nav';
 import { AppLogo } from '@mit-salon/shared/components/AppLogo';
 import { APP_NAME } from '@mit-salon/shared/lib/constants';
-import { Link } from 'react-router-dom';
+import type { MouseEvent } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 
 const footerLinks = customerNavLinks.filter((l) => l.path !== '/landing');
 
 export function CustomerFooter() {
+  const location = useLocation();
+
+  const onHomeClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    handleCustomerHomeClick(event, location.pathname);
+  };
+
   return (
     <footer className="customer-app-footer mt-auto">
       <div className="customer-container-wide flex flex-col items-center gap-8 py-10 text-center md:py-12 lg:hidden">
           <div className="max-w-xl">
-            <AppLogo
-              size="md"
-              showText
-              textClassName="font-heading text-2xl font-bold text-foreground"
-              className="justify-center"
-            />
+            <Link to={CUSTOMER_HOME_PATH} onClick={onHomeClick} className="inline-flex justify-center">
+              <AppLogo
+                size="md"
+                showText
+                textClassName="font-heading text-2xl font-bold text-foreground"
+                className="justify-center"
+              />
+            </Link>
             <p className="footer-body-text mt-4 text-muted-foreground">
               Book appointments, manage visits, and stay connected with your salon — all in one place.
             </p>
@@ -51,11 +64,13 @@ export function CustomerFooter() {
           <div className="customer-app-footer-panel-body">
             <div className="customer-app-footer-panel-main">
               <div className="customer-app-footer-panel-brand">
-                <AppLogo
-                  size="md"
-                  showText
-                  textClassName="font-heading text-xl font-bold text-foreground"
-                />
+                <Link to={CUSTOMER_HOME_PATH} onClick={onHomeClick} className="inline-flex">
+                  <AppLogo
+                    size="md"
+                    showText
+                    textClassName="font-heading text-xl font-bold text-foreground"
+                  />
+                </Link>
                 <p className="customer-app-footer-panel-tagline text-sm leading-relaxed text-muted-foreground">
                   Your salon companion — book, manage visits, and stay connected.
                 </p>

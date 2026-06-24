@@ -97,12 +97,6 @@ export function BookingStepper({ currentStep, onStepClick, disabledSteps }: Book
           );
         })}
       </ol>
-      <div className="booking-stepper-progress mt-5 hidden h-1 w-full overflow-hidden rounded-full bg-muted lg:block">
-        <div
-          className="h-full rounded-full bg-primary transition-all duration-500"
-          style={{ width: `${((currentStep + 1) / CUSTOMER_BOOKING_STEPS.length) * 100}%` }}
-        />
-      </div>
     </nav>
   );
 }

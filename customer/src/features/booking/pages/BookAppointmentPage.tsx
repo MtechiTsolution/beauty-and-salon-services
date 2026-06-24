@@ -89,11 +89,15 @@ const PAYMENT_ICONS: Record<PaymentMethodId, typeof CreditCard> = {
 const STEP_COUNT = CUSTOMER_BOOKING_STEPS.length;
 
 export default function BookAppointmentPage() {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(0);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [step]);
   const [packagePrefilled, setPackagePrefilled] = useState(false);
   const [urlBookingApplied, setUrlBookingApplied] = useState(false);
   const [branch, setBranch] = useState<Branch | null>(null);
@@ -108,12 +112,27 @@ export default function BookAppointmentPage() {
   const [discount, setDiscount] = useState(0);
   const [couponApplying, setCouponApplying] = useState(false);
   const [notes, setNotes] = useState('');
+  const [guestName, setGuestName] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
+  const [guestPhone, setGuestPhone] = useState('');
   const [done, setDone] = useState(false);
   const [confirmedBooking, setConfirmedBooking] = useState<Booking | null>(null);
   const [draftReady, setDraftReady] = useState(false);
   const [resumedDraft, setResumedDraft] = useState(false);
   const [clockTick, setClockTick] = useState(0);
   const todayStr = format(startOfToday(), 'yyyy-MM-dd');
+
+  const bookingEmail = user?.email ?? guestEmail.trim();
+  const bookingName = user?.full_name ?? guestName.trim();
+  const draftEmailKey = user?.email ?? (guestEmail.trim() ? guestEmail.trim().toLowerCase() : null);
+  const guestEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(bookingEmail);
+  const guestDetailsValid = bookingName.length > 0 && guestEmailValid;
+
+  useEffect(() => {
+    if (step === 3 && employee && !date) {
+      setDate(todayStr);
+    }
+  }, [step, employee, date, todayStr]);
 
   const { data: branches = [] } = useQuery({
     queryKey: ['branches-book'],
@@ -157,20 +176,23 @@ export default function BookAppointmentPage() {
       (p) => p.status === 'active' && isPackageAvailableAtBranch(p, branch.id, activeBranches, services),
     );
   }, [packages, branch, activeBranches, services]);
-  const hasOffering = offeringType === 'service' ? !!service : !!selectedPackage;
+  const activeOfferingType: BookingOfferingType | null = selectedPackage
+    ? 'package'
+    : service
+      ? 'service'
+      : null;
+  const hasOffering = activeOfferingType !== null;
   const linePrice =
-    offeringType === 'service' ? (service?.price ?? 0) : (selectedPackage?.price ?? 0);
+    activeOfferingType === 'package' ? (selectedPackage?.price ?? 0) : (service?.price ?? 0);
   const lineDuration =
-    offeringType === 'service'
-      ? (service?.duration_minutes ?? 0)
-      : selectedPackage
-        ? packageDurationMinutes(selectedPackage, services)
-        : 0;
+    activeOfferingType === 'package' && selectedPackage
+      ? packageDurationMinutes(selectedPackage, services)
+      : (service?.duration_minutes ?? 0);
   const lineTitle = bookingLineTitle(service, selectedPackage);
   const staffOptions =
-    branch && offeringType === 'service' && service
+    branch && activeOfferingType === 'service' && service
       ? filterStaffForBooking(employees, branch.id, service.id)
-      : branch && offeringType === 'package' && selectedPackage
+      : branch && activeOfferingType === 'package' && selectedPackage
         ? filterStaffForPackage(employees, branch.id, selectedPackage.service_ids)
         : [];
   const staffDayBookings = useMemo(
@@ -251,10 +273,27 @@ export default function BookAppointmentPage() {
   const finalPrice = hasOffering ? Math.max(0, linePrice - discount) : 0;
   const paymentLabel = PAYMENT_METHODS.find((m) => m.id === paymentMethod)?.label ?? '';
 
+  const couponCategoryId = useMemo(() => {
+    if (activeOfferingType === 'service' && service) return service.category_id;
+    if (activeOfferingType === 'package' && selectedPackage) {
+      const serviceId = packagePrimaryServiceId(selectedPackage);
+      return services.find((s) => s.id === serviceId)?.category_id;
+    }
+    return undefined;
+  }, [activeOfferingType, service, selectedPackage, services]);
+
+  const couponScope = useMemo(
+    () => ({
+      branchId: branch?.id,
+      categoryId: couponCategoryId,
+    }),
+    [branch?.id, couponCategoryId],
+  );
+
   const { data: couponOptions = [], isLoading: couponsLoading } = useQuery({
-    queryKey: ['customer-coupon-options', user?.email, linePrice],
-    queryFn: () => couponsApiExtra.listOptions(user!.email, linePrice),
-    enabled: !!user?.email && hasOffering && linePrice > 0,
+    queryKey: ['customer-coupon-options', bookingEmail, linePrice, couponScope.branchId, couponScope.categoryId],
+    queryFn: () => couponsApiExtra.listOptions(bookingEmail, linePrice, couponScope),
+    enabled: !!bookingEmail && hasOffering && linePrice > 0,
   });
 
   const hasProgress = step > 0 || !!branch;
@@ -318,11 +357,11 @@ export default function BookAppointmentPage() {
   ]);
 
   useEffect(() => {
-    if (!user?.email || draftReady || done || urlBookingApplied) return;
+    if (!draftEmailKey || draftReady || done || urlBookingApplied) return;
     if (!branches.length || !services.length || !employees.length) return;
     if (searchParams.get('package')) return;
 
-    const draft = loadBookingDraft(user.email);
+    const draft = loadBookingDraft(draftEmailKey);
     if (!draft) {
       setDraftReady(true);
       return;
@@ -333,7 +372,7 @@ export default function BookAppointmentPage() {
       : null;
 
     if (draft.branchId && !restoredBranch) {
-      clearBookingDraft(user.email);
+      clearBookingDraft(draftEmailKey);
       setDraftReady(true);
       return;
     }
@@ -366,7 +405,7 @@ export default function BookAppointmentPage() {
     setDraftReady(true);
     toast.info(`Resuming your booking from step ${resumeStep + 1}`);
   }, [
-    user?.email,
+    draftEmailKey,
     branches.length,
     services.length,
     employees.length,
@@ -383,15 +422,15 @@ export default function BookAppointmentPage() {
   ]);
 
   useEffect(() => {
-    if (!user?.email || done || !draftReady) return;
+    if (!draftEmailKey || done || !draftReady) return;
     if (!hasProgress) {
-      clearBookingDraft(user.email);
+      clearBookingDraft(draftEmailKey);
       return;
     }
-    saveBookingDraft(user.email, {
+    saveBookingDraft(draftEmailKey, {
       step,
       branchId: branch?.id ?? null,
-      offeringType,
+      offeringType: activeOfferingType ?? offeringType,
       serviceId: service?.id ?? null,
       packageId: selectedPackage?.id ?? null,
       employeeId: employee?.id ?? null,
@@ -404,12 +443,13 @@ export default function BookAppointmentPage() {
       savedAt: new Date().toISOString(),
     });
   }, [
-    user?.email,
+    draftEmailKey,
     done,
     draftReady,
     hasProgress,
     step,
     branch,
+    activeOfferingType,
     offeringType,
     service,
     selectedPackage,
@@ -423,8 +463,8 @@ export default function BookAppointmentPage() {
   ]);
 
   const discardDraft = () => {
-    if (!user?.email) return;
-    clearBookingDraft(user.email);
+    if (user?.email) clearBookingDraft(user.email);
+    if (guestEmail.trim()) clearBookingDraft(guestEmail.trim().toLowerCase());
     setStep(0);
     setBranch(null);
     setOfferingType('service');
@@ -438,6 +478,9 @@ export default function BookAppointmentPage() {
     setCouponCode('');
     setDiscount(0);
     setNotes('');
+    setGuestName('');
+    setGuestEmail('');
+    setGuestPhone('');
     setResumedDraft(false);
     setUrlBookingApplied(false);
     toast.success('Draft cleared — starting fresh');
@@ -446,7 +489,7 @@ export default function BookAppointmentPage() {
   const bookMutation = useMutation({
     mutationFn: (data: Omit<Booking, 'id' | 'created_at' | 'updated_at'>) => bookingsApi.create(data),
     onSuccess: async (booking) => {
-      if (user?.email) clearBookingDraft(user.email);
+      if (draftEmailKey) clearBookingDraft(draftEmailKey);
       setConfirmedBooking(booking);
       await invalidateAllCatalogQueries(queryClient);
       setDone(true);
@@ -508,12 +551,6 @@ export default function BookAppointmentPage() {
   const selectOfferingType = (type: BookingOfferingType) => {
     if (type === offeringType) return;
     setOfferingType(type);
-    setService(null);
-    setSelectedPackage(null);
-    clearScheduleAndPayment();
-    if (step > 1 || resumedDraft) {
-      restartFromServiceStep();
-    }
   };
 
   const selectService = (s: Service) => {
@@ -551,8 +588,8 @@ export default function BookAppointmentPage() {
   };
 
   const applyCoupon = async (codeOverride?: string) => {
-    if (!user?.email) {
-      toast.error('Please sign in to apply a coupon');
+    if (!bookingEmail) {
+      toast.error('Enter your email to apply a coupon');
       return;
     }
     const code = (codeOverride ?? couponCode).trim();
@@ -566,7 +603,7 @@ export default function BookAppointmentPage() {
     }
     setCouponApplying(true);
     try {
-      const result = await couponsApiExtra.validate(code, user.email, linePrice);
+      const result = await couponsApiExtra.validate(code, bookingEmail, linePrice, couponScope);
       if (!result.ok) {
         toast.error(COUPON_VALIDATE_MESSAGES[result.reason]);
         setDiscount(0);
@@ -603,14 +640,19 @@ export default function BookAppointmentPage() {
     !!date &&
     !!time &&
     !!paymentMethod &&
+    (isAuthenticated || guestDetailsValid) &&
     !isSlotInPast(date, time, now) &&
     !isSlotBlockedForNewBooking(time, lineDuration, staffDayBookings);
 
   const submit = async () => {
-    if (!user || !branch || !hasOffering || !employee || !date || !time || !paymentMethod) return;
+    if (!branch || !hasOffering || !employee || !date || !time || !paymentMethod) return;
+    if (!isAuthenticated && !guestDetailsValid) {
+      toast.error('Please enter your name and email');
+      return;
+    }
 
     const serviceId =
-      offeringType === 'service' ? service?.id : packagePrimaryServiceId(selectedPackage!);
+      activeOfferingType === 'service' ? service?.id : packagePrimaryServiceId(selectedPackage!);
     if (!serviceId) {
       toast.error('This package has no linked services. Please choose another package.');
       return;
@@ -631,11 +673,12 @@ export default function BookAppointmentPage() {
     const packageNote =
       selectedPackage &&
       `Package: ${selectedPackage.name} (${selectedPackage.total_sessions} sessions, ${selectedPackage.validity_days} days validity)`;
-    const combinedNotes = [packageNote, notes].filter(Boolean).join('\n') || undefined;
+    const guestPhoneNote = guestPhone.trim() ? `Contact phone: ${guestPhone.trim()}` : '';
+    const combinedNotes = [packageNote, guestPhoneNote, notes].filter(Boolean).join('\n') || undefined;
 
     bookMutation.mutate({
-      customer_email: user.email,
-      customer_name: user.full_name,
+      customer_email: bookingEmail,
+      customer_name: bookingName,
       branch_id: branch.id,
       branch_name: branch.name,
       service_id: serviceId,
@@ -666,6 +709,11 @@ export default function BookAppointmentPage() {
             </div>
             <h1 className="font-heading mt-6 text-3xl font-bold max-md:mt-4 max-md:text-2xl">You&apos;re all set!</h1>
             <p className="mt-4 text-muted-foreground max-md:mt-3 max-md:text-sm">
+              {isAuthenticated
+                ? 'A confirmation will appear in your account and email.'
+                : `Confirmation will be sent to ${bookingEmail}.`}
+            </p>
+            <p className="mt-2 text-muted-foreground max-md:text-sm">
               {branch?.name} · {lineTitle}
             </p>
             <p className="text-muted-foreground max-md:text-sm">
@@ -687,7 +735,7 @@ export default function BookAppointmentPage() {
             <p className="mt-4 text-2xl font-bold text-primary max-md:mt-3">${finalPrice.toFixed(2)}</p>
             <p className="text-sm text-muted-foreground">{paymentLabel}</p>
             <div className="customer-booking-confirm-actions mt-8 flex flex-col gap-3 sm:flex-row max-md:mt-6">
-              {confirmedBooking && (
+              {isAuthenticated && confirmedBooking && (
                 <Button
                   asChild
                   className="flex-1 rounded-full max-md:h-16 max-md:px-8 max-md:text-lg"
@@ -699,20 +747,43 @@ export default function BookAppointmentPage() {
                   </Link>
                 </Button>
               )}
-              <Button
-                asChild={!!confirmedBooking}
-                className="flex-1 rounded-full max-md:h-16 max-md:px-8 max-md:text-lg"
-                size="lg"
-                variant={confirmedBooking ? 'outline' : 'default'}
-                onClick={confirmedBooking ? undefined : () => navigate('/my-bookings')}
-              >
-                {confirmedBooking ? (
-                  <Link to={`/my-bookings/${confirmedBooking.id}`}>View my booking</Link>
-                ) : (
-                  'View my bookings'
-                )}
-              </Button>
+              {isAuthenticated ? (
+                <Button
+                  asChild={!!confirmedBooking}
+                  className="flex-1 rounded-full max-md:h-16 max-md:px-8 max-md:text-lg"
+                  size="lg"
+                  variant={confirmedBooking ? 'outline' : 'default'}
+                  onClick={confirmedBooking ? undefined : () => navigate('/my-bookings')}
+                >
+                  {confirmedBooking ? (
+                    <Link to={`/my-bookings/${confirmedBooking.id}`}>View my booking</Link>
+                  ) : (
+                    'View my bookings'
+                  )}
+                </Button>
+              ) : (
+                <>
+                  <Button asChild className="flex-1 rounded-full max-md:h-16 max-md:px-8 max-md:text-lg" size="lg">
+                    <Link to="/login" state={{ from: { pathname: '/my-bookings' } }}>Sign in to manage</Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="flex-1 rounded-full max-md:h-16 max-md:px-8 max-md:text-lg"
+                    size="lg"
+                  >
+                    <Link to="/register">Create account</Link>
+                  </Button>
+                </>
+              )}
             </div>
+            {!isAuthenticated && confirmedBooking && (
+              <p className="mt-6 text-xs text-muted-foreground">
+                Booking reference: <span className="font-mono font-medium text-foreground">{confirmedBooking.id}</span>
+                {' · '}
+                Save this if you need to contact the salon.
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -724,13 +795,41 @@ export default function BookAppointmentPage() {
       <section className="border-b bg-card/70 backdrop-blur-sm">
         <div className="customer-container-wide py-8 max-md:py-6 md:py-12">
           <div className="customer-booking-flow min-w-0">
-            <p className="text-sm font-medium text-accent">Step {step + 1} of {STEP_COUNT}</p>
-            <h1 className="font-heading mt-1 text-balance text-2xl font-bold sm:text-3xl md:text-4xl">
-              Book your appointment
-            </h1>
-            <p className="mt-2 text-pretty text-sm text-muted-foreground sm:text-base">
-              Welcome back, {user?.full_name?.split(' ')[0]} — {CUSTOMER_BOOKING_STEPS[step].full}.
-            </p>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+              <div className="min-w-0">
+                <h1 className="font-heading text-balance text-2xl font-bold sm:text-3xl md:text-4xl">
+                  Book your appointment
+                </h1>
+                <p className="mt-2 text-pretty text-sm text-muted-foreground sm:text-base">
+                  {isAuthenticated
+                    ? `Welcome back, ${user?.full_name?.split(' ')[0]} — ${CUSTOMER_BOOKING_STEPS[step].full}.`
+                    : `Booking as guest — ${CUSTOMER_BOOKING_STEPS[step].full}.`}
+                </p>
+                {!isAuthenticated && (
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Already have an account?{' '}
+                    <Link to="/login" state={{ from: { pathname: '/book' } }} className="font-medium text-primary underline">
+                      Sign in
+                    </Link>
+                    {' · '}
+                    <Link to="/register" className="font-medium text-primary underline">Create account</Link>
+                    {' '}for faster checkout and booking history.
+                  </p>
+                )}
+              </div>
+              {draftReady && hasProgress && !done && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  className="customer-booking-start-again shrink-0 gap-2 rounded-full border-border/80 bg-card px-5 shadow-sm hover:bg-muted/60 max-sm:w-full sm:px-6"
+                  onClick={discardDraft}
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Start again
+                </Button>
+              )}
+            </div>
             <div className="booking-stepper-wrap mx-auto mt-6 max-md:mt-5 md:mt-8">
               <BookingStepper
                 currentStep={step}
@@ -744,25 +843,6 @@ export default function BookAppointmentPage() {
 
       <section className="customer-container-wide py-8 max-md:py-6 md:py-12">
         <div className="customer-booking-flow-wide min-w-0">
-        {draftReady && hasProgress && !done && (
-          <div className="customer-booking-flow mx-auto mb-8 flex flex-col gap-3 rounded-xl border border-primary/25 bg-primary/5 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-            <p className="text-sm text-foreground">
-              {resumedDraft
-                ? `Your booking draft was restored — you're on step ${step + 1} of ${STEP_COUNT}.`
-                : 'Your booking progress is saved automatically while you book.'}
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="shrink-0 gap-2 rounded-full"
-              onClick={discardDraft}
-            >
-              <RotateCcw className="h-4 w-4" />
-              Start over
-            </Button>
-          </div>
-        )}
         {step === 0 && (
           <div className="customer-booking-flow min-w-0">
             <h2 className="font-heading text-balance text-xl font-semibold sm:text-2xl">
@@ -974,7 +1054,7 @@ export default function BookAppointmentPage() {
             <div className="customer-booking-cards-scroll mx-auto mt-8 grid min-w-0 max-w-full grid-cols-1 gap-5 sm:max-w-3xl md:grid-cols-2">
               {staffOptions.length === 0 ? (
                 <p className="text-muted-foreground">
-                  No staff available for this {offeringType === 'package' ? 'package' : 'service'}.
+                  No staff available for this {activeOfferingType === 'package' ? 'package' : 'service'}.
                 </p>
               ) : (
                 staffOptions.map((e) => (
@@ -1174,6 +1254,57 @@ export default function BookAppointmentPage() {
         {step === 5 && hasOffering && branch && employee && paymentMethod && (
           <div className="customer-booking-flow mx-auto max-w-2xl">
             <h2 className="font-heading text-2xl font-semibold">Review & confirm</h2>
+            {!isAuthenticated && (
+              <Card className="mt-6 border-primary/25 bg-primary/5 shadow-sm">
+                <CardContent className="space-y-4 p-6">
+                  <div>
+                    <h3 className="font-heading text-lg font-semibold">Your contact details</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      We&apos;ll send your confirmation to this email. No account required.
+                    </p>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="guest-name">Full name</Label>
+                      <Input
+                        id="guest-name"
+                        className="h-11"
+                        value={guestName}
+                        onChange={(e) => setGuestName(e.target.value)}
+                        placeholder="Jane Smith"
+                        required
+                        autoComplete="name"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="guest-email">Email</Label>
+                      <Input
+                        id="guest-email"
+                        type="email"
+                        className="h-11"
+                        value={guestEmail}
+                        onChange={(e) => setGuestEmail(e.target.value)}
+                        placeholder="you@email.com"
+                        required
+                        autoComplete="email"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="guest-phone">Phone (optional)</Label>
+                      <Input
+                        id="guest-phone"
+                        type="tel"
+                        className="h-11"
+                        value={guestPhone}
+                        onChange={(e) => setGuestPhone(e.target.value)}
+                        placeholder="For salon to reach you"
+                        autoComplete="tel"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             <Card className="mt-8 border-0 text-left shadow-lg">
               <CardContent className="space-y-5 p-6 md:p-8">
                 <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-4">
@@ -1193,7 +1324,7 @@ export default function BookAppointmentPage() {
                 <dl className="grid gap-3 text-sm sm:grid-cols-2">
                   <div>
                     <dt className="text-muted-foreground">
-                      {offeringType === 'package' ? 'Package' : 'Service'}
+                      {activeOfferingType === 'package' ? 'Package' : 'Service'}
                     </dt>
                     <dd className="font-medium">{lineTitle}</dd>
                   </div>
@@ -1228,7 +1359,7 @@ export default function BookAppointmentPage() {
                   onApply={applyCoupon}
                   onClear={() => setDiscount(0)}
                   isApplying={couponApplying}
-                  signedIn={!!user?.email}
+                  signedIn={!!bookingEmail}
                 />
                 <p className="font-heading text-2xl font-bold">Total: ${finalPrice.toFixed(2)}</p>
                 <div className="space-y-2">

@@ -1,4 +1,3 @@
-import { useAuth } from '@/features/auth/context/AuthContext';
 import { LandingCenteredShowcase } from '@/features/welcome/components/LandingCenteredShowcase';
 import { LandingCoverImage } from '@/features/welcome/components/LandingCoverImage';
 import { branchImageHints } from '@mit-salon/shared/lib/branch-image-hints';
@@ -16,9 +15,8 @@ type LandingBranchesCarouselProps = {
 };
 
 export function LandingBranchesCarousel({ branches }: LandingBranchesCarouselProps) {
-  const { isAuthenticated } = useAuth();
   const activeBranches = branches.filter((b) => b.status === 'active');
-  const bookHref = isAuthenticated ? '/book' : '/register';
+  const bookHref = '/book';
 
   return (
     <LandingCenteredShowcase

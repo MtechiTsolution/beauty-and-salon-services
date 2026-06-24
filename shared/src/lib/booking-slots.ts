@@ -29,6 +29,20 @@ export function formatBookingTimeWindow(timeSlot: string, durationMinutes: numbe
   return `${timeSlot} – ${end}`;
 }
 
+/** Start–end label for a booking record (falls back to start time only). */
+export function formatBookingAppointmentTime(booking: {
+  time_slot: string;
+  duration_minutes?: number | null;
+}): string {
+  const duration = Number(booking.duration_minutes ?? 0);
+  return duration > 0 ? formatBookingTimeWindow(booking.time_slot, duration) : booking.time_slot;
+}
+
+export function bookingAppointmentEndTime(timeSlot: string, durationMinutes: number): string {
+  if (durationMinutes <= 0) return timeSlot;
+  return minutesToTimeSlot(bookingEndMinutes(timeSlot, durationMinutes));
+}
+
 /** Compact label for slot buttons (e.g. `09:00–11:00`). */
 export function formatBookingTimeWindowCompact(
   timeSlot: string,

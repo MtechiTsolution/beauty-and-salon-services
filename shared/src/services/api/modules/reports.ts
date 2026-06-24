@@ -1,7 +1,10 @@
 import { apiRequest } from '../client';
 import { branchQuery, type SalonScopeParams } from '../../../lib/salon-scope';
-import { type ReportExportParams } from '../../../lib/report-export-data';
+import type { ReportExportParams } from '../../../lib/report-export-data';
+import type { ModuleReportSummary } from '../../../lib/report-summaries';
 import { REPORT_MODULES, type ReportModule } from '../../../lib/report-modules';
+
+export type { ModuleReportSummary };
 
 export type ReportsSummary = {
   totalBookings: number;
@@ -22,13 +25,6 @@ export type ReportExportResult = {
   columns: { key: string; header: string }[];
   rows: Record<string, unknown>[];
   rowCount: number;
-};
-
-export type ModuleReportSummary = {
-  module: ReportModule;
-  label: string;
-  stats: { label: string; value: string | number }[];
-  breakdown?: { name: string; count: number; value?: number }[];
 };
 
 export const reportsApi = {

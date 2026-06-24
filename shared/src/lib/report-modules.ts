@@ -121,6 +121,8 @@ export const REPORT_MODULES: ReportModuleMeta[] = [
       { key: 'id', header: 'ID' },
       { key: 'name', header: 'Name' },
       { key: 'description', header: 'Description' },
+      { key: 'branch_id', header: 'Saloon ID' },
+      { key: 'branch_name', header: 'Saloon' },
       { key: 'status', header: 'Status' },
       { key: 'created_at', header: 'Created at' },
     ],
@@ -169,6 +171,7 @@ export const REPORT_MODULES: ReportModuleMeta[] = [
       { key: 'phone', header: 'Phone' },
       { key: 'role', header: 'Role' },
       { key: 'branch_id', header: 'Saloon ID' },
+      { key: 'branch_name', header: 'Saloon' },
       { key: 'service_ids', header: 'Service IDs' },
       { key: 'rating', header: 'Rating' },
       { key: 'status', header: 'Status' },
@@ -208,6 +211,18 @@ export const REPORT_MODULES: ReportModuleMeta[] = [
       { key: 'created_at', header: 'Created at' },
     ],
   },
+];
+
+/** Modules shown on the admin Reports data export hub. */
+export const ADMIN_REPORT_MODULES: ReportModule[] = [
+  'branches',
+  'categories',
+  'bookings',
+  'staff',
+  'services',
+  'customers',
+  'coupons',
+  'packages',
 ];
 
 export function getReportModule(id: ReportModule): ReportModuleMeta {

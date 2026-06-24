@@ -15,6 +15,7 @@ const statusStyles: Record<string, string> = {
   refunded: 'bg-orange-100 text-orange-800',
   approved: 'bg-green-100 text-green-800 border-green-200',
   rejected: 'bg-red-100 text-red-800 border-red-200',
+  blocked: 'bg-red-100 text-red-800 border-red-200',
 };
 
 export function StatusBadge({ status }: { status: string }) {

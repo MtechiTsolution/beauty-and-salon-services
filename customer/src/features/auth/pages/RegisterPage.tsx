@@ -69,6 +69,12 @@ export default function RegisterPage() {
             <p className="mt-6 text-center text-sm text-muted-foreground">
               Have an account? <Link to="/login" className="font-medium text-primary underline">Sign in</Link>
             </p>
+            <p className="mt-3 text-center text-sm text-muted-foreground">
+              Own a salon?{' '}
+              <Link to="/register-salon" className="font-medium text-primary underline">
+                Register your salon
+              </Link>
+            </p>
           </CardContent>
         </Card>
       </div>

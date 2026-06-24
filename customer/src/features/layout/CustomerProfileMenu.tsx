@@ -3,6 +3,7 @@ import { CustomerProfileDrawer } from '@/features/layout/CustomerProfileDrawer';
 import { useMediaQuery } from '@/features/layout/useMediaQuery';
 import { notificationsApi } from '@mit-salon/shared/api';
 import { ThemeToggle } from '@mit-salon/shared/components/ThemeToggle';
+import { Button } from '@mit-salon/shared/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,13 +11,13 @@ import {
 } from '@mit-salon/shared/components/ui/dropdown-menu';
 import {
   formatNotificationDate,
-  notificationBookingDetailPath,
+  notificationActionLink,
 } from '@mit-salon/shared/lib/notification-ui';
 import { cn } from '@mit-salon/shared/lib/utils';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Bell, CheckCheck, ChevronDown, LogOut, Moon, User } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 type CustomerProfileMenuProps = {
@@ -78,8 +79,9 @@ function UserAvatar({
 }
 
 export function CustomerProfileMenu({ className }: CustomerProfileMenuProps) {
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const isMobile = useMediaQuery('(max-width: 1023px)');
   const [open, setOpen] = useState(false);
@@ -122,6 +124,19 @@ export function CustomerProfileMenu({ className }: CustomerProfileMenuProps) {
   };
 
   const firstName = user?.full_name?.split(' ')[0] ?? 'Profile';
+
+  if (!isAuthenticated) {
+    return (
+      <div className={cn('flex items-center gap-2', className)}>
+        <Button asChild variant="ghost" size="sm" className="rounded-full">
+          <Link to="/login" state={{ from: { pathname: location.pathname } }}>Sign in</Link>
+        </Button>
+        <Button asChild size="sm" className="rounded-full">
+          <Link to="/register">Register</Link>
+        </Button>
+      </div>
+    );
+  }
 
   const profileTrigger = (
     <button
@@ -276,7 +291,7 @@ export function CustomerProfileMenu({ className }: CustomerProfileMenuProps) {
               ) : (
                 <ul>
                   {notifications.map((n) => {
-                    const bookingPath = notificationBookingDetailPath(n);
+                    const action = notificationActionLink(n);
                     const content = (
                       <>
                         <p className="flex items-center gap-1.5 text-sm font-medium leading-snug">
@@ -287,8 +302,8 @@ export function CustomerProfileMenu({ className }: CustomerProfileMenuProps) {
                         <p className="mt-1 text-[10px] text-muted-foreground/70">
                           {formatNotificationDate(n.created_at)}
                         </p>
-                        {bookingPath && (
-                          <p className="mt-1.5 text-xs font-medium text-primary">View my booking</p>
+                        {action && (
+                          <p className="mt-1.5 text-xs font-medium text-primary">{action.label}</p>
                         )}
                       </>
                     );
@@ -299,12 +314,12 @@ export function CustomerProfileMenu({ className }: CustomerProfileMenuProps) {
                         className={cn(
                           'customer-profile-popup-notification-item',
                           !n.read && 'customer-profile-popup-notification-item--unread',
-                          bookingPath && 'customer-profile-popup-notification-item--link',
+                          action && 'customer-profile-popup-notification-item--link',
                         )}
                       >
-                        {bookingPath ? (
+                        {action ? (
                           <Link
-                            to={bookingPath}
+                            to={action.to}
                             className="block"
                             onClick={() => setOpen(false)}
                           >

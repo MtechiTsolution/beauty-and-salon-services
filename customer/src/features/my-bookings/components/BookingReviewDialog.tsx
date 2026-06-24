@@ -10,6 +10,7 @@ import {
 import { Label } from '@mit-salon/shared/components/ui/label';
 import { Textarea } from '@mit-salon/shared/components/ui/textarea';
 import { invalidateAllCatalogQueries } from '@mit-salon/shared/lib/catalog-query-keys';
+import { formatBookingAppointmentTime } from '@mit-salon/shared/lib/booking-slots';
 import type { Booking } from '@mit-salon/shared/types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { CalendarDays, MapPin, Sparkles, User } from 'lucide-react';
@@ -87,7 +88,7 @@ export function BookingReviewDialog({ booking, open, onOpenChange }: BookingRevi
               </li>
               <li className="flex items-center gap-2">
                 <CalendarDays className="h-3.5 w-3.5 shrink-0 text-primary" />
-                {booking.date} at {booking.time_slot}
+                {booking.date} · {formatBookingAppointmentTime(booking)}
               </li>
             </ul>
           </div>

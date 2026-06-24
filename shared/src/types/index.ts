@@ -1,9 +1,11 @@
 import type { StaffRole } from '../lib/staff-roles';
 
 export type Status = 'active' | 'inactive';
+export type BranchStatus = 'active' | 'inactive' | 'pending' | 'blocked';
+export type SalonRequestStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
 export type BookingStatus = 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'no_show';
 export type PaymentStatus = 'unpaid' | 'paid' | 'refunded';
-export type UserRole = 'customer' | 'admin';
+export type UserRole = 'customer' | 'admin' | 'super_admin';
 
 export interface BaseEntity {
   id: string;
@@ -30,7 +32,8 @@ export interface Branch extends BaseEntity {
   opening_time?: string;
   /** Daily closing time in HH:mm (24-hour). */
   closing_time?: string;
-  status: Status;
+  status: BranchStatus;
+  owner_user_id?: string;
 }
 
 export interface ServiceCategory extends BaseEntity {
@@ -97,6 +100,9 @@ export interface Coupon extends BaseEntity {
   used_count: number;
   expiry_date?: string;
   status: 'active' | 'inactive' | 'expired';
+  branch_ids?: string[];
+  category_ids?: string[];
+  customer_emails?: string[];
 }
 
 export interface Package extends BaseEntity {
@@ -159,6 +165,7 @@ export interface BookingChat extends BaseEntity {
   service_title?: string;
   booking_date?: string;
   time_slot?: string;
+  duration_minutes?: number;
   booking_status?: BookingStatus;
   payment_status?: PaymentStatus;
   final_price?: number;
@@ -173,4 +180,39 @@ export interface ChatMessage extends BaseEntity {
   body: string;
   read_by_customer: boolean;
   read_by_salon: boolean;
+}
+
+export interface SalonRegistrationRequest extends BaseEntity {
+  email: string;
+  full_name: string;
+  phone?: string;
+  salon_name: string;
+  salon_address: string;
+  salon_city?: string;
+  salon_phone?: string;
+  salon_email?: string;
+  salon_description?: string;
+  opening_time?: string;
+  closing_time?: string;
+  status: SalonRequestStatus;
+  reviewed_by?: string;
+  review_notes?: string;
+  reviewed_at?: string;
+  branch_id?: string;
+  owner_user_id?: string;
+}
+
+export interface ActivityLog {
+  id: string;
+  branch_id?: string;
+  branch_name?: string;
+  actor_user_id?: string;
+  actor_email?: string;
+  actor_role?: string;
+  action: string;
+  entity_type?: string;
+  entity_id?: string;
+  summary: string;
+  metadata?: Record<string, unknown> | null;
+  created_at: string;
 }

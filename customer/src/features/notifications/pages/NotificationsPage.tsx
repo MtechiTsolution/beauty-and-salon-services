@@ -8,13 +8,18 @@ import {
   isCouponNotification,
 } from '@mit-salon/shared/lib/coupon-notify';
 import {
+  CUSTOMER_NOTIFICATION_FILTERS,
   formatNotificationDate,
-  isSalonAnnouncement,
   notificationActionLink,
+  notificationCategoryLabel,
+  notificationFilterCategory,
   notificationTypeColors,
+  type NotificationFilterCategory,
 } from '@mit-salon/shared/lib/notification-ui';
+import { cn } from '@mit-salon/shared/lib/utils';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell, Check, CheckCheck } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -22,6 +27,7 @@ export default function NotificationsPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const email = user?.email;
+  const [category, setCategory] = useState<NotificationFilterCategory>('all');
 
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ['customer-notifications', email],
@@ -43,6 +49,11 @@ export default function NotificationsPage() {
       toast.success('All notifications marked as read');
     },
   });
+
+  const filteredNotifications = useMemo(() => {
+    if (category === 'all') return notifications;
+    return notifications.filter((n) => notificationFilterCategory(n) === category);
+  }, [notifications, category]);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -71,6 +82,31 @@ export default function NotificationsPage() {
           )}
         </div>
 
+        {notifications.length > 0 && (
+          <div className="mt-6 flex flex-wrap gap-2">
+            {CUSTOMER_NOTIFICATION_FILTERS.map((filter) => {
+              const count =
+                filter.id === 'all'
+                  ? notifications.length
+                  : notifications.filter((n) => notificationFilterCategory(n) === filter.id).length;
+              if (filter.id !== 'all' && count === 0) return null;
+              return (
+                <Button
+                  key={filter.id}
+                  type="button"
+                  size="sm"
+                  variant={category === filter.id ? 'default' : 'outline'}
+                  className={cn('rounded-full', category === filter.id && 'customer-btn-glow')}
+                  onClick={() => setCategory(filter.id)}
+                >
+                  {filter.label}
+                  <span className="ml-1.5 text-xs opacity-80">({count})</span>
+                </Button>
+              );
+            })}
+          </div>
+        )}
+
         {isLoading ? (
           <p className="mt-10 text-muted-foreground">Loading notifications…</p>
         ) : notifications.length === 0 ? (
@@ -85,13 +121,21 @@ export default function NotificationsPage() {
               <Link to="/book">Book an appointment</Link>
             </Button>
           </Card>
+        ) : filteredNotifications.length === 0 ? (
+          <Card className="mt-10 p-12 text-center">
+            <p className="text-muted-foreground">No notifications in this category.</p>
+            <Button type="button" variant="outline" className="mt-4 rounded-full" onClick={() => setCategory('all')}>
+              Show all notifications
+            </Button>
+          </Card>
         ) : (
           <div className="mt-8 space-y-3">
-            {notifications.map((n) => {
+            {filteredNotifications.map((n) => {
               const action = notificationActionLink(n);
               const couponCode = isCouponNotification(n)
                 ? extractCouponCodeFromNotificationMessage(n.message)
                 : null;
+              const sectionLabel = notificationCategoryLabel(n);
               return (
                 <Card
                   key={n.id}
@@ -105,8 +149,8 @@ export default function NotificationsPage() {
                       <div className="min-w-0">
                         <div className="mb-1 flex flex-wrap items-center gap-2">
                           <h3 className="text-sm font-semibold">{n.title}</h3>
-                          <Badge className={`${notificationTypeColors[n.type]} border-0 capitalize text-[10px]`}>
-                            {isSalonAnnouncement(n) ? 'Salon update' : n.type}
+                          <Badge className={`${notificationTypeColors[n.type]} border-0 text-[10px] capitalize`}>
+                            {sectionLabel}
                           </Badge>
                           {!n.read && <span className="h-2 w-2 rounded-full bg-primary" />}
                         </div>
