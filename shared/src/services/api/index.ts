@@ -12,7 +12,7 @@ import type { Branch, Coupon, Employee, Service, ServiceCategory } from '../../t
 
 export { authApi, bookingsApi, payoutsApi, reportsApi };
 export { superAdminApi } from './modules/super-admin';
-export type { PlatformDashboardStats, PlatformSalon } from './modules/super-admin';
+export type { PlatformAnalytics, PlatformDashboardStats, PlatformSalon } from './modules/super-admin';
 export { uploadsApi, type UploadKind } from './modules/uploads';
 
 const branchesCrud = createDataApi<Branch>('branches');

@@ -31,6 +31,7 @@ export const ADMIN_NOTIFICATION_FILTERS: { id: NotificationFilterCategory; label
   { id: 'all', label: 'All' },
   { id: 'bookings', label: 'Bookings' },
   { id: 'payments', label: 'Payments' },
+  { id: 'system', label: 'Platform' },
 ];
 
 export function notificationFilterCategory(
@@ -68,6 +69,12 @@ export function notificationAdminActionLink(n: Notification): { to: string; labe
     return {
       to: notificationAdminBookingPath(n.reference_id),
       label: 'View booking',
+    };
+  }
+  if (n.type === 'system') {
+    return {
+      to: '/branches',
+      label: 'View salon',
     };
   }
   return null;

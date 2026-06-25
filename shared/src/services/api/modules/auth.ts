@@ -181,6 +181,17 @@ async function completeSalonRegistration(payload: SalonRegistrationPayload) {
   });
 }
 
+export type SalonRegistrationStatus = {
+  status: 'none' | 'pending' | 'approved' | 'rejected' | 'cancelled' | 'blocked';
+  salon_name?: string;
+};
+
+async function getSalonRegistrationStatus(email: string): Promise<SalonRegistrationStatus> {
+  return apiRequest<SalonRegistrationStatus>(
+    `/auth/salon-registration-status?email=${encodeURIComponent(email.trim())}`,
+  );
+}
+
 export const authApi = {
   me,
   login,
@@ -196,6 +207,7 @@ export const authApi = {
   sendSalonRegisterOtp,
   verifySalonRegisterOtp,
   completeSalonRegistration,
+  getSalonRegistrationStatus,
   restoreSession: restoreSessionLocal,
   loginAsDemo,
 };

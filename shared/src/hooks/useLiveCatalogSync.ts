@@ -3,7 +3,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getApiBase } from '../lib/api-base';
 import {
   invalidateAllCatalogQueries,
+  invalidatePlatformAppQueries,
   refetchActiveCatalogQueries,
+  refetchActivePlatformAppQueries,
   refetchChatQueries,
 } from '../lib/catalog-query-keys';
 
@@ -39,7 +41,9 @@ export function useLiveCatalogSync() {
     const applyCatalogChange = async () => {
       if (disposed) return;
       await invalidateAllCatalogQueries(queryClient);
+      await invalidatePlatformAppQueries(queryClient);
       await refetchActiveCatalogQueries(queryClient);
+      await refetchActivePlatformAppQueries(queryClient);
     };
 
     const applyChatChange = async (chatId?: string) => {

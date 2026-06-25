@@ -18,10 +18,15 @@ const statusStyles: Record<string, string> = {
   blocked: 'bg-red-100 text-red-800 border-red-200',
 };
 
+const statusLabels: Record<string, string> = {
+  blocked: 'restricted',
+};
+
 export function StatusBadge({ status }: { status: string }) {
+  const label = statusLabels[status] ?? status;
   return (
     <Badge variant="outline" className={cn('capitalize border', statusStyles[status] ?? '')}>
-      {status}
+      {label}
     </Badge>
   );
 }

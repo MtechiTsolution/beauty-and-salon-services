@@ -17,14 +17,92 @@ export type PlatformDashboardStats = {
   activity_last_7_days: number;
 };
 
+export type PlatformBookingSeriesPoint = {
+  date: string;
+  bookings: number;
+  revenue: number;
+};
+
+export type PlatformRegistrationSeriesPoint = {
+  week_start: string;
+  new_registrations: number;
+  approvals: number;
+  rejections: number;
+};
+
+export type PlatformRevenueBySalon = {
+  branch_id: string;
+  branch_name: string;
+  status: string;
+  bookings: number;
+  revenue: number;
+};
+
+export type PlatformAnalytics = {
+  totals: {
+    total_bookings: number;
+    paid_bookings: number;
+    total_revenue: number;
+    bookings_today: number;
+    revenue_today: number;
+    bookings_this_week: number;
+    revenue_this_week: number;
+  };
+  bookings_by_day: PlatformBookingSeriesPoint[];
+  bookings_by_week: PlatformBookingSeriesPoint[];
+  registrations_by_week: PlatformRegistrationSeriesPoint[];
+  registrations_summary: {
+    new_last_7_days: number;
+    new_last_30_days: number;
+    approved_last_7_days: number;
+    approved_last_30_days: number;
+    rejected_last_30_days: number;
+    pending_total: number;
+  };
+  salon_lifecycle: {
+    active: number;
+    blocked: number;
+    inactive: number;
+    pending: number;
+    restricted_last_30_days: number;
+    inactive_last_30_days: number;
+  };
+  revenue_by_salon: PlatformRevenueBySalon[];
+};
+
 export type PlatformSalon = Branch & {
   owner_email?: string;
   owner_name?: string;
 };
 
+export type PlatformSalonStats = {
+  total_bookings: number;
+  upcoming_bookings: number;
+  completed_bookings: number;
+  revenue_paid: number;
+  services_count: number;
+  staff_count: number;
+  categories_count: number;
+};
+
+export type PlatformSalonDetail = {
+  salon: PlatformSalon;
+  owner: User | null;
+  stats: PlatformSalonStats;
+  registration_request: Pick<
+    SalonRegistrationRequest,
+    'id' | 'email' | 'full_name' | 'salon_name' | 'status' | 'review_notes' | 'reviewed_at' | 'created_at' | 'updated_at'
+  > | null;
+  recent_activity: ActivityLog[];
+};
+
 export const superAdminApi = {
   dashboard(): Promise<PlatformDashboardStats> {
     return apiRequest<PlatformDashboardStats>('/super-admin/dashboard');
+  },
+
+  analytics(): Promise<PlatformAnalytics> {
+    return apiRequest<PlatformAnalytics>('/super-admin/analytics');
   },
 
   listSalonRequests(status?: string): Promise<SalonRegistrationRequest[]> {
@@ -63,6 +141,10 @@ export const superAdminApi = {
   listSalons(status?: string): Promise<PlatformSalon[]> {
     const q = status && status !== 'all' ? `?status=${encodeURIComponent(status)}` : '';
     return apiRequest<PlatformSalon[]>(`/super-admin/salons${q}`);
+  },
+
+  getSalon(id: string): Promise<PlatformSalonDetail> {
+    return apiRequest<PlatformSalonDetail>(`/super-admin/salons/${encodeURIComponent(id)}`);
   },
 
   blockSalon(id: string, reason?: string) {

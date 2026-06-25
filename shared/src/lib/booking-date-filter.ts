@@ -30,3 +30,15 @@ export function filterBookingsByDateRange<T extends Pick<Booking, 'date'>>(
 export function hasActiveBookingDateRange(range: BookingDateRange): boolean {
   return !!(range.from || range.to);
 }
+
+/** Filter any list item with a `created_at` ISO timestamp by calendar date range. */
+export function filterByCreatedDateRange<T extends { created_at?: string }>(
+  items: T[],
+  range: BookingDateRange,
+): T[] {
+  if (!range.from && !range.to) return items;
+  return items.filter((item) => {
+    if (!item.created_at) return false;
+    return isBookingDateInRange(item.created_at, range);
+  });
+}

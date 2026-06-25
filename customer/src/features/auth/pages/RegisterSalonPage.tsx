@@ -11,6 +11,7 @@ import { Label } from '@mit-salon/shared/components/ui/label';
 import { Textarea } from '@mit-salon/shared/components/ui/textarea';
 import { APP_NAME } from '@mit-salon/shared/lib/constants';
 import { IMAGES } from '@mit-salon/shared/lib/images';
+import { useSalonRegistrationStatusWatch } from '@mit-salon/shared/hooks/useSalonRegistrationStatusWatch';
 import { authApi } from '@mit-salon/shared/api';
 import { Building2, Store } from 'lucide-react';
 import { useState } from 'react';
@@ -32,6 +33,8 @@ const STEP_TITLES: Record<SalonRegisterStep, string> = {
   review: 'Review and submit',
   done: 'Registration complete',
 };
+
+const ADMIN_APP_URL = import.meta.env.VITE_ADMIN_APP_URL ?? 'http://localhost:5174';
 
 export default function RegisterSalonPage() {
   const [step, setStep] = useState<SalonRegisterStep>('email');
@@ -56,6 +59,19 @@ export default function RegisterSalonPage() {
   const [description, setDescription] = useState('');
 
   const [registeredSalonName, setRegisteredSalonName] = useState('');
+
+  useSalonRegistrationStatusWatch({
+    email,
+    enabled: step === 'done',
+    onApproved: (salonName) => {
+      toast.success(
+        salonName
+          ? `"${salonName}" was approved! Opening salon admin sign-in…`
+          : 'Your salon was approved! Opening salon admin sign-in…',
+      );
+      window.location.href = `${ADMIN_APP_URL}/login`;
+    },
+  });
 
   const sendOtp = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -458,7 +474,7 @@ export default function RegisterSalonPage() {
                 </p>
                 <p className="text-xs text-muted-foreground">
                   You will receive an email at <span className="font-medium">{email}</span> once your
-                  application is reviewed.
+                  application is reviewed. This page will redirect you to salon admin sign-in when approved.
                 </p>
                 <Button asChild variant="outline" className="h-11 w-full rounded-full">
                   <Link to="/login">Back to customer sign in</Link>
