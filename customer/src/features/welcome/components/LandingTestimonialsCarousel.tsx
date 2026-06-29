@@ -82,7 +82,7 @@ export function LandingTestimonialsCarousel({ reviews }: LandingTestimonialsCaro
       autoplayDelay={7000}
     >
       {items.map((item) => (
-        <CarouselItem key={item.id} className="basis-[92%] pl-2 sm:basis-1/2 sm:pl-4 lg:basis-1/3">
+        <CarouselItem key={item.id} className="basis-full pl-0 sm:basis-1/2 sm:pl-4 lg:basis-1/3">
           <TestimonialCard item={item} />
         </CarouselItem>
       ))}

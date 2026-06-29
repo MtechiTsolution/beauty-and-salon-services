@@ -17,7 +17,6 @@ type AuthContextValue = {
   login: (email: string, password: string) => Promise<User>;
   register: (data: { email: string; full_name: string; password: string; phone?: string }) => Promise<void>;
   logout: () => Promise<void>;
-  loginAsDemo: (role: 'customer' | 'admin') => Promise<void>;
   updateProfile: (data: { full_name?: string; phone?: string }) => Promise<User>;
   refresh: () => Promise<void>;
 };
@@ -54,10 +53,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout: async () => {
         await authApi.logout();
         setUser(null);
-      },
-      loginAsDemo: async (role) => {
-        const u = await authApi.loginAsDemo(role);
-        setUser(u);
       },
       updateProfile: async (data) => {
         const u = await authApi.updateProfile(data);

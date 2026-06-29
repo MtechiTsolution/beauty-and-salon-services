@@ -74,7 +74,7 @@ export function CustomerPackageCard({
       </div>
 
       <div className={cn('flex flex-1 flex-col', compact ? 'p-4' : 'p-5 sm:p-6')}>
-        <div className="flex flex-wrap gap-2">
+        <div className="customer-package-chips flex gap-1.5 sm:flex-wrap sm:gap-2">
           <span className="customer-package-chip">
             <Layers className="h-3.5 w-3.5" />
             {pkg.total_sessions} session{pkg.total_sessions === 1 ? '' : 's'}

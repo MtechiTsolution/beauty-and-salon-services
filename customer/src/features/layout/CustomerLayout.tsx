@@ -10,14 +10,14 @@ export function CustomerLayout() {
   return (
     <div
       className={cn(
-        'flex min-h-screen min-h-[100dvh] w-full min-w-0 max-w-full flex-col overflow-x-hidden',
+        'customer-app-shell flex min-h-screen min-h-[100dvh] w-full min-w-0 max-w-full flex-col overflow-x-hidden',
         isChatThread && 'h-dvh max-h-dvh overflow-hidden',
       )}
     >
       <CustomerNavbar />
       <main
         className={cn(
-          'customer-main-canvas flex min-h-0 min-w-0 max-w-full flex-1 flex-col overflow-x-hidden',
+          'customer-main-canvas flex min-h-0 min-w-0 w-full max-w-full flex-1 flex-col overflow-x-hidden',
           isChatThread && 'overflow-hidden',
         )}
       >

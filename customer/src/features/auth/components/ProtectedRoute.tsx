@@ -1,11 +1,15 @@
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { WrongPortalNotice } from '@mit-salon/shared/components/WrongPortalNotice';
+import { useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
 const ADMIN_APP_URL = import.meta.env.VITE_ADMIN_APP_URL ?? 'http://localhost:5174';
+const SUPER_ADMIN_APP_URL = import.meta.env.VITE_SUPER_ADMIN_APP_URL ?? 'http://localhost:5175';
 
 export function ProtectedRoute() {
-  const { user, isLoading, isAuthenticated } = useAuth();
+  const { user, isLoading, isAuthenticated, logout } = useAuth();
   const location = useLocation();
+  const [signingOut, setSigningOut] = useState(false);
 
   if (isLoading) {
     return (
@@ -19,9 +23,27 @@ export function ProtectedRoute() {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (user?.role === 'admin') {
-    window.location.href = ADMIN_APP_URL;
-    return null;
+  if (user?.role !== 'customer') {
+    return (
+      <WrongPortalNotice
+        signedInRole={user?.role ?? 'unknown'}
+        portalTitle="Customer app"
+        portalPort="5173"
+        otherPortals={[
+          { label: 'Salon admin', href: ADMIN_APP_URL, port: '5174' },
+          { label: 'Platform super admin', href: SUPER_ADMIN_APP_URL, port: '5175' },
+        ]}
+        signingOut={signingOut}
+        onSignOut={async () => {
+          setSigningOut(true);
+          try {
+            await logout();
+          } finally {
+            setSigningOut(false);
+          }
+        }}
+      />
+    );
   }
 
   return <Outlet />;

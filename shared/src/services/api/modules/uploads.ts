@@ -1,11 +1,11 @@
 import { getApiBase } from '../../../lib/api-base';
+import { getSessionUserId } from '../../../lib/session-storage';
 
 export const UPLOAD_KINDS = ['branches', 'categories', 'services', 'staff', 'packages'] as const;
 export type UploadKind = (typeof UPLOAD_KINDS)[number];
 
 function authHeaders(): Record<string, string> {
-  if (typeof localStorage === 'undefined') return {};
-  const userId = localStorage.getItem('mit_salon_user_id');
+  const userId = getSessionUserId();
   return userId ? { 'X-User-Id': userId } : {};
 }
 

@@ -66,6 +66,8 @@ const PAYMENT_STATUS: Record<
 type BookingStatusHighlightsProps = {
   bookingStatus: BookingStatus;
   paymentStatus: PaymentStatus;
+  /** Tighter vertical tiles for booking grid cards */
+  compact?: boolean;
 };
 
 function StatusTile({
@@ -73,12 +75,26 @@ function StatusTile({
   label,
   icon: Icon,
   className,
+  compact,
 }: {
   title: string;
   label: string;
   icon: LucideIcon;
   className: string;
+  compact?: boolean;
 }) {
+  if (compact) {
+    return (
+      <div className={cn('booking-status-tile booking-status-tile--compact', className)}>
+        <div className="booking-status-tile-icon flex h-8 w-8 shrink-0 items-center justify-center rounded-lg">
+          <Icon className="h-3.5 w-3.5" />
+        </div>
+        <p className="booking-status-tile-compact-label">{title}</p>
+        <p className="booking-status-tile-compact-value">{label}</p>
+      </div>
+    );
+  }
+
   return (
     <div className={cn('booking-status-tile', className)}>
       <div className="flex items-center gap-2">
@@ -87,7 +103,7 @@ function StatusTile({
         </div>
         <div className="min-w-0">
           <p className="booking-status-tile-label text-[11px] font-semibold uppercase tracking-wide opacity-80">{title}</p>
-          <p className="booking-status-tile-value truncate text-sm font-bold leading-tight md:text-base">{label}</p>
+          <p className="booking-status-tile-value text-sm font-bold leading-tight md:text-base">{label}</p>
         </div>
       </div>
     </div>
@@ -97,23 +113,31 @@ function StatusTile({
 export function BookingStatusHighlights({
   bookingStatus,
   paymentStatus,
+  compact = false,
 }: BookingStatusHighlightsProps) {
   const booking = BOOKING_STATUS[bookingStatus];
   const payment = PAYMENT_STATUS[paymentStatus];
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:items-stretch">
+    <div
+      className={cn(
+        'grid gap-3',
+        compact ? 'grid-cols-2 items-stretch' : 'grid-cols-1 sm:grid-cols-2 sm:items-stretch',
+      )}
+    >
       <StatusTile
         title="Appointment"
         label={booking.label}
         icon={booking.icon}
         className={booking.className}
+        compact={compact}
       />
       <StatusTile
         title="Payment"
         label={payment.label}
         icon={payment.icon}
         className={payment.className}
+        compact={compact}
       />
     </div>
   );

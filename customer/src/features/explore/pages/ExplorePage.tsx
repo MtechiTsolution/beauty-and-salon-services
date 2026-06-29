@@ -34,45 +34,43 @@ export default function ExplorePage() {
   return (
     <div className="customer-page">
       <section className="customer-explore-hero">
-        <div className="customer-package-page-header customer-explore-hero-card rounded-2xl border border-border/70 bg-card shadow-sm">
-          <div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
-            <div className="flex items-start gap-4 md:gap-5">
+        <div className="customer-container-wide">
+          <div className="customer-package-page-header customer-explore-hero-card rounded-2xl border border-border/70 bg-card shadow-sm">
+            <div className="mx-auto flex max-w-3xl flex-col items-center text-center">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary md:h-14 md:w-14">
                 <MapPinned className="h-6 w-6 md:h-7 md:w-7" />
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold uppercase tracking-wider text-primary">Explore MIT Salon</p>
-                <h1 className="mt-1 font-heading text-3xl font-bold tracking-tight md:text-4xl lg:text-[2.75rem] lg:leading-tight">
-                  Locations & services
-                </h1>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground md:text-base lg:mt-3 lg:text-lg">
-                  Browse every salon location and treatment we offer — choose your favourite spot and book your visit
-                  in minutes.
-                </p>
+              <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-primary">Explore MIT Salon</p>
+              <h1 className="mt-1 font-heading text-3xl font-bold tracking-tight md:text-4xl lg:text-[2.75rem] lg:leading-tight">
+                Locations & services
+              </h1>
+              <p className="mt-2 text-pretty text-sm leading-relaxed text-muted-foreground md:text-base lg:mt-3 lg:text-lg">
+                Browse every salon location and treatment we offer — choose your favourite spot and book your visit
+                in minutes.
+              </p>
+              <div className="mt-6 flex flex-col items-center gap-4 sm:flex-row sm:flex-wrap sm:justify-center">
+                <div className="flex flex-wrap justify-center gap-2">
+                  {activeBranches.length > 0 && (
+                    <div className="customer-package-count-pill">
+                      <MapPin className="h-4 w-4 text-primary" />
+                      <span>
+                        {activeBranches.length} location{activeBranches.length === 1 ? '' : 's'}
+                      </span>
+                    </div>
+                  )}
+                  {activeServices.length > 0 && (
+                    <div className="customer-package-count-pill">
+                      <Scissors className="h-4 w-4 text-primary" />
+                      <span>
+                        {activeServices.length} treatment{activeServices.length === 1 ? '' : 's'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <Button asChild size="lg" className="shrink-0 rounded-full px-8 shadow-sm">
+                  <Link to="/book">Start booking</Link>
+                </Button>
               </div>
-            </div>
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center xl:shrink-0 xl:flex-col xl:items-end 2xl:flex-row 2xl:items-center">
-              <div className="flex flex-wrap gap-2">
-                {activeBranches.length > 0 && (
-                  <div className="customer-package-count-pill">
-                    <MapPin className="h-4 w-4 text-primary" />
-                    <span>
-                      {activeBranches.length} location{activeBranches.length === 1 ? '' : 's'}
-                    </span>
-                  </div>
-                )}
-                {activeServices.length > 0 && (
-                  <div className="customer-package-count-pill">
-                    <Scissors className="h-4 w-4 text-primary" />
-                    <span>
-                      {activeServices.length} treatment{activeServices.length === 1 ? '' : 's'}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <Button asChild size="lg" className="shrink-0 rounded-full px-8 shadow-sm">
-                <Link to="/book">Start booking</Link>
-              </Button>
             </div>
           </div>
         </div>
@@ -96,15 +94,15 @@ export default function ExplorePage() {
                   className="h-full w-full object-cover"
                 />
               </div>
-              <CardContent className="p-6">
-                <h3 className="font-heading text-xl font-semibold">{b.name}</h3>
-                <p className="mt-2 flex items-start gap-2 text-sm text-muted-foreground">
-                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                  <span>
+              <CardContent className="customer-branch-card-body p-6 text-left">
+                <div className="grid grid-cols-[1.125rem_minmax(0,1fr)] gap-x-2 gap-y-2">
+                  <h3 className="col-start-2 font-heading text-xl font-semibold leading-snug">{b.name}</h3>
+                  <MapPin className="col-start-1 row-start-2 mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  <p className="col-start-2 row-start-2 min-w-0 text-sm leading-relaxed text-muted-foreground">
                     {b.address}
                     {b.city ? `, ${b.city}` : ''}
-                  </span>
-                </p>
+                  </p>
+                </div>
                 {b.description && (
                   <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">{b.description}</p>
                 )}

@@ -20,7 +20,7 @@ export function LandingHowItWorks() {
 
   return (
     <section id="how-it-works" className="landing-section landing-section--contrast landing-section--dense scroll-mt-20 md:scroll-mt-24">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+      <div className="mx-auto min-w-0 w-full max-w-7xl px-4 sm:px-6">
         <LandingSectionHeader
           compact
           eyebrow={
@@ -33,11 +33,11 @@ export function LandingHowItWorks() {
           description="Six refined steps from salon selection to confirmation — with flexible payment, offers, and instant chat support."
         />
 
-        <div className="landing-carousel-shell landing-carousel-shell--tight relative md:px-10 lg:px-14">
-          <Carousel opts={{ align: 'start', loop: true }} plugins={plugins} className="w-full">
-            <CarouselContent className="-ml-2 sm:-ml-4 items-stretch">
+        <div className="landing-carousel-shell landing-carousel-shell--tight relative min-w-0 max-w-full overflow-x-clip md:overflow-x-visible md:px-10 lg:px-14">
+          <Carousel opts={{ align: 'start', loop: true }} plugins={plugins} className="w-full min-w-0">
+            <CarouselContent className="ml-0 sm:-ml-4 items-stretch">
               {landingBookingSteps.map((item) => (
-                <CarouselItem key={item.step} className="basis-[88%] pl-2 sm:basis-1/2 sm:pl-4 lg:basis-1/3">
+                <CarouselItem key={item.step} className="basis-full pl-0 sm:basis-1/2 sm:pl-4 lg:basis-1/3">
                   <div className="landing-step-card h-full">
                     <span className="landing-step-card__number">{item.step}</span>
                     <h3 className="font-heading mt-4 text-lg font-semibold tracking-tight">{item.title}</h3>

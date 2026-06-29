@@ -66,12 +66,12 @@ export function LandingCarouselShell({
       id={id}
       className={cn('landing-section scroll-mt-20 md:scroll-mt-24', compact && 'landing-section--dense', className)}
     >
-      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+      <div className="mx-auto min-w-0 w-full max-w-7xl px-4 sm:px-6">
         <LandingSectionHeader compact={compact} eyebrow={eyebrow} title={title} description={description} />
 
         <div
           className={cn(
-            'landing-carousel-shell relative',
+            'landing-carousel-shell relative min-w-0 max-w-full overflow-x-clip md:overflow-x-visible',
             compact ? 'landing-carousel-shell--tight' : 'mt-8 sm:mt-12 md:mt-14',
             centered ? 'md:px-6 lg:px-10' : 'md:px-10 lg:px-14',
             innerClassName,
@@ -82,7 +82,7 @@ export function LandingCarouselShell({
             plugins={plugins}
             className={cn('w-full', centered && 'landing-carousel--centered')}
           >
-            <CarouselContent className={cn(centered ? 'ml-0' : '-ml-2 sm:-ml-4', 'items-stretch')}>{children}</CarouselContent>
+            <CarouselContent className={cn(centered ? 'ml-0' : 'ml-0 sm:-ml-4', 'items-stretch')}>{children}</CarouselContent>
             {showArrows ? (
               <>
                 <CarouselPrevious className="landing-carousel-arrow landing-carousel-arrow--prev hidden md:flex" />

@@ -63,6 +63,7 @@ import { format, startOfToday } from 'date-fns';
 import {
   Banknote,
   CalendarCheck,
+  CalendarDays,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -75,6 +76,7 @@ import {
   Smartphone,
   RotateCcw,
   Star,
+  User,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -700,49 +702,91 @@ export default function BookAppointmentPage() {
   };
 
   if (done) {
+    const confirmDateLabel = date
+      ? format(new Date(`${date}T12:00:00`), 'EEE, MMM d, yyyy')
+      : '';
+    const confirmTimeLabel =
+      time && lineDuration > 0
+        ? formatBookingTimeWindow(time, lineDuration)
+        : time ?? '';
+
     return (
-      <div className="customer-page flex items-center justify-center px-4 py-20">
-        <Card className="w-full max-w-lg border-0 shadow-xl">
-          <CardContent className="p-10 text-center max-md:p-6">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 max-md:h-14 max-md:w-14">
-              <CheckCircle2 className="h-10 w-10 text-green-600 max-md:h-8 max-md:w-8" />
+      <div className="customer-page customer-booking-confirm-page flex justify-center px-4">
+        <Card className="customer-booking-confirm-card w-full max-w-lg border-0 shadow-xl">
+          <CardContent className="customer-booking-confirm-content p-8 text-center md:p-10">
+            <div className="customer-booking-confirm-hero">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-100 md:h-16 md:w-16">
+                <CheckCircle2 className="h-8 w-8 text-green-600 md:h-10 md:w-10" />
+              </div>
+              <h1 className="font-heading mt-4 text-2xl font-bold md:mt-6 md:text-3xl">You&apos;re all set!</h1>
+              <p className="mt-2 text-sm text-muted-foreground md:mt-3 md:text-base">
+                {isAuthenticated
+                  ? 'Confirmation sent to your account and email.'
+                  : `Confirmation will be sent to ${bookingEmail}.`}
+              </p>
             </div>
-            <h1 className="font-heading mt-6 text-3xl font-bold max-md:mt-4 max-md:text-2xl">You&apos;re all set!</h1>
-            <p className="mt-4 text-muted-foreground max-md:mt-3 max-md:text-sm">
-              {isAuthenticated
-                ? 'A confirmation will appear in your account and email.'
-                : `Confirmation will be sent to ${bookingEmail}.`}
-            </p>
-            <p className="mt-2 text-muted-foreground max-md:text-sm">
-              {branch?.name} · {lineTitle}
-            </p>
-            <p className="text-muted-foreground max-md:text-sm">
-              with {employee?.name} on {date}
-              {time && lineDuration > 0
-                ? ` · ${formatBookingTimeWindow(time, lineDuration)}`
-                : time
-                  ? ` at ${time}`
-                  : ''}
-            </p>
+
+            <div className="customer-booking-confirm-details mt-5 md:mt-6">
+              <div className="customer-booking-confirm-detail-row">
+                <span className="customer-booking-confirm-detail-label">
+                  <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  Salon
+                </span>
+                <span className="customer-booking-confirm-detail-value">{branch?.name}</span>
+              </div>
+              <div className="customer-booking-confirm-detail-row">
+                <span className="customer-booking-confirm-detail-label">
+                  <Scissors className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  Service
+                </span>
+                <span className="customer-booking-confirm-detail-value">{lineTitle}</span>
+              </div>
+              <div className="customer-booking-confirm-detail-row">
+                <span className="customer-booking-confirm-detail-label">
+                  <User className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  Stylist
+                </span>
+                <span className="customer-booking-confirm-detail-value">{employee?.name}</span>
+              </div>
+              <div className="customer-booking-confirm-detail-row">
+                <span className="customer-booking-confirm-detail-label">
+                  <CalendarDays className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  When
+                </span>
+                <span className="customer-booking-confirm-detail-value">
+                  {confirmDateLabel}
+                  {confirmTimeLabel ? (
+                    <>
+                      <span className="customer-booking-confirm-detail-sep" aria-hidden>
+                        {' '}
+                        ·{' '}
+                      </span>
+                      <span className="customer-booking-confirm-detail-time">{confirmTimeLabel}</span>
+                    </>
+                  ) : null}
+                </span>
+              </div>
+            </div>
+
             {confirmedBooking && (
-              <div className="customer-booking-confirm-status mx-auto mt-4 max-w-sm text-left max-md:mt-3">
+              <div className="customer-booking-confirm-status mt-4 text-left md:mt-5">
                 <BookingStatusHighlights
                   bookingStatus={confirmedBooking.status}
                   paymentStatus={confirmedBooking.payment_status}
                 />
               </div>
             )}
-            <p className="mt-4 text-2xl font-bold text-primary max-md:mt-3">${finalPrice.toFixed(2)}</p>
-            <p className="text-sm text-muted-foreground">{paymentLabel}</p>
-            <div className="customer-booking-confirm-actions mt-8 flex flex-col gap-3 sm:flex-row max-md:mt-6">
+
+            <div className="customer-booking-confirm-price mt-5 md:mt-6">
+              <p className="text-2xl font-bold text-primary md:text-3xl">${finalPrice.toFixed(2)}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{paymentLabel}</p>
+            </div>
+
+            <div className="customer-booking-confirm-actions mt-6 flex flex-row gap-2 md:mt-8 md:gap-3">
               {isAuthenticated && confirmedBooking && (
-                <Button
-                  asChild
-                  className="flex-1 rounded-full max-md:h-16 max-md:px-8 max-md:text-lg"
-                  size="lg"
-                >
+                <Button asChild className="customer-booking-confirm-btn h-12 flex-1 rounded-full text-base" size="lg">
                   <Link to={`/messages/booking/${confirmedBooking.id}`}>
-                    <MessageCircle className="mr-2 h-4 w-4 max-md:h-6 max-md:w-6" />
+                    <MessageCircle className="mr-2 h-4 w-4" />
                     Chat with salon
                   </Link>
                 </Button>
@@ -750,7 +794,7 @@ export default function BookAppointmentPage() {
               {isAuthenticated ? (
                 <Button
                   asChild={!!confirmedBooking}
-                  className="flex-1 rounded-full max-md:h-16 max-md:px-8 max-md:text-lg"
+                  className="customer-booking-confirm-btn h-12 flex-1 rounded-full text-base"
                   size="lg"
                   variant={confirmedBooking ? 'outline' : 'default'}
                   onClick={confirmedBooking ? undefined : () => navigate('/my-bookings')}
@@ -763,13 +807,17 @@ export default function BookAppointmentPage() {
                 </Button>
               ) : (
                 <>
-                  <Button asChild className="flex-1 rounded-full max-md:h-16 max-md:px-8 max-md:text-lg" size="lg">
+                  <Button
+                    asChild
+                    className="customer-booking-confirm-btn h-12 flex-1 rounded-full text-base"
+                    size="lg"
+                  >
                     <Link to="/login" state={{ from: { pathname: '/my-bookings' } }}>Sign in to manage</Link>
                   </Button>
                   <Button
                     asChild
                     variant="outline"
-                    className="flex-1 rounded-full max-md:h-16 max-md:px-8 max-md:text-lg"
+                    className="customer-booking-confirm-btn h-12 flex-1 rounded-full text-base"
                     size="lg"
                   >
                     <Link to="/register">Create account</Link>
@@ -777,11 +825,12 @@ export default function BookAppointmentPage() {
                 </>
               )}
             </div>
+
             {!isAuthenticated && confirmedBooking && (
-              <p className="mt-6 text-xs text-muted-foreground">
-                Booking reference: <span className="font-mono font-medium text-foreground">{confirmedBooking.id}</span>
-                {' · '}
-                Save this if you need to contact the salon.
+              <p className="customer-booking-confirm-ref mt-5 text-xs leading-relaxed text-muted-foreground md:mt-6">
+                Booking reference:{' '}
+                <span className="font-mono font-medium text-foreground">{confirmedBooking.id}</span>
+                <span className="customer-booking-confirm-ref-hint"> — save this if you need to contact the salon.</span>
               </p>
             )}
           </CardContent>
@@ -791,66 +840,81 @@ export default function BookAppointmentPage() {
   }
 
   return (
-    <div className="customer-page customer-booking-page min-w-0 max-w-full overflow-x-hidden pb-16">
-      <section className="border-b bg-card/70 backdrop-blur-sm">
-        <div className="customer-container-wide py-8 max-md:py-6 md:py-12">
-          <div className="customer-booking-flow min-w-0">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-              <div className="min-w-0">
-                <h1 className="font-heading text-balance text-2xl font-bold sm:text-3xl md:text-4xl">
+    <div className="customer-page customer-booking-page min-w-0 w-full max-w-full overflow-x-hidden pb-16">
+      <section className="customer-booking-page-header border-b bg-card/95 backdrop-blur-md max-lg:sticky max-lg:z-40 max-lg:shadow-sm supports-[backdrop-filter]:bg-card/90">
+        <div className="customer-container-wide customer-booking-page-header-inner py-4 max-md:py-3 lg:pb-3 lg:pt-4">
+            {/* Desktop: title | stepper | start again in one row */}
+            <div className="customer-booking-page-header-desktop hidden w-full lg:grid lg:grid-cols-[minmax(0,max-content)_minmax(0,1fr)_minmax(0,max-content)] lg:items-start lg:gap-x-6 xl:gap-x-8">
+              <div className="customer-booking-page-header-title-cell flex min-w-0 items-center">
+                <h1 className="shrink-0 whitespace-nowrap font-heading text-xl font-bold leading-none xl:text-2xl">
                   Book your appointment
                 </h1>
-                <p className="mt-2 text-pretty text-sm text-muted-foreground sm:text-base">
-                  {isAuthenticated
-                    ? `Welcome back, ${user?.full_name?.split(' ')[0]} — ${CUSTOMER_BOOKING_STEPS[step].full}.`
-                    : `Booking as guest — ${CUSTOMER_BOOKING_STEPS[step].full}.`}
-                </p>
-                {!isAuthenticated && (
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Already have an account?{' '}
-                    <Link to="/login" state={{ from: { pathname: '/book' } }} className="font-medium text-primary underline">
-                      Sign in
-                    </Link>
-                    {' · '}
-                    <Link to="/register" className="font-medium text-primary underline">Create account</Link>
-                    {' '}for faster checkout and booking history.
-                  </p>
+              </div>
+              <div className="booking-stepper-wrap customer-booking-page-header-stepper min-w-0 w-full max-w-none">
+                <BookingStepper
+                  currentStep={step}
+                  onStepClick={goToStep}
+                  disabledSteps={packagePrefilled ? [1] : undefined}
+                />
+              </div>
+              <div className="customer-booking-page-header-action-cell flex shrink-0 items-center justify-end">
+                {draftReady && hasProgress && !done ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="customer-booking-start-again h-7 gap-1.5 rounded-full border-border/80 bg-card px-4 py-0 text-sm shadow-sm hover:bg-muted/60"
+                    onClick={discardDraft}
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    Start again
+                  </Button>
+                ) : (
+                  <span className="w-px shrink-0" aria-hidden />
                 )}
               </div>
-              {draftReady && hasProgress && !done && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="lg"
-                  className="customer-booking-start-again shrink-0 gap-2 rounded-full border-border/80 bg-card px-5 shadow-sm hover:bg-muted/60 max-sm:w-full sm:px-6"
-                  onClick={discardDraft}
-                >
-                  <RotateCcw className="h-4 w-4" />
-                  Start again
-                </Button>
-              )}
             </div>
-            <div className="booking-stepper-wrap mx-auto mt-6 max-md:mt-5 md:mt-8">
-              <BookingStepper
-                currentStep={step}
-                onStepClick={goToStep}
-                disabledSteps={packagePrefilled ? [1] : undefined}
-              />
+
+            {/* Mobile: unchanged stacked layout */}
+            <div className="customer-booking-flow min-w-0 max-lg:text-left lg:hidden">
+              <div className="customer-booking-page-title-row flex items-start justify-between gap-3">
+                <h1 className="min-w-0 flex-1 font-heading text-balance text-left text-xl font-bold sm:text-2xl md:text-3xl">
+                  Book your appointment
+                </h1>
+                {draftReady && hasProgress && !done && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="customer-booking-start-again shrink-0 gap-1.5 rounded-full border-border/80 bg-card px-3 shadow-sm hover:bg-muted/60 sm:gap-2 sm:px-5 md:size-lg md:px-6"
+                    onClick={discardDraft}
+                  >
+                    <RotateCcw className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <span className="text-xs sm:text-sm md:text-base">Start again</span>
+                  </Button>
+                )}
+              </div>
+              <div className="booking-stepper-wrap mx-auto mt-3 max-md:mt-3 md:mt-4">
+                <BookingStepper
+                  currentStep={step}
+                  onStepClick={goToStep}
+                  disabledSteps={packagePrefilled ? [1] : undefined}
+                />
+              </div>
             </div>
-          </div>
         </div>
       </section>
 
-      <section className="customer-container-wide py-8 max-md:py-6 md:py-12">
+      <section className="customer-container-wide py-4 max-md:py-4 md:py-5">
         <div className="customer-booking-flow-wide min-w-0">
         {step === 0 && (
-          <div className="customer-booking-flow min-w-0">
-            <h2 className="font-heading text-balance text-xl font-semibold sm:text-2xl">
+          <div className="customer-booking-step customer-booking-step--locations mx-auto w-full min-w-0">
+            <h2 className="font-heading text-balance text-lg font-semibold sm:text-xl md:text-2xl">
               {packagePrefilled && selectedPackage
                 ? 'Choose salon for your package'
                 : 'Choose your location'}
             </h2>
-            <p className="mt-2 text-pretty text-sm text-muted-foreground sm:text-base">
+            <p className="mt-1 text-pretty text-sm text-muted-foreground sm:text-base">
               {packagePrefilled && selectedPackage ? (
                 <>
                   Booking <span className="font-medium text-foreground">{selectedPackage.name}</span> —{' '}
@@ -871,7 +935,7 @@ export default function BookAppointmentPage() {
                 </span>
               </div>
             )}
-            <div className="customer-booking-cards-scroll mx-auto mt-8 grid min-w-0 max-w-full grid-cols-1 gap-6 sm:max-w-5xl md:grid-cols-2 xl:grid-cols-3">
+            <div className="customer-booking-cards-scroll customer-booking-cards-grid customer-booking-cards-grid--locations mt-4 md:mt-5">
               {branchChoices.length === 0 ? (
                 <p className="col-span-full py-12 text-center text-muted-foreground">
                   {packagePrefilled
@@ -887,12 +951,12 @@ export default function BookAppointmentPage() {
                   <Card
                     key={b.id}
                     className={cn(
-                      'customer-card-hover cursor-pointer overflow-hidden border-0 shadow-md',
+                      'customer-booking-select-card customer-card-hover cursor-pointer overflow-hidden shadow-md',
                       branch?.id === b.id && 'customer-card-selected',
                     )}
                     onClick={() => selectBranch(b, { keepPackage: packagePrefilled })}
                   >
-                    <div className="aspect-[16/10] overflow-hidden">
+                    <div className="aspect-[16/10] overflow-hidden lg:aspect-video">
                       <CoverImage
                         src={b.image_url}
                         alt={b.name}
@@ -903,13 +967,15 @@ export default function BookAppointmentPage() {
                         className="h-full w-full"
                       />
                     </div>
-                    <CardContent className="p-6">
-                      <h3 className="font-heading text-xl font-semibold">{b.name}</h3>
-                      <p className="mt-2 flex items-start gap-2 text-sm text-muted-foreground">
-                        <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                        {b.address}
-                        {b.city ? `, ${b.city}` : ''}
-                      </p>
+                    <CardContent className="customer-branch-card-body p-4 md:p-5 text-left">
+                      <div className="grid grid-cols-[1.125rem_minmax(0,1fr)] gap-x-2 gap-y-2">
+                        <h3 className="col-start-2 font-heading text-xl font-semibold leading-snug">{b.name}</h3>
+                        <MapPin className="col-start-1 row-start-2 mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                        <p className="customer-branch-card-address col-start-2 row-start-2 min-w-0 text-sm leading-relaxed text-muted-foreground">
+                          {b.address}
+                          {b.city ? `, ${b.city}` : ''}
+                        </p>
+                      </div>
                     </CardContent>
                   </Card>
                 ))
@@ -921,13 +987,15 @@ export default function BookAppointmentPage() {
         {step === 1 && !packagePrefilled && (
           <div className="customer-booking-flow">
             <h2 className="font-heading text-2xl font-semibold">Service or package</h2>
-            <p className="mt-2 text-muted-foreground">At {branch?.name} — choose what you want to book</p>
-            <div className="mt-6 flex justify-center">
+            <p className="mt-2 hidden text-muted-foreground lg:block">
+              At {branch?.name} — choose what you want to book
+            </p>
+            <div className="mt-4 flex justify-center lg:mt-6">
               <BookingOfferingToggle value={offeringType} onChange={selectOfferingType} />
             </div>
 
             {offeringType === 'service' ? (
-              <div className="customer-booking-cards-scroll mx-auto mt-8 grid min-w-0 max-w-full grid-cols-1 gap-6 sm:max-w-4xl md:grid-cols-2">
+              <div className="customer-booking-cards-scroll customer-booking-cards-grid mt-8">
                 {branchServices.length === 0 ? (
                   <p className="col-span-full text-muted-foreground">No services at this branch.</p>
                 ) : (
@@ -979,7 +1047,7 @@ export default function BookAppointmentPage() {
                 )}
               </div>
             ) : (
-              <div className="customer-booking-cards-scroll mx-auto mt-8 grid min-w-0 max-w-full grid-cols-1 gap-6 sm:max-w-4xl md:grid-cols-2">
+              <div className="customer-booking-cards-scroll customer-booking-cards-grid mt-8">
                 {branchPackages.length === 0 ? (
                   <p className="col-span-full text-muted-foreground">
                     No packages at this branch yet. Try a single service instead.
@@ -1051,7 +1119,7 @@ export default function BookAppointmentPage() {
                 ? `${selectedPackage.name} at ${branch?.name}`
                 : `Specialists available for ${lineTitle} at ${branch?.name}`}
             </p>
-            <div className="customer-booking-cards-scroll mx-auto mt-8 grid min-w-0 max-w-full grid-cols-1 gap-5 sm:max-w-3xl md:grid-cols-2">
+            <div className="customer-booking-cards-scroll customer-booking-cards-grid customer-booking-cards-grid--compact mt-8">
               {staffOptions.length === 0 ? (
                 <p className="text-muted-foreground">
                   No staff available for this {activeOfferingType === 'package' ? 'package' : 'service'}.
@@ -1061,12 +1129,12 @@ export default function BookAppointmentPage() {
                   <Card
                     key={e.id}
                     className={cn(
-                      'customer-card-hover cursor-pointer border-0 shadow-md',
+                      'customer-booking-select-card customer-card-hover customer-staff-select-card cursor-pointer overflow-hidden shadow-md',
                       employee?.id === e.id && 'customer-card-selected',
                     )}
                     onClick={() => selectEmployee(e)}
                   >
-                    <CardContent className="flex items-center gap-5 p-6">
+                    <CardContent className="flex items-center gap-4 p-5 text-left md:gap-5 md:p-6">
                       <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-border/60 bg-muted/30">
                         <CoverImage
                           src={e.image_url}
@@ -1078,15 +1146,17 @@ export default function BookAppointmentPage() {
                           className="h-16 w-16"
                         />
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="font-heading text-lg font-semibold">{e.name}</h3>
-                        <p className="text-muted-foreground">{getStaffRoleLabel(e.role)}</p>
-                        {e.rating != null && (
-                          <p className="mt-1 flex items-center gap-1 text-sm text-accent">
-                            <Star className="h-4 w-4 fill-current" />
-                            {e.rating} rating
-                          </p>
-                        )}
+                      <div className="customer-staff-card-body min-w-0 flex-1">
+                        <h3 className="font-heading text-lg font-semibold leading-tight">{e.name}</h3>
+                        <div className="mt-1 flex items-center justify-between gap-3 text-sm">
+                          <span className="text-muted-foreground">{getStaffRoleLabel(e.role)}</span>
+                          {e.rating != null && (
+                            <span className="flex shrink-0 items-center gap-1 font-medium text-accent">
+                              <Star className="h-4 w-4 fill-current" />
+                              {e.rating} rating
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -1104,9 +1174,7 @@ export default function BookAppointmentPage() {
               <span className="font-medium text-foreground">{lineDuration} min appointment</span>
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Each option is a non-overlapping visit window for this service (e.g. 09:00–11:00, then
-              11:00–13:00 for a 2-hour service). Unavailable times are hidden or marked when your
-              stylist is already booked.
+              Each slot is your full appointment window. Unavailable times are hidden or marked.
             </p>
             <Card className="mt-8 border-0 text-left shadow-md">
               <CardContent className="space-y-6 p-6 md:p-8">
@@ -1230,7 +1298,7 @@ export default function BookAppointmentPage() {
                   <Card
                     key={method.id}
                     className={cn(
-                      'customer-card-hover cursor-pointer border-0 shadow-md',
+                      'customer-card-hover cursor-pointer overflow-hidden shadow-md',
                       paymentMethod === method.id && 'customer-card-selected',
                     )}
                     onClick={() => setPaymentMethod(method.id)}

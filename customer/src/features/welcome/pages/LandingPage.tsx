@@ -55,7 +55,7 @@ export default function LandingPage() {
   useLandingImagePreload(preloadUrls);
 
   return (
-    <div className="landing-page flex min-h-screen flex-col scroll-smooth">
+    <div className="landing-page flex min-h-screen min-w-0 w-full max-w-full flex-col overflow-x-hidden scroll-smooth">
       <LandingNavbar />
       <div className="landing-hero-block">
         <LandingHeroCarousel locationLabel={locationLabel} />

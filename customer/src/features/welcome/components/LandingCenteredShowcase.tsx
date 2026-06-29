@@ -23,7 +23,7 @@ export function LandingCenteredShowcase({
 }: LandingCenteredShowcaseProps) {
   return (
     <section id={id} className={cn('landing-section scroll-mt-20 md:scroll-mt-24', className)}>
-      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+      <div className="mx-auto min-w-0 w-full max-w-7xl px-4 sm:px-6">
         <LandingSectionHeader eyebrow={eyebrow} title={title} description={description} />
 
         <div

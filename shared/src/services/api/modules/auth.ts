@@ -1,14 +1,8 @@
 import { clearSessionUserId, setSessionUserId } from '../../../lib/session-storage';
 import { apiRequest } from '../client';
-import type { User, UserRole, SalonRegistrationRequest } from '../../../types';
+import type { User, SalonRegistrationRequest } from '../../../types';
 
 export type AuthPortal = 'customer' | 'admin';
-
-const DEMO_CREDENTIALS: Partial<Record<UserRole, { email: string; password: string }>> = {
-  customer: { email: 'customer@example.com', password: 'password' },
-  admin: { email: 'salon@mitsalon.com', password: 'password' },
-  super_admin: { email: 'admin@mitsalon.com', password: 'password' },
-};
 
 function persistSession(user: User) {
   setSessionUserId(user.id);
@@ -128,13 +122,6 @@ async function confirmEmailChange(
   });
 }
 
-async function loginAsDemo(role: UserRole): Promise<User> {
-  const creds = DEMO_CREDENTIALS[role];
-  if (!creds) throw new Error(`No demo credentials for role: ${role}`);
-  const portal: AuthPortal = role === 'customer' ? 'customer' : 'admin';
-  return login(creds.email, creds.password, portal);
-}
-
 export type SalonRegistrationPayload = {
   email: string;
   registrationToken: string;
@@ -209,7 +196,6 @@ export const authApi = {
   completeSalonRegistration,
   getSalonRegistrationStatus,
   restoreSession: restoreSessionLocal,
-  loginAsDemo,
 };
 
 authApi.restoreSession();

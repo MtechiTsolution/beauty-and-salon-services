@@ -13,7 +13,7 @@ type LandingStatsBarProps = {
 export function LandingStatsBar({ stats }: LandingStatsBarProps) {
   return (
     <section className="landing-stats-bar">
-      <div className="landing-stats-bar__inner mx-auto grid max-w-6xl grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 md:gap-5">
+      <div className="landing-stats-bar__inner mx-auto grid min-w-0 w-full max-w-6xl grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4 md:gap-5">
         {stats.map(({ icon: Icon, label, value }) => (
           <div key={label} className="landing-stat-card group">
             <div className="landing-stat-card__icon">

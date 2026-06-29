@@ -60,7 +60,7 @@ export function LandingPackagesCarousel({ packages, branches, services }: Landin
             : null;
 
         return (
-          <CarouselItem key={pkg.id} className="flex basis-[90%] pl-2 sm:basis-1/2 sm:pl-4 lg:basis-1/3">
+          <CarouselItem key={pkg.id} className="flex basis-full pl-0 sm:basis-1/2 sm:pl-4 lg:basis-1/3">
             <CustomerPackageCard
               className="w-full"
               pkg={pkg}

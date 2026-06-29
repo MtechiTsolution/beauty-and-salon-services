@@ -7,6 +7,7 @@ import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@mit-salon/shared/components/ui/card';
 import { CoverImage } from '@mit-salon/shared/components/CoverImage';
 import { Input } from '@mit-salon/shared/components/ui/input';
+import { PasswordInput } from '@mit-salon/shared/components/ui/password-input';
 import { Label } from '@mit-salon/shared/components/ui/label';
 import { Textarea } from '@mit-salon/shared/components/ui/textarea';
 import { APP_NAME } from '@mit-salon/shared/lib/constants';
@@ -169,7 +170,7 @@ export default function RegisterSalonPage() {
   };
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-2">
+    <div className="grid min-h-screen min-w-0 max-w-full overflow-x-clip lg:grid-cols-2">
       <div className="relative hidden lg:block">
         <CoverImage src={IMAGES.branches.downtown} alt="Salon business" className="absolute inset-0" />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-900/40 to-slate-900/20" />
@@ -297,9 +298,8 @@ export default function RegisterSalonPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
-                  <Input
+                  <PasswordInput
                     id="password"
-                    type="password"
                     className="h-11"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -310,9 +310,8 @@ export default function RegisterSalonPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirm-password">Confirm password</Label>
-                  <Input
+                  <PasswordInput
                     id="confirm-password"
-                    type="password"
                     className="h-11"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}

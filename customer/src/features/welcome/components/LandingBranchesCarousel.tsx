@@ -8,7 +8,7 @@ import { MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const bookButtonClass =
-  'mt-auto h-10 w-full rounded-full text-sm font-semibold sm:h-11 sm:text-base';
+  'mt-4 h-10 w-full rounded-full text-sm font-semibold max-md:mt-3 sm:mt-auto sm:h-11 sm:text-base';
 
 type LandingBranchesCarouselProps = {
   branches: Branch[];
@@ -49,20 +49,22 @@ export function LandingBranchesCarousel({ branches }: LandingBranchesCarouselPro
                 className="h-full w-full object-cover transition duration-700 hover:scale-105"
               />
             </div>
-            <CardContent className="flex flex-1 flex-col p-5 text-center sm:p-6">
-              <h3 className="font-heading line-clamp-2 min-h-[3.25rem] text-xl font-semibold leading-snug tracking-tight">
+            <CardContent className="landing-branch-showcase-body flex flex-col p-5 text-center sm:flex-1 sm:p-6">
+              <h3 className="font-heading line-clamp-2 text-xl font-semibold leading-snug tracking-tight sm:min-h-[3.25rem]">
                 {branch.name}
               </h3>
-              <p className="mt-2 flex min-h-[2.75rem] items-start justify-center gap-2 text-sm leading-relaxed text-muted-foreground">
+              <p className="mt-2 flex items-start justify-center gap-2 text-sm leading-relaxed text-muted-foreground sm:min-h-[2.75rem]">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                 <span className="line-clamp-2 text-left">
                   {branch.address}
                   {branch.city ? `, ${branch.city}` : ''}
                 </span>
               </p>
-              <p className="mt-3 line-clamp-2 min-h-[2.75rem] text-sm leading-relaxed text-muted-foreground">
-                {branch.description?.trim() || '\u00A0'}
-              </p>
+              {branch.description?.trim() ? (
+                <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-muted-foreground sm:min-h-[2.75rem]">
+                  {branch.description.trim()}
+                </p>
+              ) : null}
               <Button asChild className={bookButtonClass}>
                 <Link to={bookHref}>Book at this location</Link>
               </Button>

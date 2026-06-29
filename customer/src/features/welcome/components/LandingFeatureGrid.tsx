@@ -29,7 +29,7 @@ export function LandingFeatureGrid() {
         const href = feature.requiresAuth ? (isAuthenticated ? feature.path : '/register') : feature.path;
 
         return (
-          <CarouselItem key={feature.title} className="basis-[90%] pl-2 sm:basis-1/2 sm:pl-4 lg:basis-1/3">
+          <CarouselItem key={feature.title} className="basis-full pl-0 sm:basis-1/2 sm:pl-4 lg:basis-1/3">
             <Card className="landing-showcase-card group h-full">
               <CardContent className="flex h-full flex-col p-5 sm:p-7">
                 <div className="landing-feature-icon">

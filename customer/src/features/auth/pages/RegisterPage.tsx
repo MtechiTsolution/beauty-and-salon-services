@@ -3,6 +3,7 @@ import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@mit-salon/shared/components/ui/card';
 import { CoverImage } from '@mit-salon/shared/components/CoverImage';
 import { Input } from '@mit-salon/shared/components/ui/input';
+import { PasswordInput } from '@mit-salon/shared/components/ui/password-input';
 import { Label } from '@mit-salon/shared/components/ui/label';
 import { APP_NAME } from '@mit-salon/shared/lib/constants';
 import { IMAGES } from '@mit-salon/shared/lib/images';
@@ -31,7 +32,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-2">
+    <div className="grid min-h-screen min-w-0 max-w-full overflow-x-clip lg:grid-cols-2">
       <div className="relative hidden lg:block">
         <CoverImage src={IMAGES.branches.uptown} alt="Salon interior" className="absolute inset-0" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-black/20" />
@@ -47,7 +48,7 @@ export default function RegisterPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {(['full_name', 'email', 'phone', 'password'] as const).map((field) => (
+              {(['full_name', 'email', 'phone'] as const).map((field) => (
                 <div key={field} className="space-y-2">
                   <Label htmlFor={field}>
                     {field === 'full_name' ? 'Full name' : field.charAt(0).toUpperCase() + field.slice(1)}
@@ -55,13 +56,24 @@ export default function RegisterPage() {
                   <Input
                     id={field}
                     className="h-11"
-                    type={field === 'password' ? 'password' : field === 'email' ? 'email' : 'text'}
+                    type={field === 'email' ? 'email' : 'text'}
                     required={field !== 'phone'}
                     value={form[field]}
                     onChange={(e) => setForm({ ...form, [field]: e.target.value })}
                   />
                 </div>
               ))}
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <PasswordInput
+                  id="password"
+                  className="h-11"
+                  required
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  autoComplete="new-password"
+                />
+              </div>
               <Button type="submit" className="customer-primary-btn customer-btn-glow h-11 w-full rounded-full" disabled={loading}>
                 {loading ? 'Creating account...' : 'Create account'}
               </Button>

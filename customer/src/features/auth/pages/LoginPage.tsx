@@ -4,6 +4,7 @@ import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@mit-salon/shared/components/ui/card';
 import { CoverImage } from '@mit-salon/shared/components/CoverImage';
 import { Input } from '@mit-salon/shared/components/ui/input';
+import { PasswordInput } from '@mit-salon/shared/components/ui/password-input';
 import { Label } from '@mit-salon/shared/components/ui/label';
 import { APP_NAME } from '@mit-salon/shared/lib/constants';
 import { IMAGES } from '@mit-salon/shared/lib/images';
@@ -11,16 +12,14 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 
-const ADMIN_APP_URL = import.meta.env.VITE_ADMIN_APP_URL ?? 'http://localhost:5174';
-
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/book';
 
-  const [email, setEmail] = useState('customer@example.com');
-  const [password, setPassword] = useState('password');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -28,8 +27,9 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const user = await login(email, password);
-      if (user?.role === 'admin') {
-        window.location.href = ADMIN_APP_URL;
+      if (user?.role !== 'customer') {
+        await logout();
+        toast.error('This account uses salon admin (5174) or platform admin (5175) — open that port manually.');
         return;
       }
       toast.success('Welcome back!');
@@ -42,7 +42,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-2">
+    <div className="grid min-h-screen min-w-0 max-w-full overflow-x-clip lg:grid-cols-2">
       <div className="relative hidden lg:block">
         <CoverImage src={IMAGES.hero} alt="Salon" className="absolute inset-0" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-black/20" />
@@ -75,7 +75,7 @@ export default function LoginPage() {
                     Forgot password?
                   </Link>
                 </div>
-                <Input id="password" type="password" className="h-11" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                <PasswordInput id="password" className="h-11" value={password} onChange={(e) => setPassword(e.target.value)} required />
               </div>
               <Button type="submit" className="customer-primary-btn customer-btn-glow h-11 w-full rounded-full" disabled={loading}>
                 {loading ? 'Signing in...' : 'Sign in'}

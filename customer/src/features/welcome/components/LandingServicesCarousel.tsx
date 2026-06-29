@@ -35,7 +35,7 @@ export function LandingServicesCarousel({ services, reviews = [] }: LandingServi
       autoplayDelay={5000}
     >
       {activeServices.map((service) => (
-        <CarouselItem key={service.id} className="flex basis-[90%] pl-2 sm:basis-1/2 sm:pl-4 lg:basis-1/3">
+        <CarouselItem key={service.id} className="flex basis-full pl-0 sm:basis-1/2 sm:pl-4 lg:basis-1/3">
           <Card className="landing-showcase-card landing-showcase-card--media flex h-full w-full flex-col overflow-hidden">
             <div className="landing-media-frame aspect-[16/10] shrink-0 overflow-hidden">
               <LandingCoverImage
