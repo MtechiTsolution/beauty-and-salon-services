@@ -1,18 +1,22 @@
 import { BookingCard } from '@/features/my-bookings/components/BookingCard';
 import { CancelBookingConfirmDialog } from '@/features/my-bookings/components/CancelBookingConfirmDialog';
 import { BookingReviewDialog } from '@/features/my-bookings/components/BookingReviewDialog';
+import { MyBookingsMobileDateFilter } from '@/features/my-bookings/components/MyBookingsDateFilter';
 import { CustomerViewToggle } from '@/features/shared/CustomerViewToggle';
 import { useCustomerViewMode } from '@/features/shared/useCustomerViewMode';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { bookingsApi, reviewsApi } from '@mit-salon/shared/api';
-import { BookingDateRangeFilter } from '@mit-salon/shared/components/BookingDateRangeFilter';
+import { BookingDateRangeFilterPanel } from '@mit-salon/shared/components/BookingDateRangeFilterPanel';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent } from '@mit-salon/shared/components/ui/card';
 import { canReviewBooking, hasReviewForBooking } from '@mit-salon/shared/lib/booking-reviews';
 import {
+  detectBookingDateQuickPreset,
   filterBookingsByDateRange,
+  getBookingDateQuickPresetRange,
   hasActiveBookingDateRange,
   isBookingDateRangeValid,
+  type BookingDateQuickPreset,
   type BookingDateRange,
 } from '@mit-salon/shared/lib/booking-date-filter';
 import { invalidateAllCatalogQueries } from '@mit-salon/shared/lib/catalog-query-keys';
@@ -32,6 +36,7 @@ export default function MyBookingsPage() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [appliedDateRange, setAppliedDateRange] = useState<BookingDateRange>({});
+  const [activePreset, setActivePreset] = useState<BookingDateQuickPreset | 'custom' | null>(null);
 
   const { data: bookings = [] } = useQuery({
     queryKey: ['my-bookings', user?.email],
@@ -80,59 +85,108 @@ export default function MyBookingsPage() {
 
   const dateFilterActive = hasActiveBookingDateRange(appliedDateRange);
 
-  const applyDateFilter = () => {
+  const selectQuickPreset = (preset: BookingDateQuickPreset) => {
+    const range = getBookingDateQuickPresetRange(preset);
+    setActivePreset(preset);
+    setDateFrom(range.from ?? '');
+    setDateTo(range.to ?? '');
+    setAppliedDateRange(range);
+  };
+
+  const selectCustomPreset = () => {
+    setActivePreset('custom');
+  };
+
+  const applyCustomDateFilter = () => {
     if (!dateFrom && !dateTo) {
-      setAppliedDateRange({});
+      clearDateFilter();
       return;
     }
     if (!isBookingDateRangeValid(dateFrom, dateTo)) {
       toast.error('Start date must be on or before end date');
       return;
     }
+    setActivePreset('custom');
     setAppliedDateRange({
       from: dateFrom || undefined,
       to: dateTo || undefined,
     });
   };
 
+  const applyDateFilter = () => {
+    if (!dateFrom && !dateTo) {
+      clearDateFilter();
+      return;
+    }
+    if (!isBookingDateRangeValid(dateFrom, dateTo)) {
+      toast.error('Start date must be on or before end date');
+      return;
+    }
+    setActivePreset(null);
+    setAppliedDateRange({
+      from: dateFrom || undefined,
+      to: dateTo || undefined,
+    });
+  };
+
+  const applyDatePreset = (range: BookingDateRange) => {
+    setDateFrom(range.from ?? '');
+    setDateTo(range.to ?? '');
+    setActivePreset(detectBookingDateQuickPreset(range));
+    setAppliedDateRange(range);
+  };
+
   const clearDateFilter = () => {
     setDateFrom('');
     setDateTo('');
     setAppliedDateRange({});
+    setActivePreset(null);
   };
 
   return (
     <div className="customer-page">
       <div className="customer-container-wide py-12 md:py-16">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="font-heading text-3xl font-bold md:text-4xl">My bookings</h1>
-            <p className="mt-2 text-muted-foreground">
-              Manage appointments, chat with your salon, and leave reviews for completed visits with confirmed payment.
-            </p>
-          </div>
+        <div className="customer-my-bookings-header flex items-center justify-between gap-3">
+          <h1 className="font-heading min-w-0 shrink text-3xl font-bold md:text-4xl">My bookings</h1>
           {bookings.length > 0 && (
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-muted-foreground">
+            <div className="customer-my-bookings-header__actions flex shrink-0 items-center gap-3">
+              <span className="whitespace-nowrap text-sm text-muted-foreground">
                 {dateFilterActive
                   ? `${filteredBookings.length} of ${bookings.length} booking${bookings.length !== 1 ? 's' : ''}`
                   : `${bookings.length} booking${bookings.length !== 1 ? 's' : ''}`}
               </span>
               <CustomerViewToggle view={view} onViewChange={setView} />
+              <div className="customer-my-bookings-header__filter lg:hidden">
+                <MyBookingsMobileDateFilter
+                  activePreset={activePreset ?? detectBookingDateQuickPreset(appliedDateRange)}
+                  dateFilterActive={dateFilterActive}
+                  from={dateFrom}
+                  to={dateTo}
+                  showClear={dateFilterActive}
+                  onPresetSelect={selectQuickPreset}
+                  onCustomSelect={selectCustomPreset}
+                  onFromChange={setDateFrom}
+                  onToChange={setDateTo}
+                  onApplyCustom={applyCustomDateFilter}
+                  onClear={clearDateFilter}
+                />
+              </div>
             </div>
           )}
         </div>
 
         {bookings.length > 0 && (
-          <BookingDateRangeFilter
-            className="mt-6"
+          <BookingDateRangeFilterPanel
+            className="mt-6 hidden lg:block"
             variant="customer"
             idPrefix="my-bookings-date"
             from={dateFrom}
             to={dateTo}
+            appliedRange={appliedDateRange}
             onFromChange={setDateFrom}
             onToChange={setDateTo}
-            onApply={applyDateFilter}
+            onApplyCustom={applyDateFilter}
+            onPresetApply={applyDatePreset}
             onClear={clearDateFilter}
             showClear={dateFilterActive}
           />
@@ -150,7 +204,7 @@ export default function MyBookingsPage() {
                     {pendingReviewBookings.length} visit{pendingReviewBookings.length !== 1 ? 's' : ''} ready to review
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Completed and paid — tap <strong>Leave review</strong> on the booking below.
+                    Confirmed, paid visits that are complete — tap <strong>Leave review</strong> on the booking below.
                   </p>
                 </div>
               </div>

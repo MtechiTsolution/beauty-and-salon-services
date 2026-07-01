@@ -7,10 +7,11 @@ import { useLandingNavbarScroll } from '@/features/welcome/hooks/useLandingNavba
 import { AppLogo } from '@mit-salon/shared/components/AppLogo';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { cn } from '@mit-salon/shared/lib/utils';
-import { CalendarDays, LogIn, Menu, UserPlus, X } from 'lucide-react';
+import { useLogoutConfirm } from '@mit-salon/shared/hooks/useLogoutConfirm';
+import { CalendarDays, LogIn, LogOut, Menu, UserPlus, X } from 'lucide-react';
 import type { MouseEvent } from 'react';
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 const anchorLinks = [
   { label: 'Features', href: '#features' },
   { label: 'Services', href: '#services' },
@@ -24,10 +25,17 @@ type LandingNavbarProps = {
 };
 
 export function LandingNavbar({ className }: LandingNavbarProps) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
   const scrolled = useLandingNavbarScroll();
   const location = useLocation();
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { requestLogout, loading: loggingOut, logoutDialog } = useLogoutConfirm(logout, {
+    onSuccess: () => {
+      setMobileOpen(false);
+      navigate('/landing');
+    },
+  });
 
   const onHomeClick = (event: MouseEvent<HTMLAnchorElement>) => {
     setMobileOpen(false);
@@ -35,7 +43,9 @@ export function LandingNavbar({ className }: LandingNavbarProps) {
   };
 
   return (
-    <header
+    <>
+      {logoutDialog}
+      <header
       className={cn(
         'landing-navbar fixed inset-x-0 top-0 z-50 transition-all duration-300',
         scrolled ? 'landing-navbar--solid border-b' : 'landing-navbar--hero border-b backdrop-blur-md',
@@ -166,11 +176,23 @@ export function LandingNavbar({ className }: LandingNavbarProps) {
             ))}
             <div className="mt-3 flex flex-col gap-2 border-t border-border/40 pt-3">
               {isAuthenticated ? (
-                <Button asChild className="customer-accent-btn w-full rounded-full border-0">
-                  <Link to="/book" onClick={() => setMobileOpen(false)}>
-                    Book appointment
-                  </Link>
-                </Button>
+                <>
+                  <Button asChild className="customer-accent-btn w-full rounded-full border-0">
+                    <Link to="/book" onClick={() => setMobileOpen(false)}>
+                      Book appointment
+                    </Link>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    disabled={loggingOut}
+                    onClick={requestLogout}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    {loggingOut ? 'Signing out…' : 'Logout'}
+                  </Button>
+                </>
               ) : (
                 <>
                   <Button asChild variant="outline" className="w-full rounded-full">
@@ -190,5 +212,6 @@ export function LandingNavbar({ className }: LandingNavbarProps) {
         </div>
       ) : null}
     </header>
+    </>
   );
 }

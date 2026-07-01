@@ -89,6 +89,7 @@ export interface Booking extends BaseEntity {
   payment_status: PaymentStatus;
   payment_method?: string;
   notes?: string;
+  cancellation_reason?: string;
 }
 
 export interface Coupon extends BaseEntity {
@@ -207,6 +208,7 @@ export interface ActivityLog {
   branch_id?: string;
   branch_name?: string;
   actor_user_id?: string;
+  actor_name?: string;
   actor_email?: string;
   actor_role?: string;
   action: string;

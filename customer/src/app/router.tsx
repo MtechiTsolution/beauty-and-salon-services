@@ -1,5 +1,6 @@
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import ForgotPasswordPage from '@/features/auth/pages/ForgotPasswordPage';
+import ResetPasswordPage from '@/features/auth/pages/ResetPasswordPage';
 import LoginPage from '@/features/auth/pages/LoginPage';
 import RegisterPage from '@/features/auth/pages/RegisterPage';
 import RegisterSalonPage from '@/features/auth/pages/RegisterSalonPage';
@@ -29,6 +30,7 @@ export function AppRouter() {
         <Route path="/landing" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/register-salon" element={<RegisterSalonPage />} />
 

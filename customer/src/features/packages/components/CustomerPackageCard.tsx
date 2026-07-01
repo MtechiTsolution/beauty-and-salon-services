@@ -22,7 +22,7 @@ function pricePerSession(pkg: Package): string {
 }
 
 const bookButtonClass =
-  'mt-auto h-10 w-full rounded-full text-sm font-semibold shadow-sm sm:h-11 sm:text-base';
+  'mt-auto h-9 w-full rounded-full text-sm font-semibold shadow-sm sm:h-10';
 
 export function CustomerPackageCard({
   pkg,
@@ -44,8 +44,8 @@ export function CustomerPackageCard({
     >
       <div
         className={cn(
-          'relative shrink-0 overflow-hidden',
-          compact ? 'aspect-[4/3] min-h-[14rem] sm:min-h-[16rem]' : 'aspect-[5/3]',
+          'customer-package-card__media relative shrink-0 overflow-hidden',
+          compact ? 'aspect-[5/3] min-h-[10.5rem] sm:min-h-[11.5rem]' : 'aspect-[5/3]',
         )}
       >
         <CoverImage
@@ -60,20 +60,25 @@ export function CustomerPackageCard({
           className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.03]"
         />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent sm:from-black/75 sm:via-black/20" />
-        <div className="absolute left-4 top-4 flex items-center gap-2">
+        <div className="customer-package-card__badges absolute left-3 top-3 flex flex-wrap items-center gap-1.5 sm:left-4 sm:top-4 sm:gap-2">
           <span className="customer-package-price-badge">${pkg.price.toFixed(0)}</span>
           {pkg.total_sessions > 1 ? (
             <span className="customer-package-savings-badge">{perSession}/session</span>
           ) : null}
         </div>
-        <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
-          <h3 className="font-heading text-lg font-semibold tracking-tight text-white drop-shadow-sm sm:text-xl">
+        <div className="customer-package-card__title-wrap absolute inset-x-0 bottom-0 p-2.5 sm:p-4">
+          <h3 className="customer-package-card__title font-heading text-base font-semibold tracking-tight text-white drop-shadow-sm sm:text-lg">
             {pkg.name}
           </h3>
         </div>
       </div>
 
-      <div className={cn('flex flex-1 flex-col', compact ? 'p-4' : 'p-5 sm:p-6')}>
+      <div
+        className={cn(
+          'customer-package-card__body flex flex-1 flex-col',
+          compact ? 'p-3.5 sm:p-4' : 'p-5 sm:p-6',
+        )}
+      >
         <div className="customer-package-chips flex gap-1.5 sm:flex-wrap sm:gap-2">
           <span className="customer-package-chip">
             <Layers className="h-3.5 w-3.5" />
@@ -89,28 +94,28 @@ export function CustomerPackageCard({
           </span>
         </div>
 
-        <p className="mt-3 line-clamp-2 min-h-[2.75rem] text-sm leading-relaxed text-muted-foreground">
+        <p className="customer-package-card__desc mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground sm:text-sm">
           {pkg.description?.trim() || '\u00A0'}
         </p>
 
-        <p className="mt-2 flex min-h-[1.25rem] items-center gap-1.5 text-xs font-medium text-muted-foreground">
-          {locationLabel ? (
-            <>
-              <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
-              {locationLabel}
-            </>
-          ) : (
-            '\u00A0'
-          )}
-        </p>
+        {locationLabel ? (
+          <p className="customer-package-card__location mt-2 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
+            <span className="min-w-0 truncate">{locationLabel}</span>
+          </p>
+        ) : (
+          <p className="customer-package-card__location mt-2 min-h-[1.25rem] sm:min-h-[1.25rem]" aria-hidden>
+            {'\u00A0'}
+          </p>
+        )}
 
         {showBookButton &&
           (bookHref ? (
-            <Button asChild className={bookButtonClass}>
+            <Button asChild className={cn(bookButtonClass, 'customer-package-card__cta')}>
               <Link to={bookHref}>Book package</Link>
             </Button>
           ) : (
-            <Button type="button" className={bookButtonClass} onClick={onBook}>
+            <Button type="button" className={cn(bookButtonClass, 'customer-package-card__cta')} onClick={onBook}>
               Book package
             </Button>
           ))}

@@ -84,41 +84,41 @@ export function LandingFooter() {
 
           <div className="text-center lg:col-span-3 lg:text-left max-md:text-left max-md:rounded-xl max-md:border max-md:border-border/60 max-md:bg-card/40 max-md:p-4 max-md:shadow-sm">
             <p className="footer-section-title max-md:text-base">Contact</p>
-            <ul className="mt-5 space-y-4 max-md:mt-3 max-md:space-y-3">
+            <ul className="footer-contact-list mt-5 space-y-4 max-md:mt-3 max-md:space-y-3">
               <li>
                 <a
                   href={`tel:${SALON_SUPPORT.phone.replace(/\D/g, '')}`}
-                  className="footer-link footer-contact-row block max-md:flex max-md:items-center max-md:gap-2.5 max-md:text-sm"
+                  className="footer-contact-item footer-link"
                 >
-                  <span className="footer-contact-icon hidden max-md:flex max-md:h-5 max-md:w-4 max-md:shrink-0 max-md:items-center max-md:justify-center">
-                    <Phone className="h-4 w-4 text-primary" aria-hidden />
+                  <span className="footer-contact-icon" aria-hidden>
+                    <Phone className="h-4 w-4 text-primary" />
                   </span>
-                  <span className="min-w-0">{SALON_SUPPORT.phone}</span>
+                  <span className="footer-contact-text">{SALON_SUPPORT.phone}</span>
                 </a>
               </li>
               <li>
                 <a
                   href={`mailto:${SALON_SUPPORT.email}`}
-                  className="footer-link footer-contact-row block break-all max-md:flex max-md:items-center max-md:gap-2.5 max-md:break-normal max-md:text-sm sm:break-normal"
+                  className="footer-contact-item footer-link"
                 >
-                  <span className="footer-contact-icon hidden max-md:flex max-md:h-5 max-md:w-4 max-md:shrink-0 max-md:items-center max-md:justify-center">
-                    <Mail className="h-4 w-4 text-primary" aria-hidden />
+                  <span className="footer-contact-icon" aria-hidden>
+                    <Mail className="h-4 w-4 text-primary" />
                   </span>
-                  <span className="min-w-0">{SALON_SUPPORT.email}</span>
+                  <span className="footer-contact-text break-all sm:break-normal">{SALON_SUPPORT.email}</span>
                 </a>
               </li>
-              <li className="footer-body-text text-muted-foreground">
-                <span className="max-md:hidden">{SALON_SUPPORT.hours}</span>
-                <div className="footer-contact-hours hidden max-md:flex max-md:items-start max-md:gap-2.5">
-                  <span className="footer-contact-icon flex h-5 w-4 shrink-0 items-center justify-center">
-                    <Clock className="h-4 w-4 text-primary" aria-hidden />
-                  </span>
-                  <div className="min-w-0 flex-1 space-y-1 text-xs leading-snug">
-                    {supportHourLines.map((line) => (
-                      <p key={line}>{line}</p>
-                    ))}
-                  </div>
-                </div>
+              <li className="footer-contact-item footer-contact-item--static footer-body-text text-muted-foreground">
+                <span className="footer-contact-icon max-md:flex" aria-hidden>
+                  <Clock className="h-4 w-4 text-primary" />
+                </span>
+                <span className="footer-contact-text max-md:hidden">{SALON_SUPPORT.hours}</span>
+                <span className="footer-contact-text footer-contact-hours-lines hidden max-md:block">
+                  {supportHourLines.map((line) => (
+                    <span key={line} className="footer-contact-hours-line">
+                      {line}
+                    </span>
+                  ))}
+                </span>
               </li>
             </ul>
           </div>

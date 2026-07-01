@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
+  detectBookingDateQuickPreset,
   filterBookingsByDateRange,
+  getBookingDateQuickPresetRange,
   hasActiveBookingDateRange,
   isBookingDateInRange,
   isBookingDateRangeValid,
@@ -37,5 +39,19 @@ describe('booking-date-filter', () => {
   it('hasActiveBookingDateRange', () => {
     assert.equal(hasActiveBookingDateRange({}), false);
     assert.equal(hasActiveBookingDateRange({ from: '2026-06-01' }), true);
+  });
+
+  it('getBookingDateQuickPresetRange today', () => {
+    const now = new Date(2026, 5, 19, 15, 30);
+    const range = getBookingDateQuickPresetRange('today', now);
+    assert.deepEqual(range, { from: '2026-06-19', to: '2026-06-19' });
+  });
+
+  it('detectBookingDateQuickPreset', () => {
+    const now = new Date(2026, 5, 19);
+    const todayRange = getBookingDateQuickPresetRange('today', now);
+    assert.equal(detectBookingDateQuickPreset(todayRange, now), 'today');
+    assert.equal(detectBookingDateQuickPreset({ from: '2026-01-01', to: '2026-01-31' }, now), 'custom');
+    assert.equal(detectBookingDateQuickPreset({}, now), null);
   });
 });

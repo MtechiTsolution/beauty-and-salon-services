@@ -1,14 +1,17 @@
+import { useAuth } from '@/features/auth/context/AuthContext';
 import { customerNavLinks } from '@/features/layout/customer-nav-links';
 import {
   CUSTOMER_HOME_PATH,
   handleCustomerHomeClick,
 } from '@/features/layout/customer-home-nav';
-import { AppLogo } from '@mit-salon/shared/components/AppLogo';import { Button } from '@mit-salon/shared/components/ui/button';
+import { AppLogo } from '@mit-salon/shared/components/AppLogo';
+import { Button } from '@mit-salon/shared/components/ui/button';
 import { cn } from '@mit-salon/shared/lib/utils';
-import { X } from 'lucide-react';
+import { useLogoutConfirm } from '@mit-salon/shared/hooks/useLogoutConfirm';
+import { LogOut, X } from 'lucide-react';
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 const mainNavLinks = customerNavLinks.filter((l) => l.path !== '/profile');
 const profileLink = customerNavLinks.find((l) => l.path === '/profile');
@@ -20,6 +23,14 @@ type CustomerMobileDrawerProps = {
 
 export function CustomerMobileDrawer({ open, onClose }: CustomerMobileDrawerProps) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuth();
+  const { requestLogout, loading: loggingOut, logoutDialog } = useLogoutConfirm(logout, {
+    onSuccess: () => {
+      onClose();
+      navigate('/landing');
+    },
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -45,7 +56,9 @@ export function CustomerMobileDrawer({ open, onClose }: CustomerMobileDrawerProp
   const ProfileIcon = profileLink?.icon;
 
   return createPortal(
-    <div className="customer-drawer-root lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
+    <>
+      {logoutDialog}
+      <div className="customer-drawer-root lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
       <button
         type="button"
         className="customer-drawer-overlay"
@@ -101,30 +114,46 @@ export function CustomerMobileDrawer({ open, onClose }: CustomerMobileDrawerProp
 
         {profileLink && ProfileIcon && (
           <div className="customer-drawer-footer">
-            <Link
-              to={profileLink.path}
-              onClick={onClose}
-              className={cn(
-                'customer-drawer-link',
-                location.pathname === profileLink.path && 'customer-drawer-link--active',
-              )}
-            >
-              <span className="customer-drawer-link-icon">
-                <ProfileIcon className="h-5 w-5" />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block font-medium leading-snug">{profileLink.label}</span>
-                {profileLink.description && (
-                  <span className="block text-xs leading-snug text-muted-foreground">
-                    {profileLink.description}
-                  </span>
+            {isAuthenticated && user ? (
+              <div
+                className={cn(
+                  'customer-drawer-profile-row',
+                  location.pathname === profileLink.path && 'customer-drawer-profile-row--active',
                 )}
-              </span>
-            </Link>
+              >
+                <Link
+                  to={profileLink.path}
+                  onClick={onClose}
+                  className="customer-drawer-profile-row__main"
+                >
+                  <span className="customer-drawer-link-icon">
+                    <ProfileIcon className="h-5 w-5" />
+                  </span>
+                  <span className="customer-drawer-profile-row__text">
+                    <span className="block truncate font-medium leading-snug">{user.full_name}</span>
+                    <span className="block truncate text-xs leading-snug text-muted-foreground">{user.email}</span>
+                  </span>
+                </Link>
+                <button
+                  type="button"
+                  className="customer-drawer-profile-row__logout"
+                  onClick={requestLogout}
+                  disabled={loggingOut}
+                  aria-label={loggingOut ? 'Signing out' : 'Logout'}
+                >
+                  <LogOut className="h-5 w-5" />
+                </button>
+              </div>
+            ) : (
+              <Link to="/login" onClick={onClose} className="customer-drawer-link">
+                <span className="min-w-0 flex-1 font-medium">Sign in</span>
+              </Link>
+            )}
           </div>
         )}
       </aside>
-    </div>,
+    </div>
+    </>,
     document.body,
   );
 }

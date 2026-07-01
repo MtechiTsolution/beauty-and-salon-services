@@ -80,10 +80,10 @@ export default function ExplorePage() {
       <section className="mt-12 md:mt-16">
         <h2 className="font-heading text-2xl font-bold md:text-3xl">All locations</h2>
         <p className="mt-2 text-muted-foreground">Choose the salon nearest to you when you book.</p>
-        <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="customer-explore-grid mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
           {activeBranches.map((b) => (
-            <Card key={b.id} className="customer-card-hover overflow-hidden border-0 shadow-md">
-              <div className="aspect-[16/10] overflow-hidden">
+            <Card key={b.id} className="customer-explore-card customer-card-hover overflow-hidden border-0 shadow-md">
+              <div className="customer-explore-card__media aspect-[16/10] shrink-0 overflow-hidden">
                 <CoverImage
                   src={b.image_url}
                   alt={b.name}
@@ -94,19 +94,21 @@ export default function ExplorePage() {
                   className="h-full w-full object-cover"
                 />
               </div>
-              <CardContent className="customer-branch-card-body p-6 text-left">
+              <CardContent className="customer-explore-card__body customer-branch-card-body p-6 text-left">
                 <div className="grid grid-cols-[1.125rem_minmax(0,1fr)] gap-x-2 gap-y-2">
-                  <h3 className="col-start-2 font-heading text-xl font-semibold leading-snug">{b.name}</h3>
+                  <h3 className="customer-explore-card__title col-start-2 font-heading text-xl font-semibold leading-snug">
+                    {b.name}
+                  </h3>
                   <MapPin className="col-start-1 row-start-2 mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                  <p className="col-start-2 row-start-2 min-w-0 text-sm leading-relaxed text-muted-foreground">
+                  <p className="customer-explore-card__address col-start-2 row-start-2 min-w-0 text-sm leading-relaxed text-muted-foreground">
                     {b.address}
                     {b.city ? `, ${b.city}` : ''}
                   </p>
                 </div>
-                {b.description && (
-                  <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">{b.description}</p>
-                )}
-                <Button asChild variant="outline" className="mt-5 w-full rounded-full">
+                <p className="customer-explore-card__description mt-3 line-clamp-2 text-sm text-muted-foreground">
+                  {b.description?.trim() || '\u00A0'}
+                </p>
+                <Button asChild variant="outline" className="customer-explore-card__cta mt-5 w-full rounded-full">
                   <Link to="/book">Book at this location</Link>
                 </Button>
               </CardContent>
@@ -136,13 +138,13 @@ export default function ExplorePage() {
         </div>
       </section>
 
-      <section className="mt-12 border-t border-border/60 pt-12 md:mt-16 md:pt-16">
+      <section className="mt-8 border-t border-border/60 pt-6 md:mt-10 md:pt-8">
         <h2 className="font-heading text-2xl font-bold md:text-3xl">Popular services</h2>
         <p className="mt-2 text-muted-foreground">Expert care tailored to your style.</p>
-        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="customer-explore-grid mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {activeServices.map((s) => (
-            <Card key={s.id} className="customer-card-hover overflow-hidden border-0 shadow-md">
-              <div className="aspect-[4/3] overflow-hidden">
+            <Card key={s.id} className="customer-explore-card customer-card-hover overflow-hidden border-0 shadow-md">
+              <div className="customer-explore-card__media aspect-[4/3] shrink-0 overflow-hidden">
                 <CoverImage
                   src={s.image_url}
                   alt={s.title}
@@ -153,18 +155,26 @@ export default function ExplorePage() {
                   className="h-full w-full"
                 />
               </div>
-              <CardContent className="p-6">
-                <h3 className="font-heading text-lg font-semibold">{s.title}</h3>
-                <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{s.description}</p>
-                <div className="mt-4 flex items-center justify-between">
+              <CardContent className="customer-explore-card__body p-6">
+                <h3 className="customer-explore-card__title font-heading text-lg font-semibold leading-snug">
+                  {s.title}
+                </h3>
+                <p className="customer-explore-card__description mt-2 line-clamp-2 text-sm text-muted-foreground">
+                  {s.description?.trim() || '\u00A0'}
+                </p>
+                <div className="customer-explore-card__meta mt-4 flex shrink-0 items-center justify-between">
                   <span className="text-xl font-bold text-primary">${s.price}</span>
                   <span className="flex items-center gap-1 text-sm text-muted-foreground">
                     <Clock className="h-4 w-4" />
                     {s.duration_minutes} min
                   </span>
                 </div>
-                <ServiceCardReviews service={s} reviews={reviews} className="mt-4" />
-                <Button asChild variant="outline" className="mt-4 w-full rounded-full">
+                <ServiceCardReviews
+                  service={s}
+                  reviews={reviews}
+                  className="customer-explore-card__reviews mt-4"
+                />
+                <Button asChild variant="outline" className="customer-explore-card__cta mt-4 w-full rounded-full">
                   <Link to="/book">Book this service</Link>
                 </Button>
               </CardContent>

@@ -48,7 +48,7 @@ import {
   isSlotBlockedForNewBooking,
   isSlotCoveredByExistingBooking,
   isSlotInPast,
-  PAST_SLOT_MESSAGE,
+  NO_SERVICE_FOR_DAY_MESSAGE,
   slotFitsServiceDuration,
   slotsForSelectedDate,
   STAFF_SLOT_CONFLICT_MESSAGE,
@@ -263,7 +263,6 @@ export default function BookAppointmentPage() {
     if (!time || !date) return;
     if (isSlotInPast(date, time, now)) {
       setTime('');
-      toast.error(PAST_SLOT_MESSAGE);
       return;
     }
     if (!lineDuration) return;
@@ -840,7 +839,7 @@ export default function BookAppointmentPage() {
   }
 
   return (
-    <div className="customer-page customer-booking-page min-w-0 w-full max-w-full overflow-x-hidden pb-16">
+    <div className="customer-page customer-booking-page min-w-0 w-full max-w-full overflow-x-hidden pb-4 lg:pb-16">
       <section className="customer-booking-page-header border-b bg-card/95 backdrop-blur-md max-lg:sticky max-lg:z-40 max-lg:shadow-sm supports-[backdrop-filter]:bg-card/90">
         <div className="customer-container-wide customer-booking-page-header-inner py-4 max-md:py-3 lg:pb-3 lg:pt-4">
             {/* Desktop: title | stepper | start again in one row */}
@@ -1199,84 +1198,82 @@ export default function BookAppointmentPage() {
                     <Label className="mb-3 block text-base">
                       {loadingSlots ? 'Checking availability…' : 'Select a time'}
                     </Label>
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-                      {durationDaySlots.map((slot) => {
-                        const isPast = date ? isSlotInPast(date, slot, now) : false;
-                        const isBooked = !isPast && bookedSlotSet.has(slot);
-                        const isStaffBusy = !isPast && !isBooked && staffBusySlotSet.has(slot);
-                        const isUnavailable = isPast || isBooked;
-                        const isSelected = time === slot && !isUnavailable;
-                        const windowLabel =
-                          lineDuration > 0
-                            ? formatBookingTimeWindowCompact(slot, lineDuration)
-                            : slot;
-                        return (
-                          <Button
-                            key={slot}
-                            type="button"
-                            disabled={isUnavailable}
-                            variant={isSelected ? 'default' : isUnavailable ? 'secondary' : 'outline'}
-                            className={cn(
-                              'h-auto min-h-12 flex-col gap-0.5 px-2 py-2.5 text-center',
-                              isUnavailable && 'cursor-not-allowed border-dashed opacity-70',
-                              isStaffBusy && !isUnavailable && 'border-primary/25 bg-primary/5',
-                            )}
-                            onClick={() => {
-                              if (!isUnavailable) setTime(slot);
-                            }}
-                          >
-                            <span
-                              className={cn(
-                                'text-xs font-semibold leading-tight sm:text-sm',
-                                isUnavailable && 'text-muted-foreground line-through',
-                              )}
-                            >
-                              {windowLabel}
+                    {loadingSlots ? (
+                      <p className="text-sm text-muted-foreground">Checking availability…</p>
+                    ) : lineDuration > 0 && availableSlots.length === 0 ? (
+                      <p className="rounded-lg border border-dashed border-border/80 bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
+                        {NO_SERVICE_FOR_DAY_MESSAGE}
+                      </p>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                          {durationDaySlots.map((slot) => {
+                            const isPast = date ? isSlotInPast(date, slot, now) : false;
+                            const isBooked = !isPast && bookedSlotSet.has(slot);
+                            const isStaffBusy = !isPast && !isBooked && staffBusySlotSet.has(slot);
+                            const isUnavailable = isPast || isBooked;
+                            const isSelected = time === slot && !isUnavailable;
+                            const windowLabel =
+                              lineDuration > 0
+                                ? formatBookingTimeWindowCompact(slot, lineDuration)
+                                : slot;
+                            return (
+                              <Button
+                                key={slot}
+                                type="button"
+                                disabled={isUnavailable}
+                                variant={isSelected ? 'default' : isUnavailable ? 'secondary' : 'outline'}
+                                className={cn(
+                                  'h-auto min-h-12 flex-col gap-0.5 px-2 py-2.5 text-center',
+                                  isUnavailable && 'cursor-not-allowed border-dashed opacity-70',
+                                  isStaffBusy && !isUnavailable && 'border-primary/25 bg-primary/5',
+                                )}
+                                onClick={() => {
+                                  if (!isUnavailable) setTime(slot);
+                                }}
+                              >
+                                <span
+                                  className={cn(
+                                    'text-xs font-semibold leading-tight sm:text-sm',
+                                    isUnavailable && 'text-muted-foreground line-through',
+                                  )}
+                                >
+                                  {windowLabel}
+                                </span>
+                                {isPast && (
+                                  <span className="text-[10px] font-semibold uppercase tracking-wide text-destructive">
+                                    Past
+                                  </span>
+                                )}
+                                {isBooked && (
+                                  <span className="text-[10px] font-semibold uppercase tracking-wide text-destructive">
+                                    Unavailable
+                                  </span>
+                                )}
+                                {isStaffBusy && (
+                                  <span className="text-[10px] font-semibold uppercase tracking-wide text-primary/80">
+                                    Busy
+                                  </span>
+                                )}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                        {availableSlots.length > 0 && bookedSlots.length > 0 && (
+                          <p className="mt-4 text-sm text-muted-foreground">
+                            {availableSlots.length} time window{availableSlots.length !== 1 ? 's' : ''}{' '}
+                            available for your {lineDuration}-minute visit
+                          </p>
+                        )}
+                        {time && lineDuration > 0 && (
+                          <p className="mt-3 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm">
+                            Selected:{' '}
+                            <span className="font-semibold text-foreground">
+                              {formatBookingTimeWindow(time, lineDuration)}
                             </span>
-                            {isPast && (
-                              <span className="text-[10px] font-semibold uppercase tracking-wide text-destructive">
-                                Past
-                              </span>
-                            )}
-                            {isBooked && (
-                              <span className="text-[10px] font-semibold uppercase tracking-wide text-destructive">
-                                Unavailable
-                              </span>
-                            )}
-                            {isStaffBusy && (
-                              <span className="text-[10px] font-semibold uppercase tracking-wide text-primary/80">
-                                Busy
-                              </span>
-                            )}
-                          </Button>
-                        );
-                      })}
-                    </div>
-                    {durationDaySlots.length === 0 && lineDuration > 0 && !loadingSlots && (
-                      <p className="mt-4 text-sm text-destructive">
-                        No start times fit a {lineDuration}-minute visit on this date. Try another day or
-                        service.
-                      </p>
-                    )}
-                    {availableSlots.length === 0 && durationDaySlots.length > 0 && !loadingSlots && (
-                      <p className="mt-4 text-sm text-destructive">
-                        {employee?.name} is fully booked on this date. Try another day or choose another
-                        professional.
-                      </p>
-                    )}
-                    {availableSlots.length > 0 && bookedSlots.length > 0 && (
-                      <p className="mt-4 text-sm text-muted-foreground">
-                        {availableSlots.length} time window{availableSlots.length !== 1 ? 's' : ''}{' '}
-                        available for your {lineDuration}-minute visit
-                      </p>
-                    )}
-                    {time && lineDuration > 0 && (
-                      <p className="mt-3 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm">
-                        Selected:{' '}
-                        <span className="font-semibold text-foreground">
-                          {formatBookingTimeWindow(time, lineDuration)}
-                        </span>
-                      </p>
+                          </p>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
@@ -1373,8 +1370,8 @@ export default function BookAppointmentPage() {
                 </CardContent>
               </Card>
             )}
-            <Card className="mt-8 border-0 text-left shadow-lg">
-              <CardContent className="space-y-5 p-6 md:p-8">
+            <Card className="mt-8 min-w-0 overflow-hidden border-0 text-left shadow-lg">
+              <CardContent className="min-w-0 space-y-5 p-6 md:p-8">
                 <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-4">
                   <CalendarCheck className="h-8 w-8 text-primary" />
                   <div>
@@ -1446,7 +1443,10 @@ export default function BookAppointmentPage() {
           </div>
         )}
 
-        <div className="customer-booking-nav mt-12 flex items-center justify-between gap-3 border-t pt-8 sm:gap-4 max-lg:mt-4 max-lg:border-t-0 max-lg:pt-0">
+        <nav
+          className="customer-booking-nav mt-12 flex items-center justify-between gap-3 border-t pt-8 sm:gap-4 max-lg:mt-0 max-lg:border-t-0 max-lg:pt-0"
+          aria-label="Booking steps"
+        >
           <div className="min-w-0 flex-1">
             {step > 0 && (
               <Button
@@ -1480,7 +1480,7 @@ export default function BookAppointmentPage() {
               </Button>
             )}
           </div>
-        </div>
+        </nav>
         </div>
       </section>
     </div>

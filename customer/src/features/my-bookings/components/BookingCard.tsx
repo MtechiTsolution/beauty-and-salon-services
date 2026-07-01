@@ -141,7 +141,9 @@ export function BookingCard({
       {!canCancel && !review && !showReviewButton && !reviewHint && isTerminal && (
         <p className="customer-booking-card-state-note text-center text-xs leading-relaxed text-muted-foreground">
           {b.status === 'cancelled'
-            ? 'This appointment was cancelled and is no longer active.'
+            ? b.cancellation_reason?.trim()
+              ? b.cancellation_reason.trim()
+              : 'This appointment was cancelled and is no longer active.'
             : 'This visit was marked as a no-show.'}
         </p>
       )}

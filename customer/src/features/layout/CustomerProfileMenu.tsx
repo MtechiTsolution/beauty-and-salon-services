@@ -14,6 +14,7 @@ import {
   notificationActionLink,
 } from '@mit-salon/shared/lib/notification-ui';
 import { cn } from '@mit-salon/shared/lib/utils';
+import { useLogoutConfirm } from '@mit-salon/shared/hooks/useLogoutConfirm';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Bell, CheckCheck, ChevronDown, LogOut, Moon, User } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -87,7 +88,12 @@ export function CustomerProfileMenu({ className }: CustomerProfileMenuProps) {
   const [open, setOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [view, setView] = useState<PopupView>('menu');
-  const [loggingOut, setLoggingOut] = useState(false);
+  const { requestLogout, loading: loggingOut, logoutDialog } = useLogoutConfirm(logout, {
+    onSuccess: () => {
+      setOpen(false);
+      navigate('/landing');
+    },
+  });
   const email = user?.email;
 
   const { data: notifications = [], isLoading } = useQuery({
@@ -112,15 +118,8 @@ export function CustomerProfileMenu({ className }: CustomerProfileMenuProps) {
     if (!next) setView('menu');
   };
 
-  const handleLogout = async () => {
-    setLoggingOut(true);
-    try {
-      await logout();
-      setOpen(false);
-      navigate('/landing');
-    } finally {
-      setLoggingOut(false);
-    }
+  const handleLogout = () => {
+    requestLogout();
   };
 
   const firstName = user?.full_name?.split(' ')[0] ?? 'Profile';
@@ -149,7 +148,8 @@ export function CustomerProfileMenu({ className }: CustomerProfileMenuProps) {
       onClick={() => (isMobile ? setDrawerOpen(true) : undefined)}
     >
       <UserAvatar name={user?.full_name} />
-      <span className="hidden max-w-[6rem] truncate sm:inline">{firstName}</span>
+      <span className="max-w-[5.5rem] truncate sm:max-w-[6rem] lg:hidden">{firstName}</span>
+      <span className="hidden max-w-[6rem] truncate lg:inline">{firstName}</span>
       <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
     </button>
   );
@@ -157,6 +157,7 @@ export function CustomerProfileMenu({ className }: CustomerProfileMenuProps) {
   if (isMobile) {
     return (
       <>
+        {logoutDialog}
         {profileTrigger}
         <CustomerProfileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
       </>
@@ -164,7 +165,9 @@ export function CustomerProfileMenu({ className }: CustomerProfileMenuProps) {
   }
 
   return (
-    <DropdownMenu open={open} onOpenChange={handleOpenChange} modal={false}>
+    <>
+      {logoutDialog}
+      <DropdownMenu open={open} onOpenChange={handleOpenChange} modal={false}>
       <DropdownMenuTrigger asChild>
         <button
           type="button"
@@ -190,27 +193,35 @@ export function CustomerProfileMenu({ className }: CustomerProfileMenuProps) {
       >
         {view === 'menu' ? (
           <>
-            <div className="customer-profile-popup-header">
-              <UserAvatar name={user?.full_name} size="md" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-heading text-sm font-semibold leading-tight">
-                  {user?.full_name ?? 'Guest'}
-                </p>
-                {user?.email && (
-                  <p className="mt-0.5 truncate text-xs text-muted-foreground">{user.email}</p>
-                )}
-              </div>
-            </div>
-
             <div className="customer-profile-popup-body">
-              <Link
-                to="/profile"
-                className="customer-profile-popup-row"
-                onClick={() => setOpen(false)}
-              >
-                <User className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span>Profile</span>
-              </Link>
+              <div className="customer-profile-popup-row customer-profile-popup-row--profile">
+                <Link
+                  to="/profile"
+                  className="customer-profile-popup-row__main"
+                  onClick={() => setOpen(false)}
+                >
+                  <User className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span className="customer-profile-popup-row__text">
+                    <span className="block truncate font-medium leading-snug">
+                      {user?.full_name ?? 'Guest'}
+                    </span>
+                    {user?.email && (
+                      <span className="block truncate text-xs leading-snug text-muted-foreground">
+                        {user.email}
+                      </span>
+                    )}
+                  </span>
+                </Link>
+                <button
+                  type="button"
+                  className="customer-profile-popup-row__logout"
+                  onClick={handleLogout}
+                  disabled={loggingOut}
+                  aria-label={loggingOut ? 'Signing out' : 'Logout'}
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </div>
 
               <button
                 type="button"
@@ -235,18 +246,6 @@ export function CustomerProfileMenu({ className }: CustomerProfileMenuProps) {
                 </span>
                 <ThemeToggle variant="compact" />
               </div>
-
-              <div className="customer-profile-popup-divider" />
-
-              <button
-                type="button"
-                className="customer-profile-popup-row customer-profile-popup-row--danger"
-                onClick={handleLogout}
-                disabled={loggingOut}
-              >
-                <LogOut className="h-4 w-4 shrink-0" />
-                <span>{loggingOut ? 'Signing out…' : 'Logout'}</span>
-              </button>
             </div>
           </>
         ) : (
@@ -338,5 +337,6 @@ export function CustomerProfileMenu({ className }: CustomerProfileMenuProps) {
         )}
       </DropdownMenuContent>
     </DropdownMenu>
+    </>
   );
 }

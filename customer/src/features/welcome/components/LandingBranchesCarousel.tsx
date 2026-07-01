@@ -8,7 +8,7 @@ import { MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const bookButtonClass =
-  'mt-4 h-10 w-full rounded-full text-sm font-semibold max-md:mt-3 sm:mt-auto sm:h-11 sm:text-base';
+  'mt-3 h-9 w-full rounded-full text-sm font-semibold max-md:mt-2.5 sm:mt-auto sm:h-10';
 
 type LandingBranchesCarouselProps = {
   branches: Branch[];
@@ -22,6 +22,7 @@ export function LandingBranchesCarousel({ branches }: LandingBranchesCarouselPro
     <LandingCenteredShowcase
       id="locations"
       wide
+      compact
       className="landing-section--soft"
       eyebrow={
         <span className="landing-eyebrow">
@@ -36,9 +37,9 @@ export function LandingBranchesCarousel({ branches }: LandingBranchesCarouselPro
         activeBranches.map((branch) => (
           <Card
             key={branch.id}
-            className="landing-showcase-card landing-showcase-card--media flex h-full w-full flex-col overflow-hidden"
+            className="landing-showcase-card landing-showcase-card--media landing-showcase-card--compact flex h-full w-full flex-col overflow-hidden"
           >
-            <div className="landing-media-frame aspect-[16/10] shrink-0 overflow-hidden">
+            <div className="landing-media-frame landing-media-frame--compact aspect-[5/3] shrink-0 overflow-hidden">
               <LandingCoverImage
                 src={branch.image_url}
                 alt={branch.name}
@@ -49,19 +50,19 @@ export function LandingBranchesCarousel({ branches }: LandingBranchesCarouselPro
                 className="h-full w-full object-cover transition duration-700 hover:scale-105"
               />
             </div>
-            <CardContent className="landing-branch-showcase-body flex flex-col p-5 text-center sm:flex-1 sm:p-6">
-              <h3 className="font-heading line-clamp-2 text-xl font-semibold leading-snug tracking-tight sm:min-h-[3.25rem]">
+            <CardContent className="landing-branch-showcase-body flex flex-col p-4 text-center sm:flex-1 sm:p-5">
+              <h3 className="font-heading line-clamp-2 text-lg font-semibold leading-snug tracking-tight">
                 {branch.name}
               </h3>
-              <p className="mt-2 flex items-start justify-center gap-2 text-sm leading-relaxed text-muted-foreground sm:min-h-[2.75rem]">
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                <span className="line-clamp-2 text-left">
+              <p className="mt-1.5 flex items-center justify-center gap-1.5 text-center text-xs leading-relaxed text-muted-foreground sm:text-sm">
+                <MapPin className="h-4 w-4 shrink-0 text-primary" />
+                <span className="line-clamp-2">
                   {branch.address}
                   {branch.city ? `, ${branch.city}` : ''}
                 </span>
               </p>
               {branch.description?.trim() ? (
-                <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-muted-foreground sm:min-h-[2.75rem]">
+                <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground sm:text-sm">
                   {branch.description.trim()}
                 </p>
               ) : null}

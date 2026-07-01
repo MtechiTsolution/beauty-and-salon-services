@@ -95,6 +95,27 @@ async function resetPasswordWithToken(
   });
 }
 
+async function validatePasswordResetLink(
+  email: string,
+  resetToken: string,
+  portal: AuthPortal = 'customer',
+): Promise<{
+  valid: boolean;
+  message: string;
+  account?: { email: string; full_name: string; role: string };
+}> {
+  const params = new URLSearchParams({
+    email: email.trim(),
+    token: resetToken.trim(),
+    portal,
+  });
+  return apiRequest<{
+    valid: boolean;
+    message: string;
+    account?: { email: string; full_name: string; role: string };
+  }>(`/auth/reset-password/validate?${params.toString()}`);
+}
+
 async function requestEmailChange(newEmail: string): Promise<{ ok: boolean; message: string }> {
   return apiRequest<{ ok: boolean; message: string }>('/auth/request-email-change', {
     method: 'POST',
@@ -179,6 +200,10 @@ async function getSalonRegistrationStatus(email: string): Promise<SalonRegistrat
   );
 }
 
+async function getAdminAccess() {
+  return apiRequest<import('./team').AdminBranchAccess>('/auth/admin-access');
+}
+
 export const authApi = {
   me,
   login,
@@ -187,6 +212,7 @@ export const authApi = {
   updateProfile,
   forgotPassword,
   verifyPasswordResetOtp,
+  validatePasswordResetLink,
   resetPasswordWithToken,
   requestEmailChange,
   verifyEmailChange,
@@ -195,6 +221,7 @@ export const authApi = {
   verifySalonRegisterOtp,
   completeSalonRegistration,
   getSalonRegistrationStatus,
+  getAdminAccess,
   restoreSession: restoreSessionLocal,
 };
 

@@ -70,7 +70,7 @@ export function serviceReviewUnavailableMessage(
     return 'Book and complete this service before leaving a review';
   }
   if (!mine.some((b) => canReviewBooking(b))) {
-    return 'Review available after your visit is completed and payment is confirmed';
+    return 'Review available after your booking is confirmed, payment is complete, and the visit has finished';
   }
   return null;
 }

@@ -1,4 +1,4 @@
-import type { Booking, Review } from '../types';
+import type { Booking, BookingStatus, PaymentStatus, Review } from '../types';
 import { bookingEndMinutes, slotToMinutes } from './booking-slots';
 
 function toLocalDateString(d: Date): string {
@@ -22,27 +22,44 @@ export function isAppointmentTimeReached(
   return currentMinutes >= endMinutes;
 }
 
-/** Customer may review after the visit time has passed, status is completed, and payment is paid. */
+/** Booking must be approved by the salon (not pending/cancelled). */
+export function isBookingConfirmedForReview(status: BookingStatus): boolean {
+  return status === 'confirmed' || status === 'completed';
+}
+
+/** Payment must be marked paid before a review is allowed. */
+export function isPaymentConfirmedForReview(paymentStatus: PaymentStatus | string): boolean {
+  return paymentStatus === 'paid';
+}
+
+/**
+ * Customer may review after the booking is confirmed, payment is paid,
+ * and the scheduled service window has finished.
+ */
 export function canReviewBooking(booking: Booking, now: Date = new Date()): boolean {
   return (
-    booking.status === 'completed' &&
-    booking.payment_status === 'paid' &&
+    isBookingConfirmedForReview(booking.status) &&
+    isPaymentConfirmedForReview(booking.payment_status) &&
     isAppointmentTimeReached(booking, now)
   );
 }
 
 /** Short hint when a review cannot be submitted yet. */
 export function reviewUnavailableMessage(booking: Booking, now: Date = new Date()): string | null {
-  if (booking.status === 'cancelled') return null;
-  if (booking.status !== 'completed') {
-    return 'Review available after your visit is completed and payment is confirmed';
+  if (booking.status === 'cancelled' || booking.status === 'no_show') return null;
+
+  if (!isBookingConfirmedForReview(booking.status)) {
+    return 'Review available after your booking is confirmed, payment is complete, and the visit has finished';
   }
-  if (booking.payment_status !== 'paid') {
-    return 'Review available once payment is marked paid';
+
+  if (!isPaymentConfirmedForReview(booking.payment_status)) {
+    return 'Review available once payment is confirmed';
   }
+
   if (!isAppointmentTimeReached(booking, now)) {
-    return 'Review will be available after your appointment time';
+    return 'Review will be available after your appointment is complete';
   }
+
   return null;
 }
 

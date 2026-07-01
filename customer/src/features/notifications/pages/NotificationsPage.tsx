@@ -3,6 +3,7 @@ import { notificationsApi } from '@mit-salon/shared/api';
 import { Badge } from '@mit-salon/shared/components/ui/badge';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent } from '@mit-salon/shared/components/ui/card';
+import { NotificationCategoryFilter } from '@mit-salon/shared/components/NotificationCategoryFilter';
 import {
   extractCouponCodeFromNotificationMessage,
   isCouponNotification,
@@ -16,7 +17,6 @@ import {
   notificationTypeColors,
   type NotificationFilterCategory,
 } from '@mit-salon/shared/lib/notification-ui';
-import { cn } from '@mit-salon/shared/lib/utils';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell, Check, CheckCheck } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -83,27 +83,21 @@ export default function NotificationsPage() {
         </div>
 
         {notifications.length > 0 && (
-          <div className="mt-6 flex flex-wrap gap-2">
-            {CUSTOMER_NOTIFICATION_FILTERS.map((filter) => {
-              const count =
-                filter.id === 'all'
+          <div className="notification-type-filter-row mt-6 flex items-center justify-between gap-3">
+            <p className="shrink-0 text-sm font-medium text-foreground">Filter by type</p>
+            <NotificationCategoryFilter
+              value={category}
+              onChange={setCategory}
+              options={CUSTOMER_NOTIFICATION_FILTERS}
+              getCount={(filterId) =>
+                filterId === 'all'
                   ? notifications.length
-                  : notifications.filter((n) => notificationFilterCategory(n) === filter.id).length;
-              if (filter.id !== 'all' && count === 0) return null;
-              return (
-                <Button
-                  key={filter.id}
-                  type="button"
-                  size="sm"
-                  variant={category === filter.id ? 'default' : 'outline'}
-                  className={cn('rounded-full', category === filter.id && 'customer-btn-glow')}
-                  onClick={() => setCategory(filter.id)}
-                >
-                  {filter.label}
-                  <span className="ml-1.5 text-xs opacity-80">({count})</span>
-                </Button>
-              );
-            })}
+                  : notifications.filter((n) => notificationFilterCategory(n) === filterId).length
+              }
+              hideEmpty
+              className="w-full max-w-[14rem] shrink-0"
+              id="customer-notifications-type-filter"
+            />
           </div>
         )}
 

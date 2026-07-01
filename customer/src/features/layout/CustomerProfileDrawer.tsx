@@ -7,9 +7,10 @@ import {
   notificationActionLink,
 } from '@mit-salon/shared/lib/notification-ui';
 import { cn } from '@mit-salon/shared/lib/utils';
+import { useLogoutConfirm } from '@mit-salon/shared/hooks/useLogoutConfirm';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Bell, CheckCheck, LogOut, Moon, User, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -20,61 +21,17 @@ type CustomerProfileDrawerProps = {
 
 type PopupView = 'menu' | 'notifications';
 
-function userAvatarUrl(name: string) {
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=8B6914&color=fff&size=128&bold=true`;
-}
-
-function userInitials(name?: string) {
-  return (
-    name
-      ?.trim()
-      .split(/\s+/)
-      .map((part) => part[0])
-      .slice(0, 2)
-      .join('')
-      .toUpperCase() || 'U'
-  );
-}
-
-function UserAvatar({
-  name,
-  size = 'md',
-}: {
-  name?: string;
-  size?: 'sm' | 'md';
-}) {
-  const displayName = name?.trim() || 'User';
-  const initials = useMemo(() => userInitials(displayName), [displayName]);
-  const [imgError, setImgError] = useState(false);
-  const sizeClass = size === 'md' ? 'h-11 w-11 text-sm' : 'h-8 w-8 text-xs';
-
-  return (
-    <span
-      className={cn(
-        'inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary font-semibold text-primary-foreground ring-2 ring-background',
-        sizeClass,
-      )}
-    >
-      {!imgError ? (
-        <img
-          src={userAvatarUrl(displayName)}
-          alt={displayName}
-          className="h-full w-full object-cover"
-          onError={() => setImgError(true)}
-        />
-      ) : (
-        initials
-      )}
-    </span>
-  );
-}
-
 export function CustomerProfileDrawer({ open, onClose }: CustomerProfileDrawerProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [view, setView] = useState<PopupView>('menu');
-  const [loggingOut, setLoggingOut] = useState(false);
+  const { requestLogout, loading: loggingOut, logoutDialog } = useLogoutConfirm(logout, {
+    onSuccess: () => {
+      onClose();
+      navigate('/landing');
+    },
+  });
   const email = user?.email;
 
   const { data: notifications = [], isLoading } = useQuery({
@@ -111,21 +68,16 @@ export function CustomerProfileDrawer({ open, onClose }: CustomerProfileDrawerPr
     };
   }, [open, onClose]);
 
-  const handleLogout = async () => {
-    setLoggingOut(true);
-    try {
-      await logout();
-      onClose();
-      navigate('/landing');
-    } finally {
-      setLoggingOut(false);
-    }
+  const handleLogout = () => {
+    requestLogout();
   };
 
   if (!open) return null;
 
   return (
-    <div className="customer-profile-drawer-root lg:hidden" role="dialog" aria-modal="true" aria-label="Profile menu">
+    <>
+      {logoutDialog}
+      <div className="customer-profile-drawer-root lg:hidden" role="dialog" aria-modal="true" aria-label="Profile menu">
       <button type="button" className="customer-profile-drawer-overlay" aria-label="Close profile menu" onClick={onClose} />
       <aside className="customer-profile-drawer-panel">
         <div className="customer-profile-drawer-header">
@@ -158,15 +110,7 @@ export function CustomerProfileDrawer({ open, onClose }: CustomerProfileDrawerPr
             </>
           ) : (
             <>
-              <div className="flex min-w-0 flex-1 items-center gap-3">
-                <UserAvatar name={user?.full_name} size="md" />
-                <div className="min-w-0">
-                  <p className="truncate font-heading text-sm font-semibold">{user?.full_name ?? 'Guest'}</p>
-                  {user?.email && (
-                    <p className="truncate text-xs text-muted-foreground">{user.email}</p>
-                  )}
-                </div>
-              </div>
+              <p className="font-heading text-sm font-semibold">Menu</p>
               <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Close">
                 <X className="h-5 w-5" />
               </Button>
@@ -176,10 +120,30 @@ export function CustomerProfileDrawer({ open, onClose }: CustomerProfileDrawerPr
 
         {view === 'menu' ? (
           <div className="customer-profile-drawer-body">
-            <Link to="/profile" className="customer-profile-popup-row" onClick={onClose}>
-              <User className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <span>Profile</span>
-            </Link>
+            <div className="customer-profile-popup-row customer-profile-popup-row--profile">
+              <Link to="/profile" className="customer-profile-popup-row__main" onClick={onClose}>
+                <User className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <span className="customer-profile-popup-row__text">
+                  <span className="block truncate font-medium leading-snug">
+                    {user?.full_name ?? 'Guest'}
+                  </span>
+                  {user?.email && (
+                    <span className="block truncate text-xs leading-snug text-muted-foreground">
+                      {user.email}
+                    </span>
+                  )}
+                </span>
+              </Link>
+              <button
+                type="button"
+                className="customer-profile-popup-row__logout"
+                onClick={handleLogout}
+                disabled={loggingOut}
+                aria-label={loggingOut ? 'Signing out' : 'Logout'}
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            </div>
             <button type="button" className="customer-profile-popup-row" onClick={() => setView('notifications')}>
               <Bell className="h-4 w-4 shrink-0 text-muted-foreground" />
               <span className="flex-1 text-left">Notifications</span>
@@ -197,16 +161,6 @@ export function CustomerProfileDrawer({ open, onClose }: CustomerProfileDrawerPr
               </span>
               <ThemeToggle variant="compact" />
             </div>
-            <div className="customer-profile-popup-divider" />
-            <button
-              type="button"
-              className="customer-profile-popup-row customer-profile-popup-row--danger"
-              onClick={handleLogout}
-              disabled={loggingOut}
-            >
-              <LogOut className="h-4 w-4 shrink-0" />
-              <span>{loggingOut ? 'Signing out…' : 'Logout'}</span>
-            </button>
           </div>
         ) : (
           <div className="customer-profile-popup-notifications-list flex-1">
@@ -261,5 +215,7 @@ export function CustomerProfileDrawer({ open, onClose }: CustomerProfileDrawerPr
         )}
       </aside>
     </div>
+    </>
   );
 }
+

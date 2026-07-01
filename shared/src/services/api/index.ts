@@ -11,8 +11,24 @@ import type { CouponListFilters } from '../../lib/coupon-filters';
 import type { Branch, Coupon, Employee, Service, ServiceCategory } from '../../types';
 
 export { authApi, bookingsApi, payoutsApi, reportsApi };
+export { teamApi } from './modules/team';
+export type {
+  AdminBranchAccess,
+  BranchAccessEntry,
+  BranchTeamInvite,
+  BranchTeamMember,
+  SalonAdminRoleOption,
+} from './modules/team';
 export { superAdminApi } from './modules/super-admin';
-export type { PlatformAnalytics, PlatformDashboardStats, PlatformSalon } from './modules/super-admin';
+export type {
+  PlatformAnalytics,
+  PlatformDashboardStats,
+  PlatformSalon,
+  PlatformSalonAdminDetail,
+  PlatformSalonAdminSummary,
+  UpdatePlatformSalonAdminInput,
+  UpdatePlatformSalonBranchInput,
+} from './modules/super-admin';
 export { uploadsApi, type UploadKind } from './modules/uploads';
 
 const branchesCrud = createDataApi<Branch>('branches');

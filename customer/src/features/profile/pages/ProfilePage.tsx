@@ -5,8 +5,10 @@ import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@mit-salon/shared/components/ui/card';
 import { Input } from '@mit-salon/shared/components/ui/input';
 import { Label } from '@mit-salon/shared/components/ui/label';
-import { Moon, User } from 'lucide-react';
+import { useLogoutConfirm } from '@mit-salon/shared/hooks/useLogoutConfirm';
+import { Moon, User, LogOut } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 function normalizeEmail(value: string) {
@@ -14,7 +16,8 @@ function normalizeEmail(value: string) {
 }
 
 export default function ProfilePage() {
-  const { user, updateProfile, refresh } = useAuth();
+  const { user, updateProfile, refresh, logout } = useAuth();
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     full_name: user?.full_name ?? '',
     phone: user?.phone ?? '',
@@ -25,6 +28,9 @@ export default function ProfilePage() {
   const [codeSentTo, setCodeSentTo] = useState('');
   const [saving, setSaving] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
+  const { requestLogout, loading: loggingOut, logoutDialog } = useLogoutConfirm(logout, {
+    onSuccess: () => navigate('/landing'),
+  });
 
   useEffect(() => {
     if (user) {
@@ -127,6 +133,7 @@ export default function ProfilePage() {
 
   return (
     <div className="customer-page">
+      {logoutDialog}
       <div className="customer-container-wide max-w-2xl py-10 md:py-14">
         <div className="mb-8 flex items-center gap-4">
           <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground">
@@ -250,6 +257,29 @@ export default function ProfilePage() {
               Choose light or dark theme for the customer app.
             </p>
             <ThemeToggle />
+          </CardContent>
+        </Card>
+
+        <Card className="border-0 shadow-md lg:hidden">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-heading text-xl text-destructive">
+              <LogOut className="h-5 w-5" />
+              Sign out
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-4 text-sm text-muted-foreground">
+              Sign out of your account on this device.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 w-full rounded-full border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              disabled={loggingOut}
+              onClick={requestLogout}
+            >
+              {loggingOut ? 'Signing out…' : 'Logout'}
+            </Button>
           </CardContent>
         </Card>
       </div>

@@ -476,7 +476,7 @@ export default function RegisterSalonPage() {
                   application is reviewed. This page will redirect you to salon admin sign-in when approved.
                 </p>
                 <Button asChild variant="outline" className="h-11 w-full rounded-full">
-                  <Link to="/login">Back to customer sign in</Link>
+                  <a href={`${ADMIN_APP_URL}/login`}>Back to salon sign in</a>
                 </Button>
               </div>
             )}

@@ -133,6 +133,8 @@ export function isSlotInPast(date: string, timeSlot: string, now: Date = new Dat
 export const PAST_SLOT_MESSAGE =
   'This time has already passed. Please choose a later time slot.';
 
+export const NO_SERVICE_FOR_DAY_MESSAGE = 'No service available for that day';
+
 /** Drops slots that have already started when booking for today. */
 export function slotsForSelectedDate(
   date: string,

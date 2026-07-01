@@ -96,6 +96,55 @@ export type PlatformSalonDetail = {
   recent_activity: ActivityLog[];
 };
 
+export type PlatformSalonAdminSalon = Pick<
+  Branch,
+  | 'id'
+  | 'name'
+  | 'address'
+  | 'city'
+  | 'phone'
+  | 'email'
+  | 'description'
+  | 'opening_time'
+  | 'closing_time'
+  | 'status'
+  | 'created_at'
+  | 'updated_at'
+>;
+
+export type PlatformSalonAdminSummary = User & {
+  salon_count: number;
+  salons: PlatformSalonAdminSalon[];
+};
+
+export type PlatformSalonAdminDetail = {
+  admin: User;
+  salons: Branch[];
+  registration_request: SalonRegistrationRequest | null;
+  stats: {
+    total_bookings: number;
+    revenue_paid: number;
+  };
+};
+
+export type UpdatePlatformSalonAdminInput = {
+  full_name?: string;
+  phone?: string;
+  email?: string;
+};
+
+export type UpdatePlatformSalonBranchInput = {
+  name?: string;
+  address?: string;
+  city?: string;
+  phone?: string;
+  email?: string;
+  description?: string;
+  opening_time?: string;
+  closing_time?: string;
+  status?: Branch['status'];
+};
+
 export const superAdminApi = {
   dashboard(): Promise<PlatformDashboardStats> {
     return apiRequest<PlatformDashboardStats>('/super-admin/dashboard');
@@ -115,7 +164,7 @@ export const superAdminApi = {
   },
 
   approveSalonRequest(id: string, review_notes?: string) {
-    return apiRequest<{ ok: true; branch: Branch; owner: User }>(
+    return apiRequest<{ ok: true; branch: Branch; owner: User; email_sent: boolean }>(
       `/super-admin/salon-requests/${id}/approve`,
       {
         method: 'POST',
@@ -125,14 +174,14 @@ export const superAdminApi = {
   },
 
   rejectSalonRequest(id: string, review_notes?: string) {
-    return apiRequest<{ ok: true }>(`/super-admin/salon-requests/${id}/reject`, {
+    return apiRequest<{ ok: true; email_sent: boolean }>(`/super-admin/salon-requests/${id}/reject`, {
       method: 'POST',
       body: JSON.stringify({ review_notes }),
     });
   },
 
   cancelSalonRequest(id: string, review_notes?: string) {
-    return apiRequest<{ ok: true }>(`/super-admin/salon-requests/${id}/cancel`, {
+    return apiRequest<{ ok: true; email_sent: boolean }>(`/super-admin/salon-requests/${id}/cancel`, {
       method: 'POST',
       body: JSON.stringify({ review_notes }),
     });
@@ -167,5 +216,38 @@ export const superAdminApi = {
     if (params?.limit != null) q.set('limit', String(params.limit));
     const qs = q.toString();
     return apiRequest<ActivityLog[]>(`/super-admin/activity-logs${qs ? `?${qs}` : ''}`);
+  },
+
+  listAdmins(search?: string): Promise<PlatformSalonAdminSummary[]> {
+    const q = search?.trim() ? `?q=${encodeURIComponent(search.trim())}` : '';
+    return apiRequest<PlatformSalonAdminSummary[]>(`/super-admin/admins${q}`);
+  },
+
+  getAdmin(id: string): Promise<PlatformSalonAdminDetail> {
+    return apiRequest<PlatformSalonAdminDetail>(`/super-admin/admins/${encodeURIComponent(id)}`);
+  },
+
+  updateAdmin(id: string, body: UpdatePlatformSalonAdminInput) {
+    return apiRequest<{ ok: true; admin: User }>(`/super-admin/admins/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    });
+  },
+
+  updateAdminSalon(adminId: string, salonId: string, body: UpdatePlatformSalonBranchInput) {
+    return apiRequest<{ ok: true; salon: Branch }>(
+      `/super-admin/admins/${encodeURIComponent(adminId)}/salons/${encodeURIComponent(salonId)}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      },
+    );
+  },
+
+  sendAdminPasswordReset(id: string) {
+    return apiRequest<{ ok: true; message: string }>(
+      `/super-admin/admins/${encodeURIComponent(id)}/send-password-reset`,
+      { method: 'POST' },
+    );
   },
 };
