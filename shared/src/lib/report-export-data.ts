@@ -1,3 +1,4 @@
+import { formatBookingTimeWindowCompact } from './booking-slots';
 import type { ReportModule } from './report-modules';
 import { getReportModule } from './report-modules';
 import type {
@@ -80,6 +81,10 @@ export function buildMockExportRows(
           .map((b) => ({
             ...b,
             date: b.date?.slice(0, 10) ?? b.date,
+            time_slot: formatBookingTimeWindowCompact(
+              b.time_slot,
+              Number(b.duration_minutes ?? 0),
+            ).replace('–', '-'),
           })),
       );
     case 'customers': {

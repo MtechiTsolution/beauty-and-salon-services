@@ -1,16 +1,22 @@
+import { OfferingBookDialog } from '@/features/booking/components/OfferingBookDialog';
 import { PackageCardGrid } from '@/features/packages/components/PackageCardGrid';
 import { useActivePackages } from '@/features/packages/hooks/useActivePackages';
+import { getBookableBranches } from '@/features/packages/lib/package-branches';
 import { ServiceCardReviews } from '@/features/reviews/components/ServiceCardReviews';
 import { branchesApi, reviewsApi, servicesApi } from '@mit-salon/shared/api';
 import { CoverImage } from '@mit-salon/shared/components/CoverImage';
 import { branchImageHints } from '@mit-salon/shared/lib/branch-image-hints';
+import { filterCustomerServices } from '@mit-salon/shared/lib/customer-catalog';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent } from '@mit-salon/shared/components/ui/card';
+import type { Service } from '@mit-salon/shared/types';
 import { useQuery } from '@tanstack/react-query';
 import { Clock, MapPin, MapPinned, Scissors } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 export default function ExplorePage() {
+  const [bookingService, setBookingService] = useState<Service | null>(null);
   const { data: branches = [] } = useQuery({
     queryKey: ['branches-explore'],
     queryFn: () => branchesApi.list(),
@@ -29,7 +35,14 @@ export default function ExplorePage() {
   });
 
   const activeBranches = branches.filter((b) => b.status === 'active');
-  const activeServices = services.filter((s) => s.status === 'active');
+  const activeServices = filterCustomerServices(
+    services.filter((s) => s.status === 'active'),
+    activeBranches,
+  );
+  const bookableBranches = useMemo(
+    () => getBookableBranches(activeBranches, activeServices, activePackages),
+    [activeBranches, activeServices, activePackages],
+  );
 
   return (
     <div className="customer-page">
@@ -50,11 +63,11 @@ export default function ExplorePage() {
               </p>
               <div className="mt-6 flex flex-col items-center gap-4 sm:flex-row sm:flex-wrap sm:justify-center">
                 <div className="flex flex-wrap justify-center gap-2">
-                  {activeBranches.length > 0 && (
+                  {bookableBranches.length > 0 && (
                     <div className="customer-package-count-pill">
                       <MapPin className="h-4 w-4 text-primary" />
                       <span>
-                        {activeBranches.length} location{activeBranches.length === 1 ? '' : 's'}
+                        {bookableBranches.length} location{bookableBranches.length === 1 ? '' : 's'}
                       </span>
                     </div>
                   )}
@@ -81,7 +94,7 @@ export default function ExplorePage() {
         <h2 className="font-heading text-2xl font-bold md:text-3xl">All locations</h2>
         <p className="mt-2 text-muted-foreground">Choose the salon nearest to you when you book.</p>
         <div className="customer-explore-grid mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {activeBranches.map((b) => (
+          {bookableBranches.map((b) => (
             <Card key={b.id} className="customer-explore-card customer-card-hover overflow-hidden border-0 shadow-md">
               <div className="customer-explore-card__media aspect-[16/10] shrink-0 overflow-hidden">
                 <CoverImage
@@ -109,14 +122,14 @@ export default function ExplorePage() {
                   {b.description?.trim() || '\u00A0'}
                 </p>
                 <Button asChild variant="outline" className="customer-explore-card__cta mt-5 w-full rounded-full">
-                  <Link to="/book">Book at this location</Link>
+                  <Link to={`/book?branch=${encodeURIComponent(b.id)}`}>Book at this location</Link>
                 </Button>
               </CardContent>
             </Card>
           ))}
         </div>
-        {activeBranches.length === 0 && (
-          <p className="py-12 text-center text-muted-foreground">No locations available yet.</p>
+        {bookableBranches.length === 0 && (
+          <p className="py-12 text-center text-muted-foreground">No bookable locations yet.</p>
         )}
       </section>
 
@@ -174,8 +187,13 @@ export default function ExplorePage() {
                   reviews={reviews}
                   className="customer-explore-card__reviews mt-4"
                 />
-                <Button asChild variant="outline" className="customer-explore-card__cta mt-4 w-full rounded-full">
-                  <Link to="/book">Book this service</Link>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="customer-explore-card__cta mt-4 w-full rounded-full"
+                  onClick={() => setBookingService(s)}
+                >
+                  Book this service
                 </Button>
               </CardContent>
             </Card>
@@ -183,6 +201,14 @@ export default function ExplorePage() {
         </div>
       </section>
       </div>
+
+      <OfferingBookDialog
+        service={bookingService}
+        open={bookingService != null}
+        onOpenChange={(open) => {
+          if (!open) setBookingService(null);
+        }}
+      />
     </div>
   );
 }

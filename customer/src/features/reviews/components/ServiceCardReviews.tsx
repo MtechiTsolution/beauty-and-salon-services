@@ -13,7 +13,6 @@ import type { Review, Service } from '@mit-salon/shared/types';
 import { useQuery } from '@tanstack/react-query';
 import { MessageSquare, Star } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 
 type ServiceCardReviewsProps = {
   service: Service;
@@ -22,7 +21,7 @@ type ServiceCardReviewsProps = {
 };
 
 export function ServiceCardReviews({ service, reviews, className }: ServiceCardReviewsProps) {
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const { data: myBookings = [] } = useQuery({
@@ -73,7 +72,7 @@ export function ServiceCardReviews({ service, reviews, className }: ServiceCardR
         )}
       </div>
 
-      {isAuthenticated ? (
+      {user?.email ? (
         <div className="mt-3">
           {canReview ? (
             <Button
@@ -84,7 +83,7 @@ export function ServiceCardReviews({ service, reviews, className }: ServiceCardR
               onClick={() => setDialogOpen(true)}
             >
               <MessageSquare className="mr-1.5 h-4 w-4" />
-              Write a review
+              Leave a review
             </Button>
           ) : alreadyReviewed ? (
             <p className="text-center text-xs text-muted-foreground">You reviewed this service</p>
@@ -92,11 +91,7 @@ export function ServiceCardReviews({ service, reviews, className }: ServiceCardR
             <p className="text-center text-xs leading-relaxed text-muted-foreground">{unavailableMessage}</p>
           ) : null}
         </div>
-      ) : (
-        <Button asChild variant="outline" size="sm" className="mt-3 h-9 w-full rounded-full text-sm">
-          <Link to="/login">Sign in to review</Link>
-        </Button>
-      )}
+      ) : null}
 
       {dialogOpen ? (
         <ServiceReviewDialog service={service} open={dialogOpen} onOpenChange={setDialogOpen} />

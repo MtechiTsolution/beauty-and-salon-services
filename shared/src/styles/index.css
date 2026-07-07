@@ -332,3 +332,74 @@
   right: -7px;
   cursor: nwse-resize;
 }
+
+/* DatePickerInput — native picker + clickable calendar icon */
+.date-picker-input-native {
+  position: relative;
+  color-scheme: light;
+}
+
+.dark .date-picker-input-native {
+  color-scheme: dark;
+}
+
+.date-picker-input-native::-webkit-calendar-picker-indicator {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 3.5rem;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.date-picker-input-trigger {
+  position: absolute;
+  right: 0.25rem;
+  top: 50%;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  transform: translateY(-50%);
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: hsl(var(--primary));
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.date-picker-input-trigger:hover:not(:disabled) {
+  background: hsl(var(--primary) / 0.1);
+}
+
+.date-picker-input-trigger:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+.date-picker-input-trigger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.date-picker-input-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  pointer-events: none;
+}
+
+.date-picker-input:has(.h-12) .date-picker-input-trigger {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+.date-picker-input:has(.h-12) .date-picker-input-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}

@@ -25,11 +25,14 @@ export type {
   PlatformDashboardStats,
   PlatformSalon,
   PlatformSalonAdminDetail,
+  PlatformSalonAdminSalon,
   PlatformSalonAdminSummary,
+  PlatformSalonLinkRole,
   UpdatePlatformSalonAdminInput,
   UpdatePlatformSalonBranchInput,
 } from './modules/super-admin';
-export { uploadsApi, type UploadKind } from './modules/uploads';
+export { settingsApi } from './modules/settings-api';
+export type { SmtpSettingsPublic, SmtpSettingsInput } from '../../types/smtp-settings';
 
 const branchesCrud = createDataApi<Branch>('branches');
 const categoriesCrud = createDataApi<ServiceCategory>('categories');

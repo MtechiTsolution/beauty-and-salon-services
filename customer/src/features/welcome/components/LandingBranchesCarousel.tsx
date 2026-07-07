@@ -15,8 +15,7 @@ type LandingBranchesCarouselProps = {
 };
 
 export function LandingBranchesCarousel({ branches }: LandingBranchesCarouselProps) {
-  const activeBranches = branches.filter((b) => b.status === 'active');
-  const bookHref = '/book';
+  const bookableBranches = branches.filter((b) => b.status === 'active');
 
   return (
     <LandingCenteredShowcase
@@ -33,8 +32,8 @@ export function LandingBranchesCarousel({ branches }: LandingBranchesCarouselPro
       title="Visit us near you"
       description="Premium studios across the metro area — consistent quality, neighborhood convenience, and stylists you can trust."
     >
-      {activeBranches.length > 0 ? (
-        activeBranches.map((branch) => (
+      {bookableBranches.length > 0 ? (
+        bookableBranches.map((branch) => (
           <Card
             key={branch.id}
             className="landing-showcase-card landing-showcase-card--media landing-showcase-card--compact flex h-full w-full flex-col overflow-hidden"
@@ -67,7 +66,7 @@ export function LandingBranchesCarousel({ branches }: LandingBranchesCarouselPro
                 </p>
               ) : null}
               <Button asChild className={bookButtonClass}>
-                <Link to={bookHref}>Book at this location</Link>
+                <Link to={`/book?branch=${encodeURIComponent(branch.id)}`}>Book at this location</Link>
               </Button>
             </CardContent>
           </Card>

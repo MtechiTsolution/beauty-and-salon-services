@@ -96,6 +96,8 @@ export type PlatformSalonDetail = {
   recent_activity: ActivityLog[];
 };
 
+export type PlatformSalonLinkRole = 'owner' | 'manager' | 'receptionist';
+
 export type PlatformSalonAdminSalon = Pick<
   Branch,
   | 'id'
@@ -110,16 +112,20 @@ export type PlatformSalonAdminSalon = Pick<
   | 'status'
   | 'created_at'
   | 'updated_at'
->;
+> & {
+  salon_role: PlatformSalonLinkRole;
+};
 
 export type PlatformSalonAdminSummary = User & {
   salon_count: number;
+  account_role: PlatformSalonLinkRole | 'unassigned';
   salons: PlatformSalonAdminSalon[];
 };
 
 export type PlatformSalonAdminDetail = {
   admin: User;
-  salons: Branch[];
+  account_role: PlatformSalonLinkRole | 'unassigned';
+  salons: PlatformSalonAdminSalon[];
   registration_request: SalonRegistrationRequest | null;
   stats: {
     total_bookings: number;
@@ -249,5 +255,28 @@ export const superAdminApi = {
       `/super-admin/admins/${encodeURIComponent(id)}/send-password-reset`,
       { method: 'POST' },
     );
+  },
+
+  getPlatformSmtp() {
+    return apiRequest<import('../../../types/smtp-settings').SmtpSettingsPublic>(
+      '/super-admin/settings/smtp',
+    );
+  },
+
+  updatePlatformSmtp(body: import('../../../types/smtp-settings').SmtpSettingsInput) {
+    return apiRequest<import('../../../types/smtp-settings').SmtpSettingsPublic>(
+      '/super-admin/settings/smtp',
+      {
+        method: 'PUT',
+        body: JSON.stringify(body),
+      },
+    );
+  },
+
+  testPlatformSmtp(testEmail: string) {
+    return apiRequest<{ ok: true; message: string }>('/super-admin/settings/smtp/test', {
+      method: 'POST',
+      body: JSON.stringify({ test_email: testEmail }),
+    });
   },
 };

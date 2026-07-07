@@ -4,6 +4,10 @@ import { apiRequest } from '../client';
 import { createRestCrudApi } from './rest-crud';
 import type { Booking } from '../../../types';
 
+export type CreateBookingPayload = Omit<Booking, 'id' | 'created_at' | 'updated_at'> & {
+  booking_source?: 'phone' | 'walk_in';
+};
+
 const crud = createRestCrudApi<Booking>('bookings');
 
 export const bookingsApi = {
@@ -11,7 +15,7 @@ export const bookingsApi = {
   async list(params?: SalonScopeParams): Promise<Booking[]> {
     return bookingsApi.filter(params ?? {});
   },
-  async create(data: Omit<Booking, 'id' | 'created_at' | 'updated_at'>): Promise<Booking> {
+  async create(data: CreateBookingPayload): Promise<Booking> {
     assertSlotNotInPast(data.date, data.time_slot);
 
     const existing = await bookingsApi.filter({

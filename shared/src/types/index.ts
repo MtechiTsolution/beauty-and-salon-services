@@ -201,6 +201,8 @@ export interface SalonRegistrationRequest extends BaseEntity {
   reviewed_at?: string;
   branch_id?: string;
   owner_user_id?: string;
+  /** Live branch status when `branch_id` is set (e.g. after approval). */
+  branch_status?: BranchStatus;
 }
 
 export interface ActivityLog {

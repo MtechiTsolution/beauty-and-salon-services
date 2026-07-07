@@ -2,6 +2,7 @@ import { CustomerPackageCard } from '@/features/packages/components/CustomerPack
 import { PackageBookDialog } from '@/features/packages/components/PackageBookDialog';
 import { getBranchesForPackage } from '@/features/packages/lib/package-branches';
 import { branchesApi, servicesApi } from '@mit-salon/shared/api';
+import { filterCustomerPackages } from '@mit-salon/shared/lib/customer-catalog';
 import type { Branch, Package, Service } from '@mit-salon/shared/types';
 import { useQuery } from '@tanstack/react-query';
 import { Gift } from 'lucide-react';
@@ -40,15 +41,25 @@ export function PackageCardGrid({
     queryFn: () => servicesApi.list(),
   });
 
+  const activeBranches = useMemo(
+    () => branches.filter((branch) => branch.status === 'active'),
+    [branches],
+  );
+
+  const visiblePackages = useMemo(
+    () => filterCustomerPackages(packages, activeBranches),
+    [packages, activeBranches],
+  );
+
   const availabilityByPackageId = useMemo(() => {
     const map = new Map<string, string | null>();
-    for (const pkg of packages) {
-      map.set(pkg.id, packageLocationLabel(pkg, branches, services));
+    for (const pkg of visiblePackages) {
+      map.set(pkg.id, packageLocationLabel(pkg, activeBranches, services));
     }
     return map;
-  }, [packages, branches, services]);
+  }, [visiblePackages, activeBranches, services]);
 
-  if (packages.length === 0) {
+  if (visiblePackages.length === 0) {
     return (
       <div className="customer-package-empty rounded-2xl border border-dashed border-border/80 bg-muted/20 px-6 py-16 text-center">
         <Gift className="mx-auto h-12 w-12 text-muted-foreground/50" />
@@ -65,7 +76,7 @@ export function PackageCardGrid({
   return (
     <>
       <div className={gridClass}>
-        {packages.map((pkg) => (
+        {visiblePackages.map((pkg) => (
           <CustomerPackageCard
             key={pkg.id}
             pkg={pkg}

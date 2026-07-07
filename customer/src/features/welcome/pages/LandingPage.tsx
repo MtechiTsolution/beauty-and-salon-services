@@ -1,4 +1,5 @@
 import { useActivePackages } from '@/features/packages/hooks/useActivePackages';
+import { getBookableBranches } from '@/features/packages/lib/package-branches';
 import { useLandingImagePreload } from '@/features/welcome/hooks/useLandingImagePreload';
 import { LandingBranchesCarousel } from '@/features/welcome/components/LandingBranchesCarousel';
 import { LandingFeatureGrid } from '@/features/welcome/components/LandingFeatureGrid';
@@ -10,6 +11,7 @@ import { LandingServicesCarousel } from '@/features/welcome/components/LandingSe
 import { LandingStatsBar } from '@/features/welcome/components/LandingStatsBar';
 import { LandingTestimonialsCarousel } from '@/features/welcome/components/LandingTestimonialsCarousel';
 import { branchesApi, employeesApi, reviewsApi, servicesApi } from '@mit-salon/shared/api';
+import { filterCustomerServices } from '@mit-salon/shared/lib/customer-catalog';
 import { useQuery } from '@tanstack/react-query';
 import { CalendarDays, MapPin, Scissors, Star } from 'lucide-react';
 import { useMemo } from 'react';
@@ -37,20 +39,32 @@ export default function LandingPage() {
   });
   const { data: activePackages = [] } = useActivePackages(true);
 
-  const locationCount = branches.filter((b) => b.status === 'active').length;
-  const serviceCount = services.filter((s) => s.status === 'active').length;
+  const activeBranches = useMemo(
+    () => branches.filter((b) => b.status === 'active'),
+    [branches],
+  );
+  const bookableServices = useMemo(
+    () => filterCustomerServices(services, activeBranches),
+    [services, activeBranches],
+  );
+  const bookableBranches = useMemo(
+    () => getBookableBranches(activeBranches, bookableServices, activePackages),
+    [activeBranches, bookableServices, activePackages],
+  );
+  const locationCount = bookableBranches.length;
+  const serviceCount = bookableServices.length;
   const staffCount = employees.filter((e) => e.status === 'active').length;
   const locationLabel = locationCount > 0 ? `${locationCount}+ locations` : 'our locations';
 
   const preloadUrls = useMemo(
     () =>
       [
-        ...branches.map((b) => b.image_url),
-        ...services.map((s) => s.image_url),
+        ...bookableBranches.map((b) => b.image_url),
+        ...bookableServices.map((s) => s.image_url),
         ...employees.map((e) => e.image_url),
         ...activePackages.map((p) => p.image_url),
       ].filter((url): url is string => Boolean(url?.trim())),
-    [branches, services, employees, activePackages],
+    [bookableBranches, bookableServices, employees, activePackages],
   );
   useLandingImagePreload(preloadUrls);
 
@@ -70,9 +84,9 @@ export default function LandingPage() {
         />
       </div>
       <LandingFeatureGrid />
-      <LandingServicesCarousel services={services} reviews={reviews} />
-      <LandingPackagesCarousel packages={activePackages} branches={branches} services={services} />
-      <LandingBranchesCarousel branches={branches} />
+      <LandingServicesCarousel services={bookableServices} reviews={reviews} />
+      <LandingPackagesCarousel packages={activePackages} branches={bookableBranches} services={bookableServices} />
+      <LandingBranchesCarousel branches={bookableBranches} />
       <LandingTestimonialsCarousel reviews={reviews} />
       <LandingFooter />
     </div>

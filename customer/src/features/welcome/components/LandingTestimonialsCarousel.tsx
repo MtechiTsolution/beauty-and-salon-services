@@ -68,12 +68,13 @@ function TestimonialCard({ item }: { item: LandingTestimonial }) {
 }
 
 function mapReviewToTestimonial(review: Review): LandingTestimonial | null {
-  if (review.status !== 'approved' || !review.comment?.trim()) return null;
+  if (review.status !== 'approved') return null;
+  const comment = review.comment?.trim();
   return {
     id: review.id,
     customer_name: review.customer_name,
     rating: review.rating,
-    comment: review.comment,
+    comment: comment || 'Rated their visit after a completed appointment.',
     service_title: review.service_title,
     branch_name: review.branch_name,
     employee_name: review.employee_name,

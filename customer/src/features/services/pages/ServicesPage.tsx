@@ -1,13 +1,18 @@
+import { OfferingBookDialog } from '@/features/booking/components/OfferingBookDialog';
 import { CategoryCardGrid } from '@/features/categories/components/CategoryCardGrid';
-import { categoriesApi, servicesApi } from '@mit-salon/shared/api';
+import { branchesApi, categoriesApi, servicesApi } from '@mit-salon/shared/api';
 import { CoverImage } from '@mit-salon/shared/components/CoverImage';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent } from '@mit-salon/shared/components/ui/card';
+import { filterCustomerServices } from '@mit-salon/shared/lib/customer-catalog';
+import type { Service } from '@mit-salon/shared/types';
 import { useQuery } from '@tanstack/react-query';
 import { Clock, Grid3X3, RefreshCw } from 'lucide-react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 export default function ServicesPage() {
+  const [bookingService, setBookingService] = useState<Service | null>(null);
   const {
     data: services = [],
     isLoading: servicesLoading,
@@ -15,6 +20,10 @@ export default function ServicesPage() {
     refetch: refetchServices,
     isFetching: servicesFetching,
   } = useQuery({ queryKey: ['services'], queryFn: () => servicesApi.list() });
+  const { data: branches = [] } = useQuery({
+    queryKey: ['branches-services'],
+    queryFn: () => branchesApi.list(),
+  });
   const {
     data: categories = [],
     isLoading: categoriesLoading,
@@ -23,7 +32,8 @@ export default function ServicesPage() {
     isFetching: categoriesFetching,
   } = useQuery({ queryKey: ['categories'], queryFn: () => categoriesApi.list() });
 
-  const active = services.filter((s) => s.status === 'active');
+  const activeBranches = branches.filter((b) => b.status === 'active');
+  const active = filterCustomerServices(services, activeBranches);
   const activeCategories = categories.filter((c) => c.status === 'active');
   const isLoading = servicesLoading || categoriesLoading;
   const isError = servicesError || categoriesError;
@@ -138,12 +148,22 @@ export default function ServicesPage() {
                       )}
                       <h3 className="mt-2 font-heading text-lg font-semibold">{service.title}</h3>
                       <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{service.description}</p>
-                      <div className="mt-4 flex justify-between text-sm">
-                        <span className="font-bold text-primary">${service.price}</span>
-                        <span className="flex items-center gap-1 text-muted-foreground">
-                          <Clock className="h-4 w-4" />
-                          {service.duration_minutes}m
-                        </span>
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <div className="flex justify-between text-sm">
+                          <span className="font-bold text-primary">${service.price}</span>
+                          <span className="flex items-center gap-1 text-muted-foreground">
+                            <Clock className="h-4 w-4" />
+                            {service.duration_minutes}m
+                          </span>
+                        </div>
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="shrink-0 rounded-full px-4"
+                          onClick={() => setBookingService(service)}
+                        >
+                          Book
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -166,6 +186,14 @@ export default function ServicesPage() {
           </p>
         )}
       </div>
+
+      <OfferingBookDialog
+        service={bookingService}
+        open={bookingService != null}
+        onOpenChange={(open) => {
+          if (!open) setBookingService(null);
+        }}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { getBranchesForPackage } from './package-branches.js';
+import { getBookableBranches, getBranchesForPackage, getBranchesForService } from './package-branches.js';
 import type { Branch, Package, Service } from '../types/index.js';
 
 const branchA: Branch = {
@@ -55,7 +55,7 @@ describe('getBranchesForPackage', () => {
     assert.ok(result.some((b) => b.id === 'b2'));
   });
 
-  it('falls back to service coverage when package has no branch_ids', () => {
+  it('returns no salons when package has no branch_ids', () => {
     const pkg: Package = {
       id: 'p2',
       name: 'Open',
@@ -70,7 +70,34 @@ describe('getBranchesForPackage', () => {
     };
 
     const result = getBranchesForPackage(pkg, [branchA, branchB], [serviceAtAOnly]);
+    assert.equal(result.length, 0);
+  });
+});
+
+describe('getBranchesForService', () => {
+  it('returns only active branches linked to the service', () => {
+    const result = getBranchesForService(serviceAtAOnly, [branchA, branchB]);
     assert.equal(result.length, 1);
     assert.equal(result[0]?.id, 'b1');
+  });
+});
+
+describe('getBookableBranches', () => {
+  it('returns salons with at least one linked service or package', () => {
+    const pkg: Package = {
+      id: 'p1',
+      name: 'Combo',
+      price: 100,
+      service_ids: ['s1'],
+      branch_ids: ['b2'],
+      total_sessions: 1,
+      validity_days: 30,
+      status: 'active',
+      created_at: '',
+      updated_at: '',
+    };
+
+    const result = getBookableBranches([branchA, branchB], [serviceAtAOnly], [pkg]);
+    assert.equal(result.length, 2);
   });
 });

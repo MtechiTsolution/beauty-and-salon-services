@@ -1,18 +1,28 @@
+import { useActivePackages } from '@/features/packages/hooks/useActivePackages';
+import { getBookableBranches } from '@/features/packages/lib/package-branches';
 import { branchesApi, servicesApi } from '@mit-salon/shared/api';
 import { CoverImage } from '@mit-salon/shared/components/CoverImage';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent } from '@mit-salon/shared/components/ui/card';
 import { branchImageHints } from '@mit-salon/shared/lib/branch-image-hints';
+import { filterCustomerServices } from '@mit-salon/shared/lib/customer-catalog';
 import { IMAGES } from '@mit-salon/shared/lib/images';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, Clock, MapPin, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useMemo } from 'react';
 
 export default function HomePage() {
   const { data: services = [] } = useQuery({ queryKey: ['services-home'], queryFn: () => servicesApi.list() });
   const { data: branches = [] } = useQuery({ queryKey: ['branches-home'], queryFn: () => branchesApi.list() });
-  const activeServices = services.filter((s) => s.status === 'active').slice(0, 6);
+  const { data: activePackages = [] } = useActivePackages();
   const activeBranches = branches.filter((b) => b.status === 'active');
+  const activeServices = filterCustomerServices(services, activeBranches);
+  const bookableBranches = useMemo(
+    () => getBookableBranches(activeBranches, activeServices, activePackages),
+    [activeBranches, activeServices, activePackages],
+  );
+  const featuredServices = activeServices.slice(0, 6);
 
   return (
     <div>
@@ -45,8 +55,8 @@ export default function HomePage() {
           {[
             { label: 'Happy Clients', value: '5,000+' },
             { label: 'Expert Stylists', value: '50+' },
-            { label: 'Locations', value: `${branches.length}+` },
-            { label: 'Services', value: `${services.length}+` },
+            { label: 'Locations', value: `${bookableBranches.length}+` },
+            { label: 'Services', value: `${activeServices.length}+` },
           ].map((stat) => (
             <div key={stat.label}>
               <p className="font-heading text-3xl font-bold">{stat.value}</p>
@@ -59,7 +69,7 @@ export default function HomePage() {
       <section className="py-20 max-w-7xl mx-auto px-4">
         <h2 className="font-heading text-3xl font-bold text-center mb-12">Featured Services</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {activeServices.map((service) => (
+          {featuredServices.map((service) => (
             <Card key={service.id} className="overflow-hidden hover:shadow-lg transition-shadow">
               <div className="h-48 overflow-hidden">
                 <CoverImage
@@ -89,7 +99,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4">
           <h2 className="font-heading text-3xl font-bold text-center mb-10">Our Locations</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {activeBranches.map((b) => (
+            {bookableBranches.map((b) => (
               <Card key={b.id} className="overflow-hidden hover:shadow-md transition-shadow">
                 <div className="h-36 overflow-hidden">
                   <CoverImage
@@ -108,6 +118,9 @@ export default function HomePage() {
                     <MapPin className="w-4 h-4 shrink-0 mt-0.5 text-primary" />
                     <span>{b.address}, {b.city}</span>
                   </p>
+                  <Button asChild variant="outline" size="sm" className="mt-3 w-full rounded-full">
+                    <Link to={`/book?branch=${encodeURIComponent(b.id)}`}>Book here</Link>
+                  </Button>
                 </CardContent>
               </Card>
             ))}

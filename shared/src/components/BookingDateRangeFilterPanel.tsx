@@ -37,6 +37,11 @@ type BookingDateRangeFilterPanelProps = {
   embedded?: boolean;
   /** Show Apply/Clear on custom date fields. Disable when parent has unified actions. */
   showCustomActions?: boolean;
+  /** Compact label + select for side-by-side filter bars (e.g. admin notifications). */
+  compact?: boolean;
+  /** Render custom date fields outside — pair with onCustomFieldsOpenChange. */
+  detachCustomFields?: boolean;
+  onCustomFieldsOpenChange?: (open: boolean) => void;
 };
 
 function resolvePresetValue(appliedRange: BookingDateRange, customSelected: boolean): BookingDateFilterPreset {
@@ -61,6 +66,9 @@ export function BookingDateRangeFilterPanel({
   label = 'Filter by date',
   embedded = false,
   showCustomActions = true,
+  compact = false,
+  detachCustomFields = false,
+  onCustomFieldsOpenChange,
 }: BookingDateRangeFilterPanelProps) {
   const [customSelected, setCustomSelected] = useState(false);
   const isAdmin = variant === 'admin';
@@ -105,6 +113,10 @@ export function BookingDateRangeFilterPanel({
 
   const showCustomFields = presetValue === 'custom';
 
+  useEffect(() => {
+    onCustomFieldsOpenChange?.(showCustomFields);
+  }, [showCustomFields, onCustomFieldsOpenChange]);
+
   return (
     <div
       className={cn(
@@ -117,14 +129,32 @@ export function BookingDateRangeFilterPanel({
         className,
       )}
     >
-      <div className="booking-date-range-filter-panel__header flex items-center justify-between gap-3">
-        <Label htmlFor={`${idPrefix}-preset`} className="shrink-0 text-sm font-medium">
+      <div
+        className={cn(
+          'booking-date-range-filter-panel__header min-w-0',
+          compact
+            ? 'flex flex-col gap-1'
+            : 'flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3',
+        )}
+      >
+        <Label
+          htmlFor={`${idPrefix}-preset`}
+          className={cn(
+            'font-medium',
+            compact ? 'text-[11px] text-muted-foreground sm:text-xs' : 'text-sm',
+          )}
+        >
           {label}
         </Label>
         <Select value={presetValue} onValueChange={(value) => handlePresetChange(value as BookingDateFilterPreset)}>
           <SelectTrigger
             id={`${idPrefix}-preset`}
-            className="booking-date-range-filter-panel__select h-11 w-full max-w-[14rem] shrink-0 rounded-xl"
+            className={cn(
+              'booking-date-range-filter-panel__select w-full min-w-0 rounded-lg [&>span]:truncate',
+              compact
+                ? 'h-10 text-xs sm:h-11 sm:rounded-xl sm:text-sm'
+                : 'h-11 rounded-xl sm:max-w-[14rem] sm:shrink-0',
+            )}
           >
             <SelectValue placeholder="All dates">{selectedLabel}</SelectValue>
           </SelectTrigger>
@@ -138,7 +168,7 @@ export function BookingDateRangeFilterPanel({
         </Select>
       </div>
 
-      {showCustomFields && (
+      {showCustomFields && !detachCustomFields && (
         <BookingDateRangeFilter
           bare
           hideActions={!showCustomActions}

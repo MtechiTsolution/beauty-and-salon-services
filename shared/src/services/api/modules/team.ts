@@ -11,6 +11,8 @@ export type BranchAccessEntry = {
 export type AdminBranchAccess = {
   is_owner: boolean;
   branches: BranchAccessEntry[];
+  /** True when every linked salon/branch is platform-restricted (blocked). */
+  platform_restricted?: boolean;
 };
 
 export type SalonAdminRoleOption = {
@@ -41,6 +43,7 @@ export type BranchTeamInvite = {
   id: string;
   branch_id: string;
   email: string;
+  full_name: string | null;
   role_id: string;
   status: 'pending' | 'accepted' | 'revoked' | 'expired';
   invited_by: string;
@@ -60,7 +63,7 @@ export const teamApi = {
       `/team/members?branch_id=${encodeURIComponent(branchId)}`,
     );
   },
-  invite(input: { branch_id: string; email: string; role_key: SalonAdminRoleKey }) {
+  invite(input: { branch_id: string; email: string; full_name: string; role_key: SalonAdminRoleKey }) {
     return apiRequest<{ ok: true; invite: BranchTeamInvite; emailSent: boolean }>('/team/invites', {
       method: 'POST',
       body: JSON.stringify(input),
@@ -89,11 +92,19 @@ export const teamApi = {
   },
   validateInvite(token: string) {
     return apiRequest<
-      | { valid: true; email: string; branch_name: string; role_name: string; expires_at: string }
+      | {
+          valid: true;
+          email: string;
+          full_name: string | null;
+          branch_name: string;
+          role_name: string;
+          expires_at: string;
+          existing_account: boolean;
+        }
       | { valid: false; message: string }
     >(`/team/invites/validate?token=${encodeURIComponent(token)}`);
   },
-  acceptInvite(input: { token: string; full_name: string; password: string; phone?: string }) {
+  acceptInvite(input: { token: string; full_name: string; password?: string; phone?: string }) {
     return apiRequest<{ ok: true; user_id: string; message: string }>('/team/invites/accept', {
       method: 'POST',
       body: JSON.stringify(input),

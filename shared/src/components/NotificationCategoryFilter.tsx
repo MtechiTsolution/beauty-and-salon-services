@@ -21,6 +21,8 @@ type NotificationCategoryFilterProps<T extends string> = {
   id?: string;
   /** Hide options with zero count (except `all` and `unread` when present). */
   hideEmpty?: boolean;
+  /** Compact sizing for side-by-side filter bars. */
+  compact?: boolean;
 };
 
 function formatFilterLabel(label: string, count: number): string {
@@ -35,6 +37,7 @@ export function NotificationCategoryFilter<T extends string>({
   className,
   id = 'notification-category-filter',
   hideEmpty = false,
+  compact = false,
 }: NotificationCategoryFilterProps<T>) {
   const visibleOptions = options.filter((option) => {
     if (!hideEmpty) return true;
@@ -50,7 +53,16 @@ export function NotificationCategoryFilter<T extends string>({
 
   return (
     <Select value={value} onValueChange={(next) => onChange(next as T)}>
-      <SelectTrigger id={id} className={cn('notification-category-filter h-11 min-w-[11rem] rounded-xl', className)}>
+      <SelectTrigger
+        id={id}
+        className={cn(
+          'notification-category-filter w-full min-w-0 rounded-lg [&>span]:truncate',
+          compact
+            ? 'h-10 text-xs sm:h-11 sm:rounded-xl sm:text-sm'
+            : 'h-11 rounded-xl sm:min-w-[11rem] sm:w-auto',
+          className,
+        )}
+      >
         <SelectValue placeholder="Filter notifications">{selectedLabel}</SelectValue>
       </SelectTrigger>
       <SelectContent position="popper" sideOffset={6} className="notification-category-filter__content">

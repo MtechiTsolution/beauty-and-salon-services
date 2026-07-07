@@ -826,6 +826,11 @@ body.customer-mobile-menu-open .customer-booking-nav {
     padding: 0;
   }
 
+  .customer-booking-page .customer-booking-step--locations .customer-booking-cards-scroll {
+    max-height: none;
+    overflow-y: visible;
+  }
+
   .customer-booking-page .customer-booking-cards-scroll > * {
     min-width: 0;
     max-width: 100%;
@@ -848,16 +853,16 @@ body.customer-mobile-menu-open .customer-booking-nav {
   }
 
   .customer-booking-page .customer-booking-flow-wide {
-    padding-bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
   }
 
   .customer-booking-nav {
-    position: fixed;
+    position: sticky;
     bottom: 0;
     left: 0;
     right: 0;
     z-index: 35;
-    margin-top: 0;
+    margin-top: 0.75rem;
     margin-left: 0;
     margin-right: 0;
     width: 100%;
@@ -1390,6 +1395,63 @@ body.customer-mobile-menu-open .customer-booking-nav {
 .customer-booking-field {
   padding-left: 1rem !important;
   padding-right: 1rem !important;
+}
+
+/* Native date/time picker — custom visible icon (customer app) */
+.date-picker-input-native {
+  position: relative;
+  color-scheme: light;
+}
+
+.dark .date-picker-input-native {
+  color-scheme: dark;
+}
+
+.date-picker-input-native::-webkit-calendar-picker-indicator {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 3.5rem;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.date-picker-input-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: hsl(var(--primary));
+  opacity: 1;
+}
+
+.date-picker-input:has(.h-12) .date-picker-input-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  right: 1rem;
+}
+
+.dark .date-picker-input-icon {
+  color: hsl(var(--primary));
+  filter: drop-shadow(0 0 1px hsl(var(--background)));
+}
+
+/* Legacy native-only tweak for date/time fields without DatePickerInput */
+.dark input[type='date']:not(.date-picker-input-native),
+.dark input[type='time'],
+.dark input[type='datetime-local'] {
+  color-scheme: dark;
+}
+
+.dark input[type='date']:not(.date-picker-input-native)::-webkit-calendar-picker-indicator,
+.dark input[type='time']::-webkit-calendar-picker-indicator,
+.dark input[type='datetime-local']::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  width: 1.25rem;
+  height: 1.25rem;
+  opacity: 0.95;
+  filter: invert(1) brightness(1.25);
 }
 
 /* My bookings — prominent status tiles */
@@ -3646,4 +3708,37 @@ body.customer-mobile-menu-open .customer-booking-nav {
 
 html {
   scroll-behavior: smooth;
+}
+
+/* Customer notifications — mobile compact */
+@media (max-width: 767px) {
+  .customer-notifications-lead {
+    font-size: 0.75rem;
+    line-height: 1.35;
+  }
+
+  .customer-notification-item__message {
+    font-size: 0.75rem;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .customer-notification-empty-copy {
+    font-size: 0.75rem;
+    line-height: 1.35;
+  }
+}
+
+@media (min-width: 768px) {
+  .customer-notification-item__message {
+    font-size: 0.875rem;
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
 }

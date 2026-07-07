@@ -4,9 +4,12 @@ import { CouponPicker } from '@/features/booking/components/CouponPicker';
 import { BookingStatusHighlights } from '@/features/my-bookings/components/BookingStatusHighlights';
 import { CUSTOMER_BOOKING_STEPS } from '@/features/booking/lib/booking-steps';
 import {
-  clearBookingDraft,
-  loadBookingDraft,
-  saveBookingDraft,
+  clearActiveBookingDraft,
+  clearAllBookingDrafts,
+  getBookingDraftScope,
+  loadActiveBookingDraft,
+  migrateSessionBookingDraftToGuestEmail,
+  saveActiveBookingDraft,
 } from '@/features/booking/lib/booking-draft';
 import {
   bookingLineTitle,
@@ -14,8 +17,12 @@ import {
   packagePrimaryServiceId,
 } from '@/features/booking/lib/bookingOffering';
 import {
+  getBookableBranches,
   getBranchesForPackage,
+  getBranchesForService,
+  isPackageAvailableAtAnyBranch,
   isPackageAvailableAtBranch,
+  isServiceAvailableAtAnyBranch,
 } from '@/features/packages/lib/package-branches';
 import { useActivePackages } from '@/features/packages/hooks/useActivePackages';
 import { useAuth } from '@/features/auth/context/AuthContext';
@@ -30,6 +37,7 @@ import { CoverImage } from '@mit-salon/shared/components/CoverImage';
 import { branchImageHints } from '@mit-salon/shared/lib/branch-image-hints';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent } from '@mit-salon/shared/components/ui/card';
+import { DatePickerInput } from '@mit-salon/shared/components/DatePickerInput';
 import { Input } from '@mit-salon/shared/components/ui/input';
 import { Label } from '@mit-salon/shared/components/ui/label';
 import { Textarea } from '@mit-salon/shared/components/ui/textarea';
@@ -101,6 +109,8 @@ export default function BookAppointmentPage() {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [step]);
   const [packagePrefilled, setPackagePrefilled] = useState(false);
+  const [servicePrefilled, setServicePrefilled] = useState(false);
+  const offeringPrefilled = packagePrefilled || servicePrefilled;
   const [urlBookingApplied, setUrlBookingApplied] = useState(false);
   const [branch, setBranch] = useState<Branch | null>(null);
   const [offeringType, setOfferingType] = useState<BookingOfferingType>('service');
@@ -126,7 +136,15 @@ export default function BookAppointmentPage() {
 
   const bookingEmail = user?.email ?? guestEmail.trim();
   const bookingName = user?.full_name ?? guestName.trim();
-  const draftEmailKey = user?.email ?? (guestEmail.trim() ? guestEmail.trim().toLowerCase() : null);
+  const draftScope = useMemo(
+    () =>
+      getBookingDraftScope({
+        userEmail: user?.email,
+        guestEmail,
+        isAuthenticated,
+      }),
+    [user?.email, guestEmail, isAuthenticated],
+  );
   const guestEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(bookingEmail);
   const guestDetailsValid = bookingName.length > 0 && guestEmailValid;
 
@@ -163,21 +181,48 @@ export default function BookAppointmentPage() {
   });
 
   const activeBranches = branches.filter((b) => b.status === 'active');
+  const bookableServices = useMemo(
+    () => services.filter((s) => isServiceAvailableAtAnyBranch(s, activeBranches)),
+    [services, activeBranches],
+  );
+  const bookablePackages = useMemo(
+    () => packages.filter((p) => isPackageAvailableAtAnyBranch(p, activeBranches)),
+    [packages, activeBranches],
+  );
+  const bookableBranches = useMemo(
+    () => getBookableBranches(activeBranches, bookableServices, bookablePackages),
+    [activeBranches, bookableServices, bookablePackages],
+  );
   const branchChoices = useMemo(() => {
     if (packagePrefilled && selectedPackage) {
-      return getBranchesForPackage(selectedPackage, activeBranches, services);
+      return getBranchesForPackage(selectedPackage, activeBranches, bookableServices);
     }
-    return activeBranches;
-  }, [packagePrefilled, selectedPackage, activeBranches, services]);
-  const branchServices = services.filter(
-    (s) => s.status === 'active' && branch && s.branch_ids.includes(branch.id),
+    if (servicePrefilled && service) {
+      return getBranchesForService(service, activeBranches);
+    }
+    return bookableBranches;
+  }, [
+    packagePrefilled,
+    servicePrefilled,
+    selectedPackage,
+    service,
+    activeBranches,
+    bookableServices,
+    bookableBranches,
+  ]);
+  const branchServices = useMemo(
+    () =>
+      branch
+        ? bookableServices.filter((s) => s.branch_ids.includes(branch.id))
+        : [],
+    [bookableServices, branch],
   );
   const branchPackages = useMemo(() => {
     if (!branch) return [];
-    return packages.filter(
-      (p) => p.status === 'active' && isPackageAvailableAtBranch(p, branch.id, activeBranches, services),
+    return bookablePackages.filter((p) =>
+      isPackageAvailableAtBranch(p, branch.id, activeBranches, bookableServices),
     );
-  }, [packages, branch, activeBranches, services]);
+  }, [bookablePackages, branch, activeBranches, bookableServices]);
   const activeOfferingType: BookingOfferingType | null = selectedPackage
     ? 'package'
     : service
@@ -302,78 +347,151 @@ export default function BookAppointmentPage() {
   useEffect(() => {
     if (done || urlBookingApplied) return;
     const packageId = searchParams.get('package');
+    const serviceId = searchParams.get('service');
     const branchId = searchParams.get('branch');
-    if (!packageId) return;
-    if (!branches.length || !packages.length) return;
+    if (!packageId && !serviceId && !branchId) return;
+    if (!branches.length || !bookableServices.length) return;
 
-    const pkg = packages.find((p) => p.id === packageId && p.status === 'active');
-    if (!pkg) {
-      toast.error('Package not found or no longer available');
+    const finishUrlBooking = () => {
       setSearchParams({}, { replace: true });
       setUrlBookingApplied(true);
       setDraftReady(true);
+    };
+
+    clearAllBookingDrafts({ userEmail: user?.email, guestEmail });
+
+    if (packageId) {
+      if (!bookablePackages.length) return;
+      const pkg = bookablePackages.find((p) => p.id === packageId);
+      if (!pkg) {
+        toast.error('Package not found or no longer available');
+        finishUrlBooking();
+        return;
+      }
+
+      setOfferingType('package');
+      setSelectedPackage(pkg);
+      setPackagePrefilled(true);
+      setServicePrefilled(false);
+      setService(null);
+      setEmployee(null);
+      setDate('');
+      setTime('');
+      setDiscount(0);
+      setCouponCode('');
+      setResumedDraft(false);
+
+      if (branchId) {
+        const b = getBranchesForPackage(pkg, activeBranches, bookableServices).find((x) => x.id === branchId);
+        if (!b) {
+          toast.error('This salon is not available for the selected package');
+          setBranch(null);
+          setStep(0);
+        } else {
+          setBranch(b);
+          setStep(2);
+        }
+      } else {
+        setBranch(null);
+        setStep(0);
+      }
+
+      finishUrlBooking();
       return;
     }
 
-    if (user?.email) clearBookingDraft(user.email);
+    if (serviceId) {
+      const svc = bookableServices.find((s) => s.id === serviceId);
+      if (!svc) {
+        toast.error('Service not found or no longer available');
+        finishUrlBooking();
+        return;
+      }
 
-    setOfferingType('package');
-    setSelectedPackage(pkg);
-    setPackagePrefilled(true);
-    setService(null);
-    setEmployee(null);
-    setDate('');
-    setTime('');
-    setDiscount(0);
-    setCouponCode('');
-    setResumedDraft(false);
+      setOfferingType('service');
+      setService(svc);
+      setServicePrefilled(true);
+      setPackagePrefilled(false);
+      setSelectedPackage(null);
+      setEmployee(null);
+      setDate('');
+      setTime('');
+      setDiscount(0);
+      setCouponCode('');
+      setResumedDraft(false);
 
-    if (branchId) {
-      const b = activeBranches.find((x) => x.id === branchId);
-      if (!b) {
-        toast.error('This salon is not available for the selected package');
+      if (branchId) {
+        const b = getBranchesForService(svc, activeBranches).find((x) => x.id === branchId);
+        if (!b) {
+          toast.error('This salon does not offer the selected service');
+          setBranch(null);
+          setStep(0);
+        } else {
+          setBranch(b);
+          setStep(2);
+        }
+      } else {
         setBranch(null);
         setStep(0);
-      } else {
-        setBranch(b);
-        setStep(2);
       }
-    } else {
-      setBranch(null);
-      setStep(0);
+
+      finishUrlBooking();
+      return;
     }
 
-    setSearchParams({}, { replace: true });
-    setUrlBookingApplied(true);
-    setDraftReady(true);
+    if (branchId) {
+      const b = bookableBranches.find((x) => x.id === branchId);
+      if (!b) {
+        toast.error('Salon not found or has no bookable services yet');
+        finishUrlBooking();
+        return;
+      }
+
+      setBranch(b);
+      setOfferingType('service');
+      setService(null);
+      setSelectedPackage(null);
+      setPackagePrefilled(false);
+      setServicePrefilled(false);
+      setEmployee(null);
+      setDate('');
+      setTime('');
+      setDiscount(0);
+      setCouponCode('');
+      setResumedDraft(false);
+      setStep(1);
+      finishUrlBooking();
+    }
   }, [
     done,
     urlBookingApplied,
     searchParams,
     branches.length,
-    packages,
+    bookablePackages,
+    bookableServices,
     activeBranches,
+    bookableBranches,
     user?.email,
     setSearchParams,
   ]);
 
   useEffect(() => {
-    if (!draftEmailKey || draftReady || done || urlBookingApplied) return;
+    if (!draftScope || draftReady || done || urlBookingApplied) return;
     if (!branches.length || !services.length || !employees.length) return;
-    if (searchParams.get('package')) return;
+    if (searchParams.get('package') || searchParams.get('service') || searchParams.get('branch')) return;
 
-    const draft = loadBookingDraft(draftEmailKey);
+    const draft = loadActiveBookingDraft(draftScope);
     if (!draft) {
       setDraftReady(true);
       return;
     }
 
     const restoredBranch = draft.branchId
-      ? activeBranches.find((b) => b.id === draft.branchId) ?? null
+      ? bookableBranches.find((b) => b.id === draft.branchId) ?? null
       : null;
 
     if (draft.branchId && !restoredBranch) {
-      clearBookingDraft(draftEmailKey);
+      clearActiveBookingDraft(draftScope);
       setDraftReady(true);
       return;
     }
@@ -382,11 +500,11 @@ export default function BookAppointmentPage() {
     setOfferingType(draft.offeringType);
 
     if (draft.serviceId) {
-      const s = services.find((x) => x.id === draft.serviceId && x.status === 'active');
+      const s = bookableServices.find((x) => x.id === draft.serviceId);
       if (s) setService(s);
     }
     if (draft.packageId) {
-      const p = packages.find((x) => x.id === draft.packageId && x.status === 'active');
+      const p = bookablePackages.find((x) => x.id === draft.packageId);
       if (p) setSelectedPackage(p);
     }
     if (draft.employeeId && restoredBranch) {
@@ -400,35 +518,43 @@ export default function BookAppointmentPage() {
     setCouponCode(draft.couponCode || '');
     setDiscount(draft.discount || 0);
     setNotes(draft.notes || '');
+    if (!isAuthenticated) {
+      if (draft.guestName) setGuestName(draft.guestName);
+      if (draft.guestEmail) setGuestEmail(draft.guestEmail);
+      if (draft.guestPhone) setGuestPhone(draft.guestPhone);
+    }
     const resumeStep = Math.min(Math.max(0, draft.step), STEP_COUNT - 1);
     setStep(resumeStep);
     setResumedDraft(true);
     setDraftReady(true);
     toast.info(`Resuming your booking from step ${resumeStep + 1}`);
   }, [
-    draftEmailKey,
+    draftScope,
     branches.length,
     services.length,
     employees.length,
-    packages.length,
+    bookableServices,
+    bookablePackages,
+    bookableBranches,
     draftReady,
     done,
-    activeBranches,
-    branches,
-    services,
-    employees,
-    packages,
+    isAuthenticated,
     urlBookingApplied,
     searchParams,
   ]);
 
   useEffect(() => {
-    if (!draftEmailKey || done || !draftReady) return;
+    if (isAuthenticated || !guestEmailValid || !draftReady) return;
+    migrateSessionBookingDraftToGuestEmail(guestEmail);
+  }, [isAuthenticated, guestEmail, guestEmailValid, draftReady]);
+
+  useEffect(() => {
+    if (!draftScope || done || !draftReady) return;
     if (!hasProgress) {
-      clearBookingDraft(draftEmailKey);
+      clearActiveBookingDraft(draftScope);
       return;
     }
-    saveBookingDraft(draftEmailKey, {
+    saveActiveBookingDraft(draftScope, {
       step,
       branchId: branch?.id ?? null,
       offeringType: activeOfferingType ?? offeringType,
@@ -441,10 +567,13 @@ export default function BookAppointmentPage() {
       couponCode,
       discount,
       notes,
+      guestName: !isAuthenticated && guestName.trim() ? guestName.trim() : undefined,
+      guestEmail: !isAuthenticated && guestEmail.trim() ? guestEmail.trim().toLowerCase() : undefined,
+      guestPhone: !isAuthenticated && guestPhone.trim() ? guestPhone.trim() : undefined,
       savedAt: new Date().toISOString(),
     });
   }, [
-    draftEmailKey,
+    draftScope,
     done,
     draftReady,
     hasProgress,
@@ -461,17 +590,21 @@ export default function BookAppointmentPage() {
     couponCode,
     discount,
     notes,
+    isAuthenticated,
+    guestName,
+    guestEmail,
+    guestPhone,
   ]);
 
   const discardDraft = () => {
-    if (user?.email) clearBookingDraft(user.email);
-    if (guestEmail.trim()) clearBookingDraft(guestEmail.trim().toLowerCase());
+    clearAllBookingDrafts({ userEmail: user?.email, guestEmail });
     setStep(0);
     setBranch(null);
     setOfferingType('service');
     setService(null);
     setSelectedPackage(null);
     setPackagePrefilled(false);
+    setServicePrefilled(false);
     setEmployee(null);
     setDate('');
     setTime('');
@@ -490,7 +623,7 @@ export default function BookAppointmentPage() {
   const bookMutation = useMutation({
     mutationFn: (data: Omit<Booking, 'id' | 'created_at' | 'updated_at'>) => bookingsApi.create(data),
     onSuccess: async (booking) => {
-      if (draftEmailKey) clearBookingDraft(draftEmailKey);
+      clearAllBookingDrafts({ userEmail: user?.email, guestEmail });
       setConfirmedBooking(booking);
       await invalidateAllCatalogQueries(queryClient);
       setDone(true);
@@ -515,9 +648,12 @@ export default function BookAppointmentPage() {
     setResumedDraft(false);
   };
 
-  const selectBranch = (b: Branch, options?: { keepPackage?: boolean }) => {
+  const selectBranch = (b: Branch, options?: { keepPackage?: boolean; keepService?: boolean }) => {
     setBranch(b);
-    setService(null);
+    if (!options?.keepService) {
+      setService(null);
+      setServicePrefilled(false);
+    }
     if (!options?.keepPackage) {
       setSelectedPackage(null);
       setPackagePrefilled(false);
@@ -527,24 +663,30 @@ export default function BookAppointmentPage() {
     setTime('');
     setDiscount(0);
     setCouponCode('');
+
+    if ((options?.keepPackage && selectedPackage) || (options?.keepService && service)) {
+      setStep(2);
+    } else {
+      setStep(1);
+    }
   };
 
   const goBack = () => {
     setStep((s) => {
-      if (s === 2 && packagePrefilled) return 0;
+      if (s === 2 && offeringPrefilled) return 0;
       return Math.max(0, s - 1);
     });
   };
 
   const goToStep = (target: number) => {
     if (target >= step || target < 0) return;
-    if (target === 1 && packagePrefilled) return;
+    if (target === 1 && offeringPrefilled) return;
     setStep(target);
   };
 
   const goNext = () => {
     setStep((s) => {
-      if (s === 0 && packagePrefilled && branch) return 2;
+      if (s === 0 && offeringPrefilled && branch) return 2;
       return Math.min(STEP_COUNT - 1, s + 1);
     });
   };
@@ -853,7 +995,7 @@ export default function BookAppointmentPage() {
                 <BookingStepper
                   currentStep={step}
                   onStepClick={goToStep}
-                  disabledSteps={packagePrefilled ? [1] : undefined}
+                  disabledSteps={offeringPrefilled ? [1] : undefined}
                 />
               </div>
               <div className="customer-booking-page-header-action-cell flex shrink-0 items-center justify-end">
@@ -897,7 +1039,7 @@ export default function BookAppointmentPage() {
                 <BookingStepper
                   currentStep={step}
                   onStepClick={goToStep}
-                  disabledSteps={packagePrefilled ? [1] : undefined}
+                  disabledSteps={offeringPrefilled ? [1] : undefined}
                 />
               </div>
             </div>
@@ -911,12 +1053,19 @@ export default function BookAppointmentPage() {
             <h2 className="font-heading text-balance text-lg font-semibold sm:text-xl md:text-2xl">
               {packagePrefilled && selectedPackage
                 ? 'Choose salon for your package'
-                : 'Choose your location'}
+                : servicePrefilled && service
+                  ? 'Choose salon for your service'
+                  : 'Choose your location'}
             </h2>
             <p className="mt-1 text-pretty text-sm text-muted-foreground sm:text-base">
               {packagePrefilled && selectedPackage ? (
                 <>
                   Booking <span className="font-medium text-foreground">{selectedPackage.name}</span> —{' '}
+                  {branchChoices.length} salon{branchChoices.length !== 1 ? 's' : ''} available.
+                </>
+              ) : servicePrefilled && service ? (
+                <>
+                  Booking <span className="font-medium text-foreground">{service.title}</span> —{' '}
                   {branchChoices.length} salon{branchChoices.length !== 1 ? 's' : ''} available.
                 </>
               ) : (
@@ -934,14 +1083,23 @@ export default function BookAppointmentPage() {
                 </span>
               </div>
             )}
+            {servicePrefilled && service && (
+              <div className="mx-auto mt-4 flex max-w-lg items-center gap-3 rounded-xl border border-primary/25 bg-primary/5 px-4 py-3 text-sm">
+                <Scissors className="h-5 w-5 shrink-0 text-primary" />
+                <span>
+                  <span className="font-semibold">{service.title}</span> is already selected — pick a salon to
+                  continue.
+                </span>
+              </div>
+            )}
             <div className="customer-booking-cards-scroll customer-booking-cards-grid customer-booking-cards-grid--locations mt-4 md:mt-5">
               {branchChoices.length === 0 ? (
                 <p className="col-span-full py-12 text-center text-muted-foreground">
-                  {packagePrefilled
-                    ? 'No salons offer this package right now.'
+                  {offeringPrefilled
+                    ? `No salons offer this ${packagePrefilled ? 'package' : 'service'} right now.`
                     : (
                       <>
-                        No branches yet. <Link to="/explore" className="text-primary underline">Explore</Link>
+                        No bookable salons yet. <Link to="/explore" className="text-primary underline">Explore</Link>
                       </>
                     )}
                 </p>
@@ -953,7 +1111,12 @@ export default function BookAppointmentPage() {
                       'customer-booking-select-card customer-card-hover cursor-pointer overflow-hidden shadow-md',
                       branch?.id === b.id && 'customer-card-selected',
                     )}
-                    onClick={() => selectBranch(b, { keepPackage: packagePrefilled })}
+                    onClick={() =>
+                      selectBranch(b, {
+                        keepPackage: packagePrefilled,
+                        keepService: servicePrefilled,
+                      })
+                    }
                   >
                     <div className="aspect-[16/10] overflow-hidden lg:aspect-video">
                       <CoverImage
@@ -983,7 +1146,7 @@ export default function BookAppointmentPage() {
           </div>
         )}
 
-        {step === 1 && !packagePrefilled && (
+        {step === 1 && !offeringPrefilled && (
           <div className="customer-booking-flow">
             <h2 className="font-heading text-2xl font-semibold">Service or package</h2>
             <p className="mt-2 hidden text-muted-foreground lg:block">
@@ -1116,7 +1279,9 @@ export default function BookAppointmentPage() {
             <p className="mt-2 text-muted-foreground">
               {packagePrefilled && selectedPackage
                 ? `${selectedPackage.name} at ${branch?.name}`
-                : `Specialists available for ${lineTitle} at ${branch?.name}`}
+                : servicePrefilled && service
+                  ? `${service.title} at ${branch?.name}`
+                  : `Specialists available for ${lineTitle} at ${branch?.name}`}
             </p>
             <div className="customer-booking-cards-scroll customer-booking-cards-grid customer-booking-cards-grid--compact mt-8">
               {staffOptions.length === 0 ? (
@@ -1181,9 +1346,8 @@ export default function BookAppointmentPage() {
                   <Label htmlFor="date" className="text-base">
                     Appointment date
                   </Label>
-                  <Input
+                  <DatePickerInput
                     id="date"
-                    type="date"
                     className="h-12 text-base"
                     min={format(startOfToday(), 'yyyy-MM-dd')}
                     value={date}

@@ -1,31 +1,30 @@
 import type { Branch, Package, Service } from '../types';
 
+const activeBranchesList = (branches: Branch[]) => branches.filter((b) => b.status === 'active');
+
+/**
+ * Salons where a service can be booked (admin `service.branch_ids`).
+ */
+export function getBranchesForService(service: Service, branches: Branch[]): Branch[] {
+  const activeBranches = activeBranchesList(branches);
+  const assignedIds = (service.branch_ids ?? []).filter(Boolean);
+  if (!assignedIds.length) return [];
+  return activeBranches.filter((b) => assignedIds.includes(b.id));
+}
+
 /**
  * Salons where a package can be booked.
  * Uses admin `package.branch_ids` (package_branches) as the source of truth.
- * When no branches are assigned on the package, falls back to salons that offer every included service.
  */
 export function getBranchesForPackage(
   pkg: Package,
   branches: Branch[],
-  services: Service[] = [],
+  _services: Service[] = [],
 ): Branch[] {
   const activeBranches = branches.filter((b) => b.status === 'active');
   const assignedIds = (pkg.branch_ids ?? []).filter(Boolean);
-
-  if (assignedIds.length > 0) {
-    return activeBranches.filter((b) => assignedIds.includes(b.id));
-  }
-
-  const packageServices = (pkg.service_ids ?? [])
-    .map((id) => services.find((s) => s.id === id))
-    .filter((s): s is Service => !!s && s.status === 'active');
-
-  if (!packageServices.length) return [];
-
-  return activeBranches.filter((branch) =>
-    packageServices.every((s) => s.branch_ids.includes(branch.id)),
-  );
+  if (!assignedIds.length) return [];
+  return activeBranches.filter((b) => assignedIds.includes(b.id));
 }
 
 export function isPackageAvailableAtBranch(
@@ -40,7 +39,52 @@ export function isPackageAvailableAtBranch(
 export function packageAvailableBranchCount(
   pkg: Package,
   branches: Branch[],
-  services: Service[] = [],
+  _services: Service[] = [],
 ): number {
-  return getBranchesForPackage(pkg, branches, services).length;
+  return getBranchesForPackage(pkg, branches).length;
+}
+
+const activeBranchIdSet = (branches: Branch[]) =>
+  new Set(activeBranchesList(branches).map((b) => b.id));
+
+/**
+ * Active salons that have at least one linked service or package available to book.
+ */
+export function getBookableBranches(
+  branches: Branch[],
+  services: Service[],
+  packages: Package[],
+): Branch[] {
+  const activeBranches = activeBranchesList(branches);
+  const activeIds = activeBranchIdSet(branches);
+  const bookableIds = new Set<string>();
+
+  for (const service of services) {
+    if (service.status !== 'active') continue;
+    for (const id of service.branch_ids ?? []) {
+      if (activeIds.has(id)) bookableIds.add(id);
+    }
+  }
+
+  for (const pkg of packages) {
+    if (pkg.status !== 'active') continue;
+    for (const id of pkg.branch_ids ?? []) {
+      if (activeIds.has(id)) bookableIds.add(id);
+    }
+  }
+
+  return activeBranches.filter((b) => bookableIds.has(b.id));
+}
+
+/** Service is customer-bookable only when linked to at least one active salon. */
+export function isServiceAvailableAtAnyBranch(service: Service, branches: Branch[]): boolean {
+  if (service.status !== 'active') return false;
+  const activeIds = activeBranchIdSet(branches);
+  return (service.branch_ids ?? []).some((id) => activeIds.has(id));
+}
+
+/** Package is customer-bookable only when explicitly linked to at least one active salon. */
+export function isPackageAvailableAtAnyBranch(pkg: Package, branches: Branch[]): boolean {
+  if (pkg.status !== 'active') return false;
+  return packageAvailableBranchCount(pkg, branches) > 0;
 }
