@@ -1,7 +1,9 @@
+import { CatalogPopularBadge } from '@/features/catalog/components/CatalogPopularBadge';
 import { OfferingBookDialog } from '@/features/booking/components/OfferingBookDialog';
 import { getBranchesForPackage } from '@/features/packages/lib/package-branches';
 import { LandingCenteredShowcase } from '@/features/welcome/components/LandingCenteredShowcase';
 import { LandingCoverImage } from '@/features/welcome/components/LandingCoverImage';
+import { formatBranchLocationsLabel } from '@mit-salon/shared/lib/branch-location-sort';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent } from '@mit-salon/shared/components/ui/card';
 import type { Branch, Package, Service } from '@mit-salon/shared/types';
@@ -41,25 +43,30 @@ export function LandingPackagesCarousel({ packages, branches, services }: Landin
         }
         title="Packages & bundles"
         description={
-          visiblePackages.length === 0
-            ? 'Packages appear here once offers are linked to a salon — check back soon.'
-            : 'Curated multi-session bundles designed for value — ideal for regular visits and complete care routines.'
+          visiblePackages.length === 0 ? (
+            'Packages appear here once offers are linked to a salon — check back soon.'
+          ) : (
+            <>
+              <span className="md:hidden">Multi-session bundles at better rates.</span>
+              <span className="hidden md:inline">
+                Curated multi-session bundles designed for value — ideal for regular visits and complete care
+                routines.
+              </span>
+            </>
+          )
         }
       >
         {visiblePackages.length > 0 ? (
           visiblePackages.map((pkg) => {
             const available = getBranchesForPackage(pkg, branches, services);
-            const locationLabel =
-              available.length > 0
-                ? `Available at ${available.length} salon${available.length === 1 ? '' : 's'}`
-                : null;
+            const locationLabel = formatBranchLocationsLabel(available);
 
             return (
               <Card
                 key={pkg.id}
                 className="landing-showcase-card landing-showcase-card--media landing-showcase-card--compact flex h-full w-full flex-col overflow-hidden"
               >
-                <div className="landing-media-frame landing-media-frame--compact aspect-[5/3] shrink-0 overflow-hidden">
+                <div className="landing-showcase-card__media-wrap landing-media-frame landing-media-frame--compact aspect-[5/3] shrink-0 overflow-hidden">
                   <LandingCoverImage
                     src={pkg.image_url}
                     alt={pkg.name}
@@ -68,6 +75,13 @@ export function LandingPackagesCarousel({ packages, branches, services }: Landin
                     entityName={pkg.name}
                     entityDescription={pkg.description}
                     className="h-full w-full object-cover transition duration-700 hover:scale-105"
+                  />
+                  <CatalogPopularBadge
+                    entityType="package"
+                    entityId={pkg.id}
+                    isFeatured={pkg.is_featured}
+                    variant="overlay"
+                    className="landing-showcase-card__popular-badge"
                   />
                 </div>
                 <CardContent className="flex flex-col p-4 text-center sm:flex-1 sm:p-5">

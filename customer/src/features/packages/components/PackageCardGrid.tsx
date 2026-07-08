@@ -1,7 +1,9 @@
 import { CustomerPackageCard } from '@/features/packages/components/CustomerPackageCard';
 import { PackageBookDialog } from '@/features/packages/components/PackageBookDialog';
 import { getBranchesForPackage } from '@/features/packages/lib/package-branches';
-import { branchesApi, servicesApi } from '@mit-salon/shared/api';
+import { useCustomerBranches } from '@/features/location/hooks/useCustomerBranches';
+import { servicesApi } from '@mit-salon/shared/api';
+import { formatBranchLocationsLabel } from '@mit-salon/shared/lib/branch-location-sort';
 import { filterCustomerPackages } from '@mit-salon/shared/lib/customer-catalog';
 import type { Branch, Package, Service } from '@mit-salon/shared/types';
 import { useQuery } from '@tanstack/react-query';
@@ -18,8 +20,7 @@ type PackageCardGridProps = {
 
 function packageLocationLabel(pkg: Package, branches: Branch[], services: Service[]): string | null {
   const available = getBranchesForPackage(pkg, branches, services);
-  if (available.length === 0) return null;
-  return `Available at ${available.length} salon${available.length === 1 ? '' : 's'}`;
+  return formatBranchLocationsLabel(available);
 }
 
 export function PackageCardGrid({
@@ -31,10 +32,7 @@ export function PackageCardGrid({
 }: PackageCardGridProps) {
   const [bookingPackage, setBookingPackage] = useState<Package | null>(null);
 
-  const { data: branches = [] } = useQuery({
-    queryKey: ['branches-package-grid'],
-    queryFn: () => branchesApi.list(),
-  });
+  const { data: branches = [] } = useCustomerBranches({ queryKeyPrefix: 'branches-package-grid' });
 
   const { data: services = [] } = useQuery({
     queryKey: ['services-package-grid'],

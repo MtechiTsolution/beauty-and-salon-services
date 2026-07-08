@@ -1,6 +1,5 @@
 import { Button } from './ui/button';
 import { DatePickerInput } from './DatePickerInput';
-import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { isBookingDateRangeValid } from '../lib/booking-date-filter';
 import { cn } from '../lib/utils';
@@ -57,47 +56,25 @@ export function BookingDateRangeFilter({
             <Label htmlFor={`${idPrefix}-from`} className="text-sm font-medium">
               From date
             </Label>
-            {isAdmin ? (
-              <Input
-                id={`${idPrefix}-from`}
-                type="date"
-                value={from}
-                max={to || undefined}
-                onChange={(e) => onFromChange(e.target.value)}
-                className="h-11 rounded-xl"
-              />
-            ) : (
-              <DatePickerInput
-                id={`${idPrefix}-from`}
-                value={from}
-                max={to || undefined}
-                onChange={(e) => onFromChange(e.target.value)}
-                className="h-11 rounded-xl"
-              />
-            )}
+            <DatePickerInput
+              id={`${idPrefix}-from`}
+              value={from}
+              max={to || undefined}
+              onChange={(e) => onFromChange(e.target.value)}
+              className={cn('h-11 rounded-xl', isAdmin && 'rounded-xl')}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor={`${idPrefix}-to`} className="text-sm font-medium">
               To date
             </Label>
-            {isAdmin ? (
-              <Input
-                id={`${idPrefix}-to`}
-                type="date"
-                value={to}
-                min={from || undefined}
-                onChange={(e) => onToChange(e.target.value)}
-                className="h-11 rounded-xl"
-              />
-            ) : (
-              <DatePickerInput
-                id={`${idPrefix}-to`}
-                value={to}
-                min={from || undefined}
-                onChange={(e) => onToChange(e.target.value)}
-                className="h-11 rounded-xl"
-              />
-            )}
+            <DatePickerInput
+              id={`${idPrefix}-to`}
+              value={to}
+              min={from || undefined}
+              onChange={(e) => onToChange(e.target.value)}
+              className={cn('h-11 rounded-xl', isAdmin && 'rounded-xl')}
+            />
           </div>
         </div>
         {!hideActions && (

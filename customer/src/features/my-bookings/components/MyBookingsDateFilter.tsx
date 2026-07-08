@@ -17,10 +17,10 @@ import { cn } from '@mit-salon/shared/lib/utils';
 import { CalendarRange, Check } from 'lucide-react';
 
 const QUICK_PRESETS: { id: BookingDateQuickPreset; label: string }[] = [
-  { id: 'today', label: 'Today' },
-  { id: 'weekly', label: 'Weekly' },
-  { id: 'monthly', label: 'Monthly' },
-  { id: 'three_months', label: '3 months' },
+  { id: 'today', label: "Today's appointments" },
+  { id: 'weekly', label: 'This week' },
+  { id: 'monthly', label: 'This month' },
+  { id: 'three_months', label: 'Last 3 months' },
 ];
 
 type MyBookingsMobileDateFilterProps = {

@@ -63,7 +63,9 @@ export type LandingTestimonial = {
   rating: number;
   comment: string;
   service_title?: string;
+  service_id?: string;
   branch_name?: string;
+  branch_id?: string;
   employee_name?: string;
 };
 

@@ -1,8 +1,10 @@
+import { CatalogPopularBadge } from '@/features/catalog/components/CatalogPopularBadge';
 import {
   getBranchesForPackage,
   getBranchesForService,
 } from '@/features/packages/lib/package-branches';
-import { branchesApi, servicesApi } from '@mit-salon/shared/api';
+import { useCustomerBranches } from '@/features/location/hooks/useCustomerBranches';
+import { servicesApi } from '@mit-salon/shared/api';
 import { CoverImage } from '@mit-salon/shared/components/CoverImage';
 import { branchImageHints } from '@mit-salon/shared/lib/branch-image-hints';
 import { packageDurationMinutes } from '@mit-salon/shared/lib/package-duration';
@@ -32,9 +34,8 @@ export function OfferingBookDialog({ service, pkg, open, onOpenChange }: Offerin
   const offering = resolvedService ?? resolvedPackage;
   const isPackage = resolvedPackage != null;
 
-  const { data: branches = [], isLoading: loadingBranches } = useQuery({
-    queryKey: ['branches-offering-book'],
-    queryFn: () => branchesApi.list(),
+  const { data: branches = [], isLoading: loadingBranches } = useCustomerBranches({
+    queryKeyPrefix: 'branches-offering-book',
     enabled: open && offering != null,
   });
 
@@ -87,7 +88,24 @@ export function OfferingBookDialog({ service, pkg, open, onOpenChange }: Offerin
             {isPackage ? <Gift className="h-3.5 w-3.5" /> : <Scissors className="h-3.5 w-3.5" />}
             Book {isPackage ? 'package' : 'service'}
           </p>
-          <h2 className="font-heading mt-1 text-lg font-semibold">{title}</h2>
+          <h2 className="font-heading mt-1 flex flex-wrap items-center gap-2 text-lg font-semibold">
+            {title}
+            {isPackage ? (
+              <CatalogPopularBadge
+                entityType="package"
+                entityId={resolvedPackage.id}
+                isFeatured={resolvedPackage.is_featured}
+                variant="chip"
+              />
+            ) : (
+              <CatalogPopularBadge
+                entityType="service"
+                entityId={resolvedService!.id}
+                isFeatured={resolvedService!.is_featured}
+                variant="chip"
+              />
+            )}
+          </h2>
           <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
             {isPackage ? null : <Clock className="h-3.5 w-3.5 shrink-0" />}
             {subtitle}

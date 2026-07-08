@@ -58,12 +58,27 @@ export default function NotificationsPage() {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
+  const typeFilterProps = {
+    value: category,
+    onChange: setCategory,
+    options: CUSTOMER_NOTIFICATION_FILTERS,
+    getCount: (filterId: NotificationFilterCategory) =>
+      filterId === 'all'
+        ? notifications.length
+        : notifications.filter((n) => notificationFilterCategory(n) === filterId).length,
+    hideEmpty: true as const,
+    compact: true as const,
+    className: 'customer-notification-filter__select',
+  };
+
+  const showTypeFilter = notifications.length > 0;
+
   return (
     <div className="customer-page customer-notifications-page">
       <div className="customer-container-wide py-8 md:py-16">
         <header className="customer-notifications-header">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
+          <div className="customer-notifications-header__row">
+            <div className="customer-notifications-header__title">
               <h1 className="font-heading text-2xl font-bold leading-tight md:text-4xl">Notifications</h1>
               <p className="customer-notifications-lead mt-1 text-sm text-muted-foreground md:mt-2">
                 <span className="md:hidden">Bookings, offers & salon updates.</span>
@@ -73,12 +88,47 @@ export default function NotificationsPage() {
               </p>
             </div>
 
-            {unreadCount > 0 && (
-              <div className="customer-notification-unread-stat shrink-0 rounded-xl border border-primary/25 bg-primary/5 px-2.5 py-1.5 text-center md:px-3 md:py-2">
-                <p className="text-base font-bold leading-none text-primary tabular-nums md:text-lg">{unreadCount}</p>
-                <p className="mt-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Unread</p>
+            <div className="customer-notifications-header__tools">
+              {showTypeFilter ? (
+                <div className="customer-notification-filter customer-notification-filter--header">
+                  <p className="customer-notification-filter__label">Filter by type</p>
+                  <NotificationCategoryFilter
+                    {...typeFilterProps}
+                    id="customer-notifications-type-filter"
+                  />
+                </div>
+              ) : null}
+
+              {unreadCount > 0 ? (
+                <>
+                  <div className="customer-notification-unread-stat customer-notification-unread-stat--header">
+                    <span className="customer-notification-unread-stat__value">{unreadCount}</span>
+                    <span className="customer-notification-unread-stat__label">Unread</span>
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="customer-notifications-mark-all customer-notifications-mark-all--header gap-2 rounded-full"
+                    onClick={() => markAllRead.mutate()}
+                    disabled={markAllRead.isPending}
+                  >
+                    <CheckCheck className="h-4 w-4" />
+                    Mark all read
+                  </Button>
+                </>
+              ) : null}
+            </div>
+
+            {unreadCount > 0 ? (
+              <div className="customer-notifications-header__aside">
+                <div className="customer-notification-unread-stat customer-notification-unread-stat--mobile">
+                  <span className="customer-notification-unread-stat__value">{unreadCount}</span>
+                  <span className="customer-notification-unread-stat__label">Unread</span>
+                </div>
               </div>
-            )}
+            ) : null}
           </div>
 
           {unreadCount > 0 && (
@@ -86,7 +136,7 @@ export default function NotificationsPage() {
               type="button"
               variant="outline"
               size="sm"
-              className="customer-notifications-mark-all mt-3 gap-2 rounded-full md:mt-4"
+              className="customer-notifications-mark-all mt-3 gap-2 rounded-full md:hidden"
               onClick={() => markAllRead.mutate()}
               disabled={markAllRead.isPending}
             >
@@ -96,26 +146,17 @@ export default function NotificationsPage() {
           )}
         </header>
 
-        {notifications.length > 0 && (
-          <div className="customer-notification-filter mt-4 rounded-xl border border-border/70 bg-card p-3 shadow-sm md:mt-6 md:p-4">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-              <p className="text-xs font-medium text-foreground md:text-sm">Filter by type</p>
+        {showTypeFilter ? (
+          <div className="customer-notification-filter customer-notification-filter--mobile mt-4 rounded-xl border border-border/70 bg-card p-3 shadow-sm md:hidden md:mt-6 md:p-4">
+            <div className="customer-notification-filter__row">
+              <p className="customer-notification-filter__label">Filter by type</p>
               <NotificationCategoryFilter
-                value={category}
-                onChange={setCategory}
-                options={CUSTOMER_NOTIFICATION_FILTERS}
-                getCount={(filterId) =>
-                  filterId === 'all'
-                    ? notifications.length
-                    : notifications.filter((n) => notificationFilterCategory(n) === filterId).length
-                }
-                hideEmpty
-                className="sm:max-w-[14rem] sm:shrink-0"
-                id="customer-notifications-type-filter"
+                {...typeFilterProps}
+                id="customer-notifications-type-filter-mobile"
               />
             </div>
           </div>
-        )}
+        ) : null}
 
         {isLoading ? (
           <p className="mt-8 text-sm text-muted-foreground md:mt-10">Loading notifications…</p>
@@ -170,12 +211,12 @@ export default function NotificationsPage() {
                         <Bell className="h-3.5 w-3.5 md:h-4 md:w-4" />
                       </div>
                       <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
-                          <h3 className="text-sm font-semibold leading-snug">{n.title}</h3>
-                          <Badge className={`${notificationTypeColors[n.type]} border-0 text-[10px] capitalize`}>
+                        <div className="flex flex-wrap items-center gap-1.5 md:flex-nowrap md:gap-2">
+                          <h3 className="text-sm font-semibold leading-snug md:truncate">{n.title}</h3>
+                          <Badge className={`${notificationTypeColors[n.type]} shrink-0 border-0 text-[10px] capitalize`}>
                             {sectionLabel}
                           </Badge>
-                          {unread && <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden />}
+                          {unread && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden />}
                         </div>
                         {couponCode && (
                           <p className="mb-1.5 mt-1.5 inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 font-mono text-xs font-bold tracking-wide text-primary md:px-3 md:py-1 md:text-sm">

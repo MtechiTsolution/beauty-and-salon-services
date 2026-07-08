@@ -2,11 +2,24 @@ import type { Booking, Branch, Employee, Package, Review, Service, ServiceCatego
 
 export type SalonScopeParams = {
   branch_id?: string;
+  latitude?: number;
+  longitude?: number;
 };
 
-export function branchQuery(branchId?: string | null): string {
-  if (!branchId?.trim()) return '';
-  return `?branch_id=${encodeURIComponent(branchId.trim())}`;
+export function branchQuery(params?: SalonScopeParams | string | null): string {
+  if (typeof params === 'string') {
+    return params.trim() ? `?branch_id=${encodeURIComponent(params.trim())}` : '';
+  }
+  const q = new URLSearchParams();
+  if (params?.branch_id?.trim()) q.set('branch_id', params.branch_id.trim());
+  if (params?.latitude != null && Number.isFinite(params.latitude)) {
+    q.set('lat', String(params.latitude));
+  }
+  if (params?.longitude != null && Number.isFinite(params.longitude)) {
+    q.set('lng', String(params.longitude));
+  }
+  const qs = q.toString();
+  return qs ? `?${qs}` : '';
 }
 
 function hasBranchId(value: unknown): value is { branch_id: string } {

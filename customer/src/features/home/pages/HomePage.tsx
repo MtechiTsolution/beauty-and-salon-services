@@ -1,6 +1,12 @@
+import { BranchNearYouLabel } from '@/features/location/components/BranchNearYouLabel';
+import { useCustomerBranches } from '@/features/location/hooks/useCustomerBranches';
+import { useNearbyBranches } from '@/features/location/hooks/useNearbyBranches';
+import { CatalogPopularBadge } from '@/features/catalog/components/CatalogPopularBadge';
 import { useActivePackages } from '@/features/packages/hooks/useActivePackages';
+import { usePopularPackages } from '@/features/packages/hooks/usePopularPackages';
+import { usePopularServices } from '@/features/services/hooks/usePopularServices';
 import { getBookableBranches } from '@/features/packages/lib/package-branches';
-import { branchesApi, servicesApi } from '@mit-salon/shared/api';
+import { servicesApi } from '@mit-salon/shared/api';
 import { CoverImage } from '@mit-salon/shared/components/CoverImage';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent } from '@mit-salon/shared/components/ui/card';
@@ -14,15 +20,17 @@ import { useMemo } from 'react';
 
 export default function HomePage() {
   const { data: services = [] } = useQuery({ queryKey: ['services-home'], queryFn: () => servicesApi.list() });
-  const { data: branches = [] } = useQuery({ queryKey: ['branches-home'], queryFn: () => branchesApi.list() });
+  const { data: branches = [] } = useCustomerBranches({ queryKeyPrefix: 'branches-home' });
   const { data: activePackages = [] } = useActivePackages();
+  const { data: popularServices = [] } = usePopularServices(6);
   const activeBranches = branches.filter((b) => b.status === 'active');
   const activeServices = filterCustomerServices(services, activeBranches);
-  const bookableBranches = useMemo(
+  const bookableBranchesBase = useMemo(
     () => getBookableBranches(activeBranches, activeServices, activePackages),
     [activeBranches, activeServices, activePackages],
   );
-  const featuredServices = activeServices.slice(0, 6);
+  const { branches: bookableBranches, nearest } = useNearbyBranches(bookableBranchesBase);
+  const featuredServices = popularServices;
 
   return (
     <div>
@@ -71,7 +79,7 @@ export default function HomePage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {featuredServices.map((service) => (
             <Card key={service.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="h-48 overflow-hidden">
+              <div className="customer-service-card-media h-48 overflow-hidden">
                 <CoverImage
                   src={service.image_url}
                   alt={service.title}
@@ -80,6 +88,12 @@ export default function HomePage() {
                   entityName={service.title}
                   entityDescription={service.description}
                   className="h-48 hover:scale-105 transition-transform duration-500"
+                />
+                <CatalogPopularBadge
+                  entityType="service"
+                  entityId={service.id}
+                  isFeatured={service.is_featured}
+                  variant="overlay"
                 />
               </div>
               <CardContent className="p-6">
@@ -101,7 +115,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {bookableBranches.map((b) => (
               <Card key={b.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                <div className="h-36 overflow-hidden">
+                <div className="customer-service-card-media h-36 overflow-hidden">
                   <CoverImage
                     src={b.image_url}
                     alt={b.name}
@@ -111,9 +125,22 @@ export default function HomePage() {
                     entityDescription={branchImageHints(b)}
                     className="h-36"
                   />
+                  <BranchNearYouLabel
+                    distanceKm={b.distance_km}
+                    isNearest={nearest?.id === b.id}
+                    branch={b}
+                    className="landing-showcase-card__nearby-badge"
+                  />
                 </div>
                 <CardContent className="p-4">
                   <h3 className="font-semibold">{b.name}</h3>
+                  <BranchNearYouLabel
+                    distanceKm={b.distance_km}
+                    isNearest={nearest?.id === b.id}
+                    branch={b}
+                    className="mt-1"
+                    variant="compact"
+                  />
                   <p className="text-sm text-muted-foreground mt-1 flex items-start gap-1">
                     <MapPin className="w-4 h-4 shrink-0 mt-0.5 text-primary" />
                     <span>{b.address}, {b.city}</span>

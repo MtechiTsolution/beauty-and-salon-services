@@ -2,12 +2,14 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
   canReviewBooking,
+  getReviewForBooking,
+  hasCustomerReviewedBooking,
   isAppointmentTimeReached,
   isBookingConfirmedForReview,
   isPaymentConfirmedForReview,
   reviewUnavailableMessage,
 } from './booking-reviews';
-import type { Booking } from '../types';
+import type { Booking, Review } from '../types';
 
 function booking(overrides: Partial<Booking> = {}): Booking {
   return {
@@ -89,6 +91,31 @@ describe('booking-reviews', () => {
   it('isAppointmentTimeReached after visit window', () => {
     assert.equal(isAppointmentTimeReached(booking(), beforeVisit), false);
     assert.equal(isAppointmentTimeReached(booking(), afterVisit), true);
+  });
+
+  it('hasCustomerReviewedBooking matches booking_id or same service review', () => {
+    const b = booking({ id: 'b1', service_id: 's1', customer_email: 'guest@example.com' });
+    const byBooking: Review = {
+      id: 'r1',
+      booking_id: 'b1',
+      service_id: 's1',
+      customer_email: 'guest@example.com',
+      customer_name: 'Guest',
+      rating: 5,
+      status: 'approved',
+      created_at: '2026-06-01T00:00:00.000Z',
+      updated_at: '2026-06-01T00:00:00.000Z',
+    };
+    const byService: Review = {
+      ...byBooking,
+      id: 'r2',
+      booking_id: undefined,
+    };
+
+    assert.equal(hasCustomerReviewedBooking([byBooking], b), true);
+    assert.equal(hasCustomerReviewedBooking([byService], b), true);
+    assert.equal(getReviewForBooking([byService], b)?.id, 'r2');
+    assert.equal(hasCustomerReviewedBooking([], b), false);
   });
 
   it('reviewUnavailableMessage explains missing requirements', () => {

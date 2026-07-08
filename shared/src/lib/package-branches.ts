@@ -1,4 +1,5 @@
 import type { Branch, Package, Service } from '../types';
+import { sortBranchesByLocation } from './branch-location-sort';
 
 const activeBranchesList = (branches: Branch[]) => branches.filter((b) => b.status === 'active');
 
@@ -9,7 +10,7 @@ export function getBranchesForService(service: Service, branches: Branch[]): Bra
   const activeBranches = activeBranchesList(branches);
   const assignedIds = (service.branch_ids ?? []).filter(Boolean);
   if (!assignedIds.length) return [];
-  return activeBranches.filter((b) => assignedIds.includes(b.id));
+  return sortBranchesByLocation(activeBranches.filter((b) => assignedIds.includes(b.id)));
 }
 
 /**
@@ -24,7 +25,7 @@ export function getBranchesForPackage(
   const activeBranches = branches.filter((b) => b.status === 'active');
   const assignedIds = (pkg.branch_ids ?? []).filter(Boolean);
   if (!assignedIds.length) return [];
-  return activeBranches.filter((b) => assignedIds.includes(b.id));
+  return sortBranchesByLocation(activeBranches.filter((b) => assignedIds.includes(b.id)));
 }
 
 export function isPackageAvailableAtBranch(
@@ -73,7 +74,7 @@ export function getBookableBranches(
     }
   }
 
-  return activeBranches.filter((b) => bookableIds.has(b.id));
+  return sortBranchesByLocation(activeBranches.filter((b) => bookableIds.has(b.id)));
 }
 
 /** Service is customer-bookable only when linked to at least one active salon. */

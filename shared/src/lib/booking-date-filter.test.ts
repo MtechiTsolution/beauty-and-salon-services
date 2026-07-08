@@ -7,6 +7,7 @@ import {
   hasActiveBookingDateRange,
   isBookingDateInRange,
   isBookingDateRangeValid,
+  normalizeBookingDate,
 } from './booking-date-filter';
 
 describe('booking-date-filter', () => {
@@ -28,6 +29,21 @@ describe('booking-date-filter', () => {
     ];
     const filtered = filterBookingsByDateRange(bookings, { from: '2026-06-10', to: '2026-06-20' });
     assert.deepEqual(filtered.map((b) => b.id), ['2']);
+  });
+
+  it('today filter uses appointment date not when the booking was created', () => {
+    const bookings = [
+      { id: '1', date: '2026-07-07', created_at: '2026-07-01T10:00:00Z' },
+      { id: '2', date: '2026-07-15', created_at: '2026-07-07T10:00:00Z' },
+    ];
+    const filtered = filterBookingsByDateRange(bookings, { from: '2026-07-07', to: '2026-07-07' });
+    assert.deepEqual(filtered.map((b) => b.id), ['1']);
+  });
+
+  it('normalizeBookingDate handles ISO timestamps as local calendar dates', () => {
+    const local = new Date(2026, 6, 7, 15, 0, 0);
+    assert.equal(normalizeBookingDate(local), '2026-07-07');
+    assert.equal(normalizeBookingDate('2026-07-30'), '2026-07-30');
   });
 
   it('isBookingDateRangeValid', () => {

@@ -1,4 +1,6 @@
 import { AuthProvider } from '@/features/auth/context/AuthContext';
+import { FeaturedCatalogProvider } from '@/features/catalog/context/FeaturedCatalogContext';
+import { CustomerLocationProvider } from '@/features/location/context/CustomerLocationContext';
 import { CustomerChatSocket } from '@/features/messages/components/CustomerChatSocket';
 import { LiveCatalogSync } from '@mit-salon/shared/components/LiveCatalogSync';
 import { ThemeProvider } from '@mit-salon/shared/components/ThemeProvider';
@@ -15,9 +17,13 @@ export function AppProviders({ children }: { children: ReactNode }) {
       <ThemeProvider>
         <LiveCatalogSync />
         <AuthProvider>
-          <CustomerChatSocket>
-            {children}
-          </CustomerChatSocket>
+          <CustomerLocationProvider>
+            <FeaturedCatalogProvider>
+              <CustomerChatSocket>
+                {children}
+              </CustomerChatSocket>
+            </FeaturedCatalogProvider>
+          </CustomerLocationProvider>
           <Toaster position="top-right" richColors />
         </AuthProvider>
       </ThemeProvider>

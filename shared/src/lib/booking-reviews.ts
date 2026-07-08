@@ -67,6 +67,33 @@ export function hasReviewForBooking(reviews: Review[], bookingId: string): boole
   return reviews.some((r) => r.booking_id === bookingId);
 }
 
+function customerEmailMatches(reviewEmail: string, bookingEmail: string): boolean {
+  return reviewEmail.trim().toLowerCase() === bookingEmail.trim().toLowerCase();
+}
+
+/** Review linked to this booking, or same customer already reviewed this service/package. */
+export function getReviewForBooking(
+  reviews: Review[],
+  booking: Pick<Booking, 'id' | 'service_id' | 'customer_email'>,
+): Review | undefined {
+  const byBooking = reviews.find((r) => r.booking_id === booking.id);
+  if (byBooking) return byBooking;
+
+  return reviews.find(
+    (r) =>
+      r.service_id === booking.service_id &&
+      customerEmailMatches(r.customer_email, booking.customer_email),
+  );
+}
+
+/** True when the customer already submitted a review for this visit or its service. */
+export function hasCustomerReviewedBooking(
+  reviews: Review[],
+  booking: Pick<Booking, 'id' | 'service_id' | 'customer_email'>,
+): boolean {
+  return getReviewForBooking(reviews, booking) != null;
+}
+
 export function averageRating(reviews: Review[]): number {
   if (!reviews.length) return 0;
   const sum = reviews.reduce((s, r) => s + r.rating, 0);

@@ -1,3 +1,4 @@
+import { CatalogPopularBadge } from '@/features/catalog/components/CatalogPopularBadge';
 import { CoverImage } from '@mit-salon/shared/components/CoverImage';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card } from '@mit-salon/shared/components/ui/card';
@@ -60,12 +61,19 @@ export function CustomerPackageCard({
           className="absolute inset-0 h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.03]"
         />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent sm:from-black/75 sm:via-black/20" />
-        <div className="customer-package-card__badges absolute left-3 top-3 flex flex-wrap items-center gap-1.5 sm:left-4 sm:top-4 sm:gap-2">
+        <div className="customer-package-card__badges-row">
           <span className="customer-package-price-badge">${pkg.price.toFixed(0)}</span>
           {pkg.total_sessions > 1 ? (
             <span className="customer-package-savings-badge">{perSession}/session</span>
           ) : null}
         </div>
+        <CatalogPopularBadge
+          entityType="package"
+          entityId={pkg.id}
+          isFeatured={pkg.is_featured}
+          variant="overlay"
+          className="customer-package-card__featured-badge"
+        />
         <div className="customer-package-card__title-wrap absolute inset-x-0 bottom-0 p-2.5 sm:p-4">
           <h3 className="customer-package-card__title font-heading text-base font-semibold tracking-tight text-white drop-shadow-sm sm:text-lg">
             {pkg.name}
@@ -79,7 +87,7 @@ export function CustomerPackageCard({
           compact ? 'p-3.5 sm:p-4' : 'p-5 sm:p-6',
         )}
       >
-        <div className="customer-package-chips flex gap-1.5 sm:flex-wrap sm:gap-2">
+        <div className="customer-package-chips flex flex-wrap gap-1.5 sm:gap-2">
           <span className="customer-package-chip">
             <Layers className="h-3.5 w-3.5" />
             {pkg.total_sessions} session{pkg.total_sessions === 1 ? '' : 's'}

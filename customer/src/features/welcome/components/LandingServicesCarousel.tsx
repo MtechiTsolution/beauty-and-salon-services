@@ -1,3 +1,4 @@
+import { CatalogPopularBadge } from '@/features/catalog/components/CatalogPopularBadge';
 import { OfferingBookDialog } from '@/features/booking/components/OfferingBookDialog';
 import { LandingCenteredShowcase } from '@/features/welcome/components/LandingCenteredShowcase';
 import { LandingCoverImage } from '@/features/welcome/components/LandingCoverImage';
@@ -18,9 +19,8 @@ type LandingServicesCarouselProps = {
 
 export function LandingServicesCarousel({ services, reviews = [] }: LandingServicesCarouselProps) {
   const [bookingService, setBookingService] = useState<Service | null>(null);
-  const activeServices = services.filter((s) => s.status === 'active').slice(0, 12);
 
-  if (activeServices.length === 0) return null;
+  if (services.length === 0) return null;
 
   return (
     <>
@@ -38,12 +38,12 @@ export function LandingServicesCarousel({ services, reviews = [] }: LandingServi
         title="Popular services"
         description="From precision cuts to restorative spa treatments — explore our menu and reserve your preferred time in minutes."
       >
-        {activeServices.map((service) => (
+        {services.map((service) => (
           <Card
             key={service.id}
             className="landing-showcase-card landing-showcase-card--media landing-showcase-card--compact flex h-full w-full flex-col overflow-hidden"
           >
-            <div className="landing-media-frame landing-media-frame--compact aspect-[5/3] shrink-0 overflow-hidden">
+            <div className="landing-showcase-card__media-wrap landing-media-frame landing-media-frame--compact aspect-[5/3] shrink-0 overflow-hidden">
               <LandingCoverImage
                 src={service.image_url}
                 alt={service.title}
@@ -52,6 +52,13 @@ export function LandingServicesCarousel({ services, reviews = [] }: LandingServi
                 entityName={service.title}
                 entityDescription={service.description}
                 className="h-full w-full object-cover transition duration-700 hover:scale-105"
+              />
+              <CatalogPopularBadge
+                entityType="service"
+                entityId={service.id}
+                isFeatured={service.is_featured}
+                variant="overlay"
+                className="landing-showcase-card__popular-badge"
               />
             </div>
             <CardContent className="flex flex-col p-4 text-center sm:flex-1 sm:p-5">

@@ -151,6 +151,28 @@ export type UpdatePlatformSalonBranchInput = {
   status?: Branch['status'];
 };
 
+export type CatalogPopularityRow = {
+  id: string;
+  name: string;
+  subtitle?: string;
+  booking_count: number;
+  review_count: number;
+  avg_rating: number;
+  score: number;
+  featured: boolean;
+  sort_order: number | null;
+  bookable: boolean;
+};
+
+export type FeaturedCatalogAdminPayload = {
+  services: CatalogPopularityRow[];
+  packages: CatalogPopularityRow[];
+  salons: CatalogPopularityRow[];
+  featured_service_ids: string[];
+  featured_package_ids: string[];
+  featured_branch_ids: string[];
+};
+
 export const superAdminApi = {
   dashboard(): Promise<PlatformDashboardStats> {
     return apiRequest<PlatformDashboardStats>('/super-admin/dashboard');
@@ -277,6 +299,21 @@ export const superAdminApi = {
     return apiRequest<{ ok: true; message: string }>('/super-admin/settings/smtp/test', {
       method: 'POST',
       body: JSON.stringify({ test_email: testEmail }),
+    });
+  },
+
+  getFeaturedCatalog(): Promise<FeaturedCatalogAdminPayload> {
+    return apiRequest<FeaturedCatalogAdminPayload>('/super-admin/featured-catalog');
+  },
+
+  updateFeaturedCatalog(body: {
+    featured_service_ids: string[];
+    featured_package_ids: string[];
+    featured_branch_ids: string[];
+  }) {
+    return apiRequest<FeaturedCatalogAdminPayload>('/super-admin/featured-catalog', {
+      method: 'PUT',
+      body: JSON.stringify(body),
     });
   },
 };

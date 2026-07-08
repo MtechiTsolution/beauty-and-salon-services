@@ -1,48 +1,51 @@
+import { EnableLocationBanner } from '@/features/location/components/EnableLocationBanner';
+import { useCustomerBranches } from '@/features/location/hooks/useCustomerBranches';
+import { useCustomerLocation } from '@/features/location/context/CustomerLocationContext';
+import { useNearbyBranches } from '@/features/location/hooks/useNearbyBranches';
+import { SalonCard } from '@/features/salons/components/SalonCard';
+import { isSalonVisibleToCustomer } from '@/features/salons/lib/salon-profile';
+import { CatalogPopularBadge } from '@/features/catalog/components/CatalogPopularBadge';
 import { OfferingBookDialog } from '@/features/booking/components/OfferingBookDialog';
 import { PackageCardGrid } from '@/features/packages/components/PackageCardGrid';
 import { useActivePackages } from '@/features/packages/hooks/useActivePackages';
-import { getBookableBranches } from '@/features/packages/lib/package-branches';
+import { usePopularPackages } from '@/features/packages/hooks/usePopularPackages';
+import { usePopularServices } from '@/features/services/hooks/usePopularServices';
 import { ServiceCardReviews } from '@/features/reviews/components/ServiceCardReviews';
-import { branchesApi, reviewsApi, servicesApi } from '@mit-salon/shared/api';
+import { reviewsApi, servicesApi } from '@mit-salon/shared/api';
 import { CoverImage } from '@mit-salon/shared/components/CoverImage';
-import { branchImageHints } from '@mit-salon/shared/lib/branch-image-hints';
 import { filterCustomerServices } from '@mit-salon/shared/lib/customer-catalog';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent } from '@mit-salon/shared/components/ui/card';
 import type { Service } from '@mit-salon/shared/types';
 import { useQuery } from '@tanstack/react-query';
 import { Clock, MapPin, MapPinned, Scissors } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 export default function ExplorePage() {
   const [bookingService, setBookingService] = useState<Service | null>(null);
-  const { data: branches = [] } = useQuery({
-    queryKey: ['branches-explore'],
-    queryFn: () => branchesApi.list(),
-    refetchOnMount: 'always',
-  });
+  const { data: branches = [] } = useCustomerBranches({ queryKeyPrefix: 'branches-explore' });
   const { data: services = [] } = useQuery({
     queryKey: ['services-explore'],
     queryFn: () => servicesApi.list(),
     refetchOnMount: 'always',
   });
   const { data: activePackages = [] } = useActivePackages();
+  const { data: popularPackages = [] } = usePopularPackages(50);
+  const { data: popularServices = [] } = usePopularServices(50);
   const { data: reviews = [] } = useQuery({
     queryKey: ['service-reviews'],
     queryFn: () => reviewsApi.list(),
     refetchOnMount: 'always',
   });
 
-  const activeBranches = branches.filter((b) => b.status === 'active');
+  const activeBranches = branches.filter((b) => isSalonVisibleToCustomer(b));
   const activeServices = filterCustomerServices(
     services.filter((s) => s.status === 'active'),
     activeBranches,
   );
-  const bookableBranches = useMemo(
-    () => getBookableBranches(activeBranches, activeServices, activePackages),
-    [activeBranches, activeServices, activePackages],
-  );
+  const { usingDeviceLocation } = useCustomerLocation();
+  const { branches: sortedSalons, nearest } = useNearbyBranches(activeBranches);
 
   return (
     <div className="customer-page">
@@ -63,11 +66,11 @@ export default function ExplorePage() {
               </p>
               <div className="mt-6 flex flex-col items-center gap-4 sm:flex-row sm:flex-wrap sm:justify-center">
                 <div className="flex flex-wrap justify-center gap-2">
-                  {bookableBranches.length > 0 && (
+                  {sortedSalons.length > 0 && (
                     <div className="customer-package-count-pill">
                       <MapPin className="h-4 w-4 text-primary" />
                       <span>
-                        {bookableBranches.length} location{bookableBranches.length === 1 ? '' : 's'}
+                        {sortedSalons.length} location{sortedSalons.length === 1 ? '' : 's'}
                       </span>
                     </div>
                   )}
@@ -90,46 +93,30 @@ export default function ExplorePage() {
       </section>
 
       <div className="customer-container-wide pb-12 md:pb-16">
+      <EnableLocationBanner className="customer-location-banner mt-8" />
       <section className="mt-12 md:mt-16">
-        <h2 className="font-heading text-2xl font-bold md:text-3xl">All locations</h2>
-        <p className="mt-2 text-muted-foreground">Choose the salon nearest to you when you book.</p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="font-heading text-2xl font-bold md:text-3xl">
+              {usingDeviceLocation ? 'Salons near you' : 'All locations'}
+            </h2>
+            <p className="mt-2 text-muted-foreground">
+              {usingDeviceLocation
+                ? 'Sorted by distance from your device — the nearest salon is listed first.'
+                : 'Choose a salon to view its profile, services, and packages.'}
+            </p>
+          </div>
+          <Button asChild variant="outline" className="shrink-0 rounded-full">
+            <Link to="/salons">View all salons</Link>
+          </Button>
+        </div>
         <div className="customer-explore-grid mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {bookableBranches.map((b) => (
-            <Card key={b.id} className="customer-explore-card customer-card-hover overflow-hidden border-0 shadow-md">
-              <div className="customer-explore-card__media aspect-[16/10] shrink-0 overflow-hidden">
-                <CoverImage
-                  src={b.image_url}
-                  alt={b.name}
-                  kind="branch"
-                  entityId={b.id}
-                  entityName={b.name}
-                  entityDescription={branchImageHints(b)}
-                  className="h-full w-full object-cover"
-                />
-              </div>
-              <CardContent className="customer-explore-card__body customer-branch-card-body p-6 text-left">
-                <div className="grid grid-cols-[1.125rem_minmax(0,1fr)] gap-x-2 gap-y-2">
-                  <h3 className="customer-explore-card__title col-start-2 font-heading text-xl font-semibold leading-snug">
-                    {b.name}
-                  </h3>
-                  <MapPin className="col-start-1 row-start-2 mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                  <p className="customer-explore-card__address col-start-2 row-start-2 min-w-0 text-sm leading-relaxed text-muted-foreground">
-                    {b.address}
-                    {b.city ? `, ${b.city}` : ''}
-                  </p>
-                </div>
-                <p className="customer-explore-card__description mt-3 line-clamp-2 text-sm text-muted-foreground">
-                  {b.description?.trim() || '\u00A0'}
-                </p>
-                <Button asChild variant="outline" className="customer-explore-card__cta mt-5 w-full rounded-full">
-                  <Link to={`/book?branch=${encodeURIComponent(b.id)}`}>Book at this location</Link>
-                </Button>
-              </CardContent>
-            </Card>
+          {sortedSalons.map((b) => (
+            <SalonCard key={b.id} salon={b} isNearest={nearest?.id === b.id} />
           ))}
         </div>
-        {bookableBranches.length === 0 && (
-          <p className="py-12 text-center text-muted-foreground">No bookable locations yet.</p>
+        {sortedSalons.length === 0 && (
+          <p className="py-12 text-center text-muted-foreground">No salons available yet.</p>
         )}
       </section>
 
@@ -147,7 +134,7 @@ export default function ExplorePage() {
           </Button>
         </div>
         <div className="mt-8">
-          <PackageCardGrid packages={activePackages} />
+          <PackageCardGrid packages={popularPackages.length > 0 ? popularPackages : activePackages} />
         </div>
       </section>
 
@@ -155,9 +142,9 @@ export default function ExplorePage() {
         <h2 className="font-heading text-2xl font-bold md:text-3xl">Popular services</h2>
         <p className="mt-2 text-muted-foreground">Expert care tailored to your style.</p>
         <div className="customer-explore-grid mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {activeServices.map((s) => (
+          {popularServices.map((s) => (
             <Card key={s.id} className="customer-explore-card customer-card-hover overflow-hidden border-0 shadow-md">
-              <div className="customer-explore-card__media aspect-[4/3] shrink-0 overflow-hidden">
+              <div className="customer-service-card-media customer-explore-card__media aspect-[4/3] shrink-0 overflow-hidden">
                 <CoverImage
                   src={s.image_url}
                   alt={s.title}
@@ -166,6 +153,12 @@ export default function ExplorePage() {
                   entityName={s.title}
                   entityDescription={s.description}
                   className="h-full w-full"
+                />
+                <CatalogPopularBadge
+                  entityType="service"
+                  entityId={s.id}
+                  isFeatured={s.is_featured}
+                  variant="overlay"
                 />
               </div>
               <CardContent className="customer-explore-card__body p-6">

@@ -16,6 +16,8 @@ import MessageThreadPage from '@/features/messages/pages/MessageThreadPage';
 import MessagesPage from '@/features/messages/pages/MessagesPage';
 import NotificationsPage from '@/features/notifications/pages/NotificationsPage';
 import ContactPage from '@/features/contact/pages/ContactPage';
+import SalonProfilePage from '@/features/salons/pages/SalonProfilePage';
+import SalonsPage from '@/features/salons/pages/SalonsPage';
 import ProfilePage from '@/features/profile/pages/ProfilePage';
 import LandingPage from '@/features/welcome/pages/LandingPage';
 import WelcomePage from '@/features/welcome/pages/WelcomePage';
@@ -36,6 +38,8 @@ export function AppRouter() {
 
         <Route element={<CustomerLayout />}>
           <Route path="/book" element={<BookAppointmentPage />} />
+          <Route path="/salons" element={<SalonsPage />} />
+          <Route path="/salons/:branchId" element={<SalonProfilePage />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/explore" element={<ExplorePage />} />
             <Route path="/packages" element={<PackagesPage />} />

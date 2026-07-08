@@ -6,7 +6,7 @@ type LandingCenteredShowcaseProps = {
   id?: string;
   eyebrow?: ReactNode;
   title: string;
-  description?: string;
+  description?: ReactNode;
   className?: string;
   wide?: boolean;
   small?: boolean;

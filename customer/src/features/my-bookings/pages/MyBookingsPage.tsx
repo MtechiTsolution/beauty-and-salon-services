@@ -4,12 +4,17 @@ import { BookingReviewDialog } from '@/features/my-bookings/components/BookingRe
 import { MyBookingsMobileDateFilter } from '@/features/my-bookings/components/MyBookingsDateFilter';
 import { CustomerViewToggle } from '@/features/shared/CustomerViewToggle';
 import { useCustomerViewMode } from '@/features/shared/useCustomerViewMode';
+import { useMediaQuery } from '@/features/layout/useMediaQuery';
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { bookingsApi, reviewsApi } from '@mit-salon/shared/api';
 import { BookingDateRangeFilterPanel } from '@mit-salon/shared/components/BookingDateRangeFilterPanel';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent } from '@mit-salon/shared/components/ui/card';
-import { canReviewBooking, hasReviewForBooking } from '@mit-salon/shared/lib/booking-reviews';
+import {
+  canReviewBooking,
+  getReviewForBooking,
+  hasCustomerReviewedBooking,
+} from '@mit-salon/shared/lib/booking-reviews';
 import {
   detectBookingDateQuickPreset,
   filterBookingsByDateRange,
@@ -33,6 +38,8 @@ export default function MyBookingsPage() {
   const [reviewBooking, setReviewBooking] = useState<Booking | null>(null);
   const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
   const [view, setView] = useCustomerViewMode('my-bookings', 'grid');
+  const isWebLayout = useMediaQuery('(min-width: 768px)');
+  const useGridLayout = view === 'grid' || isWebLayout;
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [appliedDateRange, setAppliedDateRange] = useState<BookingDateRange>({});
@@ -65,16 +72,8 @@ export default function MyBookingsPage() {
     onError: (err: Error) => toast.error(err.message || 'Could not cancel booking'),
   });
 
-  const reviewByBookingId = useMemo(() => {
-    const map = new Map<string, (typeof myReviews)[0]>();
-    for (const r of myReviews) {
-      if (r.booking_id) map.set(r.booking_id, r);
-    }
-    return map;
-  }, [myReviews]);
-
   const pendingReviewBookings = useMemo(
-    () => bookings.filter((b) => canReviewBooking(b) && !hasReviewForBooking(myReviews, b.id)),
+    () => bookings.filter((b) => canReviewBooking(b) && !hasCustomerReviewedBooking(myReviews, b)),
     [bookings, myReviews],
   );
 
@@ -155,7 +154,7 @@ export default function MyBookingsPage() {
                   ? `${filteredBookings.length} of ${bookings.length} booking${bookings.length !== 1 ? 's' : ''}`
                   : `${bookings.length} booking${bookings.length !== 1 ? 's' : ''}`}
               </span>
-              <CustomerViewToggle view={view} onViewChange={setView} />
+              <CustomerViewToggle view={view} onViewChange={setView} className="md:hidden" />
               <div className="customer-my-bookings-header__filter lg:hidden">
                 <MyBookingsMobileDateFilter
                   activePreset={activePreset ?? detectBookingDateQuickPreset(appliedDateRange)}
@@ -180,6 +179,7 @@ export default function MyBookingsPage() {
             className="mt-6 hidden lg:block"
             variant="customer"
             idPrefix="my-bookings-date"
+            label="Filter by appointment date"
             from={dateFrom}
             to={dateTo}
             appliedRange={appliedDateRange}
@@ -233,18 +233,18 @@ export default function MyBookingsPage() {
           <Card className="mt-10 border-0 shadow-md">
             <CardContent className="py-16 text-center">
               <FilterX className="mx-auto h-12 w-12 text-muted-foreground" />
-              <p className="mt-4 text-lg text-muted-foreground">No bookings in this date range.</p>
+              <p className="mt-4 text-lg text-muted-foreground">No appointments in this date range.</p>
               <Button type="button" variant="outline" className="mt-6 rounded-full" onClick={clearDateFilter}>
                 Clear date filter
               </Button>
             </CardContent>
           </Card>
-        ) : view === 'grid' ? (
+        ) : useGridLayout ? (
           <div className="customer-bookings-grid mt-8">
             {filteredBookings.map((b) => {
-              const review = reviewByBookingId.get(b.id);
+              const review = getReviewForBooking(myReviews, b);
               const showReviewButton =
-                canReviewBooking(b) && !hasReviewForBooking(myReviews, b.id);
+                canReviewBooking(b) && !hasCustomerReviewedBooking(myReviews, b);
               return (
                 <BookingCard
                   key={b.id}
@@ -262,9 +262,9 @@ export default function MyBookingsPage() {
         ) : (
           <div className="mt-8 space-y-5">
             {filteredBookings.map((b) => {
-              const review = reviewByBookingId.get(b.id);
+              const review = getReviewForBooking(myReviews, b);
               const showReviewButton =
-                canReviewBooking(b) && !hasReviewForBooking(myReviews, b.id);
+                canReviewBooking(b) && !hasCustomerReviewedBooking(myReviews, b);
               return (
                 <BookingCard
                   key={b.id}

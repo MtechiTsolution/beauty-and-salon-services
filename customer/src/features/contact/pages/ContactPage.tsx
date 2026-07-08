@@ -1,10 +1,9 @@
-import { branchesApi } from '@mit-salon/shared/api';
+import { useCustomerBranches } from '@/features/location/hooks/useCustomerBranches';
 import { CoverImage } from '@mit-salon/shared/components/CoverImage';
 import { branchImageHints } from '@mit-salon/shared/lib/branch-image-hints';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent } from '@mit-salon/shared/components/ui/card';
 import { APP_NAME, SALON_SUPPORT } from '@mit-salon/shared/lib/constants';
-import { useQuery } from '@tanstack/react-query';
 import {
   Clock,
   Mail,
@@ -45,11 +44,7 @@ function ContactLink({
 }
 
 export default function ContactPage() {
-  const { data: branches = [], isLoading } = useQuery({
-    queryKey: ['branches-contact'],
-    queryFn: () => branchesApi.list(),
-    refetchOnMount: 'always',
-  });
+  const { data: branches = [], isLoading } = useCustomerBranches({ queryKeyPrefix: 'branches-contact' });
 
   const activeBranches = branches.filter((b) => b.status === 'active');
   const phoneHref = `tel:${SALON_SUPPORT.phone.replace(/[^\d+]/g, '')}`;
@@ -113,9 +108,14 @@ export default function ContactPage() {
       <section className="border-t bg-muted/20">
         <div className="customer-container-wide py-12 md:py-16">
           <h2 className="font-heading text-2xl font-bold md:text-3xl">Our salons</h2>
-          <p className="mt-2 text-muted-foreground">
-            Contact details for each {APP_NAME} location.
-          </p>
+          <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-muted-foreground">
+              Contact details for each {APP_NAME} location.
+            </p>
+            <Button asChild variant="outline" className="shrink-0 rounded-full">
+              <Link to="/salons">Browse all salon profiles</Link>
+            </Button>
+          </div>
 
           {isLoading ? (
             <p className="mt-8 text-muted-foreground">Loading locations…</p>
@@ -177,9 +177,14 @@ export default function ContactPage() {
                       </p>
                     )}
 
-                    <Button asChild variant="outline" className="w-full rounded-full">
-                      <Link to="/book">Book here</Link>
-                    </Button>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <Button asChild variant="outline" className="flex-1 rounded-full">
+                        <Link to={`/salons/${encodeURIComponent(b.id)}`}>View profile</Link>
+                      </Button>
+                      <Button asChild className="flex-1 rounded-full">
+                        <Link to={`/book?branch=${encodeURIComponent(b.id)}`}>Book here</Link>
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))}

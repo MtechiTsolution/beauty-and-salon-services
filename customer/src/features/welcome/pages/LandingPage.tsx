@@ -1,5 +1,8 @@
 import { useActivePackages } from '@/features/packages/hooks/useActivePackages';
-import { getBookableBranches } from '@/features/packages/lib/package-branches';
+import { usePopularPackages } from '@/features/packages/hooks/usePopularPackages';
+import { usePopularServices } from '@/features/services/hooks/usePopularServices';
+import { useCustomerBranches } from '@/features/location/hooks/useCustomerBranches';
+import { useNearbyBranches } from '@/features/location/hooks/useNearbyBranches';
 import { useLandingImagePreload } from '@/features/welcome/hooks/useLandingImagePreload';
 import { LandingBranchesCarousel } from '@/features/welcome/components/LandingBranchesCarousel';
 import { LandingFeatureGrid } from '@/features/welcome/components/LandingFeatureGrid';
@@ -10,18 +13,14 @@ import { LandingPackagesCarousel } from '@/features/welcome/components/LandingPa
 import { LandingServicesCarousel } from '@/features/welcome/components/LandingServicesCarousel';
 import { LandingStatsBar } from '@/features/welcome/components/LandingStatsBar';
 import { LandingTestimonialsCarousel } from '@/features/welcome/components/LandingTestimonialsCarousel';
-import { branchesApi, employeesApi, reviewsApi, servicesApi } from '@mit-salon/shared/api';
+import { employeesApi, reviewsApi, servicesApi } from '@mit-salon/shared/api';
 import { filterCustomerServices } from '@mit-salon/shared/lib/customer-catalog';
 import { useQuery } from '@tanstack/react-query';
 import { CalendarDays, MapPin, Scissors, Star } from 'lucide-react';
 import { useMemo } from 'react';
 
 export default function LandingPage() {
-  const { data: branches = [] } = useQuery({
-    queryKey: ['branches-landing'],
-    queryFn: () => branchesApi.list(),
-    refetchOnMount: 'always',
-  });
+  const { data: branches = [] } = useCustomerBranches({ queryKeyPrefix: 'branches-landing' });
   const { data: services = [] } = useQuery({
     queryKey: ['services-landing'],
     queryFn: () => servicesApi.list(),
@@ -38,6 +37,8 @@ export default function LandingPage() {
     refetchOnMount: 'always',
   });
   const { data: activePackages = [] } = useActivePackages(true);
+  const { data: popularServices = [] } = usePopularServices(12);
+  const { data: popularPackages = [] } = usePopularPackages(12);
 
   const activeBranches = useMemo(
     () => branches.filter((b) => b.status === 'active'),
@@ -47,11 +48,8 @@ export default function LandingPage() {
     () => filterCustomerServices(services, activeBranches),
     [services, activeBranches],
   );
-  const bookableBranches = useMemo(
-    () => getBookableBranches(activeBranches, bookableServices, activePackages),
-    [activeBranches, bookableServices, activePackages],
-  );
-  const locationCount = bookableBranches.length;
+  const { branches: showcaseSalons, nearest } = useNearbyBranches(activeBranches);
+  const locationCount = activeBranches.length;
   const serviceCount = bookableServices.length;
   const staffCount = employees.filter((e) => e.status === 'active').length;
   const locationLabel = locationCount > 0 ? `${locationCount}+ locations` : 'our locations';
@@ -59,12 +57,12 @@ export default function LandingPage() {
   const preloadUrls = useMemo(
     () =>
       [
-        ...bookableBranches.map((b) => b.image_url),
+        ...showcaseSalons.map((b) => b.image_url),
         ...bookableServices.map((s) => s.image_url),
         ...employees.map((e) => e.image_url),
         ...activePackages.map((p) => p.image_url),
       ].filter((url): url is string => Boolean(url?.trim())),
-    [bookableBranches, bookableServices, employees, activePackages],
+    [showcaseSalons, bookableServices, employees, activePackages],
   );
   useLandingImagePreload(preloadUrls);
 
@@ -84,9 +82,9 @@ export default function LandingPage() {
         />
       </div>
       <LandingFeatureGrid />
-      <LandingServicesCarousel services={bookableServices} reviews={reviews} />
-      <LandingPackagesCarousel packages={activePackages} branches={bookableBranches} services={bookableServices} />
-      <LandingBranchesCarousel branches={bookableBranches} />
+      <LandingServicesCarousel services={popularServices} reviews={reviews} />
+      <LandingPackagesCarousel packages={popularPackages} branches={activeBranches} services={bookableServices} />
+      <LandingBranchesCarousel branches={showcaseSalons} nearestBranchId={nearest?.id ?? null} />
       <LandingTestimonialsCarousel reviews={reviews} />
       <LandingFooter />
     </div>

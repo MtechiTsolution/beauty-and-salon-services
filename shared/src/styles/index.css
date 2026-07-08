@@ -368,7 +368,7 @@
   transform: translateY(-50%);
   border: none;
   border-radius: 0.5rem;
-  background: transparent;
+  background: hsl(var(--primary) / 0.08);
   color: hsl(var(--primary));
   cursor: pointer;
   transition: background-color 0.15s ease, color 0.15s ease;
@@ -392,6 +392,8 @@
   width: 1.25rem;
   height: 1.25rem;
   pointer-events: none;
+  color: currentColor;
+  opacity: 1;
 }
 
 .date-picker-input:has(.h-12) .date-picker-input-trigger {
@@ -402,4 +404,35 @@
 .date-picker-input:has(.h-12) .date-picker-input-icon {
   width: 1.5rem;
   height: 1.5rem;
+}
+
+.dark .date-picker-input-trigger {
+  background: hsl(var(--primary) / 0.18);
+  color: hsl(var(--primary));
+}
+
+.dark .date-picker-input-trigger:hover:not(:disabled) {
+  background: hsl(var(--primary) / 0.28);
+}
+
+.dark .date-picker-input-icon {
+  color: currentColor;
+  opacity: 1;
+}
+
+/* Native date/time fields without DatePickerInput wrapper */
+.dark input[type='date']:not(.date-picker-input-native),
+.dark input[type='time']:not(.date-picker-input-native),
+.dark input[type='datetime-local']:not(.date-picker-input-native) {
+  color-scheme: dark;
+}
+
+.dark input[type='date']:not(.date-picker-input-native)::-webkit-calendar-picker-indicator,
+.dark input[type='time']:not(.date-picker-input-native)::-webkit-calendar-picker-indicator,
+.dark input[type='datetime-local']:not(.date-picker-input-native)::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  width: 1.25rem;
+  height: 1.25rem;
+  opacity: 0.95;
+  filter: invert(1) brightness(1.25);
 }

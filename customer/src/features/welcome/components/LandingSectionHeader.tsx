@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 type LandingSectionHeaderProps = {
   eyebrow?: ReactNode;
   title: string;
-  description?: string;
+  description?: ReactNode;
   className?: string;
   align?: 'left' | 'center';
   compact?: boolean;

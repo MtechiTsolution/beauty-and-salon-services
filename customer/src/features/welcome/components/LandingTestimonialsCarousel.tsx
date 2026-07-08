@@ -1,12 +1,17 @@
 import { CarouselItem } from '@/components/ui/carousel';
+import { bookBranchUrl, bookServiceUrl } from '@/features/booking/lib/booking-links';
 import { LandingCarouselShell } from '@/features/welcome/components/LandingCarouselShell';
 import {
   fallbackTestimonials,
   type LandingTestimonial,
 } from '@/features/welcome/lib/landing-content';
 import { Card, CardContent } from '@mit-salon/shared/components/ui/card';
+import { cn } from '@mit-salon/shared/lib/utils';
+import { sortReviewsByOfferingReviewCount } from '@mit-salon/shared/lib/catalog-review-rank';
 import type { Review } from '@mit-salon/shared/types';
 import { Star } from 'lucide-react';
+import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 
 function Stars({ rating }: { rating: number }) {
   return (
@@ -21,6 +26,26 @@ function Stars({ rating }: { rating: number }) {
   );
 }
 
+type TestimonialMetaItem = {
+  label: string;
+  value: string;
+  href?: string;
+};
+
+function TestimonialMetaValue({ item }: { item: TestimonialMetaItem }) {
+  if (item.href) {
+    return (
+      <Link
+        to={item.href}
+        className={cn('landing-testimonial-card__meta-value', 'landing-testimonial-card__meta-link')}
+      >
+        {item.value}
+      </Link>
+    );
+  }
+  return <span className={cn('landing-testimonial-card__meta-value', item.value === '—' && 'text-muted-foreground')}>{item.value}</span>;
+}
+
 function TestimonialCard({ item }: { item: LandingTestimonial }) {
   const initials = item.customer_name
     .split(/\s+/)
@@ -29,11 +54,25 @@ function TestimonialCard({ item }: { item: LandingTestimonial }) {
     .map((part) => part[0]?.toUpperCase() ?? '')
     .join('');
 
-  const metaItems = [
-    item.service_title ? { label: 'Service', value: item.service_title } : null,
-    item.branch_name ? { label: 'Salon', value: item.branch_name } : null,
-    item.employee_name ? { label: 'Stylist', value: item.employee_name } : null,
-  ].filter((entry): entry is { label: string; value: string } => entry != null);
+  const metaItems: TestimonialMetaItem[] = [
+    {
+      label: 'Service',
+      value: item.service_title?.trim() || '—',
+      href:
+        item.service_id && item.service_title?.trim()
+          ? bookServiceUrl(item.service_id, item.branch_id)
+          : undefined,
+    },
+    {
+      label: 'Salon',
+      value: item.branch_name?.trim() || '—',
+      href: item.branch_id && item.branch_name?.trim() ? bookBranchUrl(item.branch_id) : undefined,
+    },
+    {
+      label: 'Stylist',
+      value: item.employee_name?.trim() || '—',
+    },
+  ];
 
   return (
     <Card className="landing-showcase-card landing-testimonial-card">
@@ -52,16 +91,14 @@ function TestimonialCard({ item }: { item: LandingTestimonial }) {
           <p>{item.comment}</p>
         </blockquote>
 
-        {metaItems.length > 0 ? (
-          <div className="landing-testimonial-card__meta">
-            {metaItems.map((entry) => (
-              <div key={entry.label} className="landing-testimonial-card__meta-item">
-                <span className="landing-testimonial-card__meta-label">{entry.label}</span>
-                <span className="landing-testimonial-card__meta-value">{entry.value}</span>
-              </div>
-            ))}
-          </div>
-        ) : null}
+        <div className="landing-testimonial-card__meta">
+          {metaItems.map((entry) => (
+            <div key={entry.label} className="landing-testimonial-card__meta-item">
+              <span className="landing-testimonial-card__meta-label">{entry.label}</span>
+              <TestimonialMetaValue item={entry} />
+            </div>
+          ))}
+        </div>
       </CardContent>
     </Card>
   );
@@ -76,7 +113,9 @@ function mapReviewToTestimonial(review: Review): LandingTestimonial | null {
     rating: review.rating,
     comment: comment || 'Rated their visit after a completed appointment.',
     service_title: review.service_title,
+    service_id: review.service_id,
     branch_name: review.branch_name,
+    branch_id: review.branch_id,
     employee_name: review.employee_name,
   };
 }
@@ -86,9 +125,15 @@ type LandingTestimonialsCarouselProps = {
 };
 
 export function LandingTestimonialsCarousel({ reviews }: LandingTestimonialsCarouselProps) {
+  const approvedReviews = useMemo(
+    () => sortReviewsByOfferingReviewCount(reviews.filter((review) => review.status === 'approved')),
+    [reviews],
+  );
+
   const items =
-    reviews.map(mapReviewToTestimonial).filter((item): item is LandingTestimonial => item != null).length > 0
-      ? reviews
+    approvedReviews.map(mapReviewToTestimonial).filter((item): item is LandingTestimonial => item != null)
+      .length > 0
+      ? approvedReviews
           .map(mapReviewToTestimonial)
           .filter((item): item is LandingTestimonial => item != null)
           .slice(0, 8)

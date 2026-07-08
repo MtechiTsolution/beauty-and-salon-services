@@ -4,7 +4,11 @@ import { BookingReviewDialog } from '@/features/my-bookings/components/BookingRe
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { bookingsApi, reviewsApi } from '@mit-salon/shared/api';
 import { Button } from '@mit-salon/shared/components/ui/button';
-import { canReviewBooking, hasReviewForBooking } from '@mit-salon/shared/lib/booking-reviews';
+import {
+  canReviewBooking,
+  getReviewForBooking,
+  hasCustomerReviewedBooking,
+} from '@mit-salon/shared/lib/booking-reviews';
 import { invalidateAllCatalogQueries } from '@mit-salon/shared/lib/catalog-query-keys';
 import type { Booking } from '@mit-salon/shared/types';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -49,12 +53,12 @@ export default function BookingDetailPage() {
   });
 
   const review = useMemo(
-    () => myReviews.find((r) => r.booking_id === bookingId),
-    [myReviews, bookingId],
+    () => (booking ? getReviewForBooking(myReviews, booking) : undefined),
+    [myReviews, booking],
   );
 
   const showReviewButton =
-    !!booking && canReviewBooking(booking) && !hasReviewForBooking(myReviews, booking.id);
+    !!booking && canReviewBooking(booking) && !hasCustomerReviewedBooking(myReviews, booking);
 
   const notFound =
     !isLoading && (isError || !booking || booking.customer_email.toLowerCase() !== user?.email.toLowerCase());

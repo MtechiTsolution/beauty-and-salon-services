@@ -16,7 +16,7 @@ type LandingCarouselShellProps = {
   id?: string;
   eyebrow?: ReactNode;
   title: string;
-  description?: string;
+  description?: ReactNode;
   children: ReactNode;
   className?: string;
   innerClassName?: string;

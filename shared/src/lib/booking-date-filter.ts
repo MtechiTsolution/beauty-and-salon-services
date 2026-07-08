@@ -1,5 +1,3 @@
-import type { Booking } from '../types';
-
 export type BookingDateRange = {
   from?: string;
   to?: string;
@@ -11,10 +9,10 @@ export type BookingDateFilterPreset = BookingDateQuickPreset | 'custom' | 'all';
 
 export const BOOKING_DATE_PRESET_OPTIONS: { id: BookingDateFilterPreset; label: string }[] = [
   { id: 'all', label: 'All dates' },
-  { id: 'today', label: 'Today' },
-  { id: 'weekly', label: 'Weekly' },
-  { id: 'monthly', label: 'Monthly' },
-  { id: 'three_months', label: '3 months' },
+  { id: 'today', label: "Today's appointments" },
+  { id: 'weekly', label: 'This week' },
+  { id: 'monthly', label: 'This month' },
+  { id: 'three_months', label: 'Last 3 months' },
   { id: 'custom', label: 'Custom' },
 ];
 
@@ -23,6 +21,30 @@ function formatLocalDate(d: Date): string {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
+}
+
+/** Calendar date of the scheduled visit (YYYY-MM-DD). Never uses created_at. */
+export function normalizeBookingDate(value: unknown): string {
+  if (value == null || value === '') return '';
+  if (value instanceof Date) {
+    return formatLocalDate(value);
+  }
+  const s = String(value).trim();
+  const dateOnly = s.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (dateOnly) return dateOnly[1];
+  const parsed = new Date(s);
+  if (!Number.isNaN(parsed.getTime())) {
+    return formatLocalDate(parsed);
+  }
+  return s.slice(0, 10);
+}
+
+/** Appointment date for filtering/display — prefers `date`, falls back to `booking_date`. */
+export function getBookingAppointmentDate(booking: {
+  date?: string;
+  booking_date?: string;
+}): string {
+  return normalizeBookingDate(booking.date ?? booking.booking_date);
 }
 
 function startOfLocalDay(d: Date): Date {
@@ -81,7 +103,7 @@ export function getBookingDateQuickPresetRange(
     case 'three_months':
       return {
         from: formatLocalDate(startOfLocalMonth(subLocalMonths(today, 2))),
-        to: formatLocalDate(today),
+        to: formatLocalDate(endOfLocalMonth(today)),
       };
   }
 }
@@ -106,7 +128,8 @@ export function detectBookingDateQuickPreset(
 export function isBookingDateInRange(date: string, range: BookingDateRange): boolean {
   const { from, to } = range;
   if (!from && !to) return true;
-  const d = date.slice(0, 10);
+  const d = normalizeBookingDate(date);
+  if (!d) return false;
   if (from && d < from) return false;
   if (to && d > to) return false;
   return true;
@@ -117,12 +140,12 @@ export function isBookingDateRangeValid(from: string, to: string): boolean {
   return from <= to;
 }
 
-export function filterBookingsByDateRange<T extends Pick<Booking, 'date'>>(
+export function filterBookingsByDateRange<T extends { date?: string; booking_date?: string }>(
   bookings: T[],
   range: BookingDateRange,
 ): T[] {
   if (!range.from && !range.to) return bookings;
-  return bookings.filter((b) => isBookingDateInRange(b.date, range));
+  return bookings.filter((b) => isBookingDateInRange(getBookingAppointmentDate(b), range));
 }
 
 export function hasActiveBookingDateRange(range: BookingDateRange): boolean {

@@ -9,7 +9,7 @@ import { PAYMENT_METHODS } from '@mit-salon/shared/lib/constants';
 import type { Booking, BookingStatus, Review } from '@mit-salon/shared/types';
 import { cn } from '@mit-salon/shared/lib/utils';
 import { format } from 'date-fns';
-import { CalendarDays, Clock, MapPin, MessageCircle, Star, User, XCircle } from 'lucide-react';
+import { CalendarDays, Clock, CreditCard, MapPin, MessageCircle, Star, User, XCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 type BookingCardProps = {
@@ -84,7 +84,7 @@ export function BookingCard({
   const paymentLabel = paymentMethodLabel(b.payment_method);
   const hasFooterContent = canCancel || showReviewButton || !!review || !!reviewHint;
   const isTerminal = b.status === 'cancelled' || b.status === 'no_show';
-  const showFooter = compact || hasFooterContent || isTerminal;
+  const showFooter = hasFooterContent || isTerminal;
 
   const footer = (
     <>
@@ -159,10 +159,10 @@ export function BookingCard({
       )}
     >
       <div className={cn('customer-booking-card-accent', stateUi.accentClass)} aria-hidden />
-      <CardContent className={cn('flex h-full flex-col', compact ? 'p-4 sm:p-5' : 'p-5 sm:p-6')}>
+      <CardContent className={cn('flex flex-col', compact ? 'h-full flex-1 p-4 sm:p-5' : 'h-full p-5 sm:p-6')}>
         <div className={cn('customer-booking-card-top', compact && 'customer-booking-card-top--grid')}>
           <div className="customer-booking-card-top-main min-w-0">
-            <div className="flex items-center justify-between gap-2">
+            <div className="customer-booking-card-eyebrow-row flex items-center justify-between gap-2">
               <p className="customer-booking-card-eyebrow">{stateUi.eyebrow}</p>
               {compact ? (
                 <p className="customer-booking-card-price-inline font-heading text-lg font-bold text-primary">
@@ -170,31 +170,29 @@ export function BookingCard({
                 </p>
               ) : null}
             </div>
-            <h3
-              className={cn(
-                'font-heading font-semibold leading-snug tracking-tight text-foreground',
-                compact ? 'line-clamp-2 text-lg' : 'text-xl md:text-2xl',
-              )}
-            >
-              {b.service_title}
-            </h3>
+            <div className="customer-booking-card-title-row flex items-start justify-between gap-2">
+              <h3
+                className={cn(
+                  'min-w-0 flex-1 font-heading font-semibold leading-snug tracking-tight text-foreground',
+                  compact ? 'line-clamp-2 text-lg' : 'line-clamp-2 text-xl md:text-2xl',
+                )}
+              >
+                {b.service_title}
+              </h3>
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="customer-booking-card-chat mt-0.5 shrink-0 gap-1.5 rounded-full border-primary/20 bg-background/80 text-xs font-semibold sm:text-sm"
+              >
+                <Link to={`/messages/booking/${b.id}`}>
+                  <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="sm:hidden">Chat</span>
+                  <span className="hidden sm:inline">Chat with salon</span>
+                </Link>
+              </Button>
+            </div>
           </div>
-
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            className={cn(
-              'customer-booking-card-chat shrink-0 gap-1.5 rounded-full border-primary/20 bg-background/80 text-xs font-semibold sm:text-sm',
-              compact && 'customer-booking-card-chat--grid w-full',
-            )}
-          >
-            <Link to={`/messages/booking/${b.id}`}>
-              <MessageCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="sm:hidden">Chat</span>
-              <span className="hidden sm:inline">Chat with salon</span>
-            </Link>
-          </Button>
         </div>
 
         <div className="customer-booking-card-status mt-3 sm:mt-4">
@@ -268,7 +266,10 @@ export function BookingCard({
                 </div>
                 {paymentLabel ? (
                   <div className="customer-booking-card-detail-row">
-                    <span className="customer-booking-card-detail-label">Paid via</span>
+                    <span className="customer-booking-card-detail-label">
+                      <CreditCard className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                      Paid via
+                    </span>
                     <span className="customer-booking-card-detail-value">{paymentLabel}</span>
                   </div>
                 ) : null}
@@ -284,15 +285,18 @@ export function BookingCard({
           ) : null}
         </div>
 
-        <div
-          className={cn(
-            'customer-booking-card-footer mt-auto',
-            compact && 'customer-booking-card-footer--grid',
-            !compact && showFooter && 'mt-5 border-t border-border/50 pt-4',
-          )}
-        >
-          {showFooter ? footer : null}
-        </div>
+        {showFooter ? (
+          <div
+            className={cn(
+              'customer-booking-card-footer',
+              compact
+                ? 'customer-booking-card-footer--grid mt-auto pt-3'
+                : 'mt-5 border-t border-border/50 pt-4',
+            )}
+          >
+            {footer}
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );

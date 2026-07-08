@@ -23,6 +23,7 @@ export const catalogQueryKeys = {
   ],
   staff: ['admin-staff', 'lookup-staff', 'employees-book'],
   packages: ['admin-packages', 'packages', 'packages-welcome', 'packages-explore'],
+  popular: ['popular-services', 'popular-packages', 'catalog-featured-ids'],
   coupons: ['admin-coupons'],
   payouts: ['admin-payouts'],
   bookings: ['admin-bookings-list', 'admin-bookings', 'bookings', 'bookings-slot', 'reports-summary'],

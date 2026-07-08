@@ -24,6 +24,9 @@ export interface Branch extends BaseEntity {
   name: string;
   address: string;
   city?: string;
+  /** Decimal degrees — used for near-you salon sorting. */
+  latitude?: number;
+  longitude?: number;
   phone?: string;
   email?: string;
   image_url?: string;
@@ -34,6 +37,10 @@ export interface Branch extends BaseEntity {
   closing_time?: string;
   status: BranchStatus;
   owner_user_id?: string;
+  /** Kilometres from customer device when listing with lat/lng query params. */
+  distance_km?: number | null;
+  /** Set when super-admin pinned this salon in Featured salons. */
+  is_featured?: boolean;
 }
 
 export interface ServiceCategory extends BaseEntity {
@@ -54,6 +61,8 @@ export interface Service extends BaseEntity {
   employee_ids: string[];
   image_url?: string;
   status: Status;
+  /** Set when super-admin pinned this service in Popular catalog. */
+  is_featured?: boolean;
 }
 
 export interface Employee extends BaseEntity {
@@ -116,6 +125,8 @@ export interface Package extends BaseEntity {
   validity_days: number;
   image_url?: string;
   status: Status;
+  /** Set when super-admin pinned this package in Popular catalog. */
+  is_featured?: boolean;
 }
 
 export interface Notification extends BaseEntity {

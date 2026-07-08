@@ -1,10 +1,11 @@
+import { CatalogPopularBadge } from '@/features/catalog/components/CatalogPopularBadge';
 import { OfferingBookDialog } from '@/features/booking/components/OfferingBookDialog';
 import { CategoryCardGrid } from '@/features/categories/components/CategoryCardGrid';
-import { branchesApi, categoriesApi, servicesApi } from '@mit-salon/shared/api';
+import { usePopularServices } from '@/features/services/hooks/usePopularServices';
+import { categoriesApi } from '@mit-salon/shared/api';
 import { CoverImage } from '@mit-salon/shared/components/CoverImage';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent } from '@mit-salon/shared/components/ui/card';
-import { filterCustomerServices } from '@mit-salon/shared/lib/customer-catalog';
 import type { Service } from '@mit-salon/shared/types';
 import { useQuery } from '@tanstack/react-query';
 import { Clock, Grid3X3, RefreshCw } from 'lucide-react';
@@ -19,11 +20,7 @@ export default function ServicesPage() {
     isError: servicesError,
     refetch: refetchServices,
     isFetching: servicesFetching,
-  } = useQuery({ queryKey: ['services'], queryFn: () => servicesApi.list() });
-  const { data: branches = [] } = useQuery({
-    queryKey: ['branches-services'],
-    queryFn: () => branchesApi.list(),
-  });
+  } = usePopularServices(100);
   const {
     data: categories = [],
     isLoading: categoriesLoading,
@@ -32,8 +29,7 @@ export default function ServicesPage() {
     isFetching: categoriesFetching,
   } = useQuery({ queryKey: ['categories'], queryFn: () => categoriesApi.list() });
 
-  const activeBranches = branches.filter((b) => b.status === 'active');
-  const active = filterCustomerServices(services, activeBranches);
+  const active = services;
   const activeCategories = categories.filter((c) => c.status === 'active');
   const isLoading = servicesLoading || categoriesLoading;
   const isError = servicesError || categoriesError;
@@ -118,7 +114,7 @@ export default function ServicesPage() {
                 const cat = categories.find((c) => c.id === service.category_id);
                 return (
                   <Card key={service.id} className="customer-card-hover overflow-hidden border-border/70 shadow-md">
-                    <div className="aspect-[5/3] overflow-hidden">
+                    <div className="customer-service-card-media aspect-[5/3] overflow-hidden">
                       <CoverImage
                         src={service.image_url}
                         alt={service.title}
@@ -127,6 +123,12 @@ export default function ServicesPage() {
                         entityName={service.title}
                         entityDescription={service.description}
                         className="h-full w-full object-cover transition-transform duration-500 hover:scale-[1.03]"
+                      />
+                      <CatalogPopularBadge
+                        entityType="service"
+                        entityId={service.id}
+                        isFeatured={service.is_featured}
+                        variant="overlay"
                       />
                     </div>
                     <CardContent className="p-5 sm:p-6">

@@ -7,6 +7,7 @@ import {
   MessageCircle,
   Phone,
   Scissors,
+  Store,
   User,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -21,6 +22,7 @@ export type CustomerNavLink = {
 export const customerNavLinks: CustomerNavLink[] = [
   { label: 'Home', path: '/landing', icon: Home, description: 'Salon overview & offers' },
   { label: 'Book', path: '/book', icon: Scissors, description: 'Schedule an appointment' },
+  { label: 'Salons', path: '/salons', icon: Store, description: 'Browse all salon profiles' },
   { label: 'Explore', path: '/explore', icon: MapPin, description: 'Browse salons & services' },
   { label: 'Packages', path: '/packages', icon: Gift, description: 'View session bundles' },
   { label: 'My bookings', path: '/my-bookings', icon: CalendarDays, description: 'Your appointments & reviews' },

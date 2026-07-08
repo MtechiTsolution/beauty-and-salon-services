@@ -10,6 +10,9 @@ import type { CouponValidateResult } from '../../lib/coupon-validate';
 import type { CouponListFilters } from '../../lib/coupon-filters';
 import type { Branch, Coupon, Employee, Service, ServiceCategory } from '../../types';
 
+export { catalogApi } from './modules/catalog';
+export type { FeaturedCatalogIds } from './modules/catalog';
+
 export { authApi, bookingsApi, payoutsApi, reportsApi };
 export { teamApi } from './modules/team';
 export type {
@@ -30,6 +33,8 @@ export type {
   PlatformSalonLinkRole,
   UpdatePlatformSalonAdminInput,
   UpdatePlatformSalonBranchInput,
+  CatalogPopularityRow,
+  FeaturedCatalogAdminPayload,
 } from './modules/super-admin';
 export { settingsApi } from './modules/settings-api';
 export type { SmtpSettingsPublic, SmtpSettingsInput } from '../../types/smtp-settings';
@@ -42,7 +47,7 @@ const employeesCrud = createDataApi<Employee>('employees');
 export const branchesApi = {
   ...branchesCrud,
   list(params?: SalonScopeParams) {
-    return apiRequest<Branch[]>(`/branches${branchQuery(params?.branch_id)}`);
+    return apiRequest<Branch[]>(`/branches${branchQuery(params)}`);
   },
   listAll() {
     return branchesCrud.list();
