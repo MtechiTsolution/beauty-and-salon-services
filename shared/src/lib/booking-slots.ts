@@ -1,4 +1,5 @@
 import { TIME_SLOTS } from './constants';
+import { isSlotBlockedByTimeOff, type StaffTimeOffBlock } from './staff-time-off';
 
 export type BookingSlotCandidate = {
   time_slot: string;
@@ -133,6 +134,9 @@ export function isSlotInPast(date: string, timeSlot: string, now: Date = new Dat
 export const PAST_SLOT_MESSAGE =
   'This time has already passed. Please choose a later time slot.';
 
+export const PAST_BOOKING_DATE_MESSAGE =
+  'You cannot book an appointment in the past. Please choose today or a future date.';
+
 export const NO_SERVICE_FOR_DAY_MESSAGE = 'No service available for that day';
 
 /** Drops slots that have already started when booking for today. */
@@ -202,14 +206,24 @@ export function getAvailableSlots(
   allSlots: readonly string[],
   newDurationMinutes: number,
   existingBookings: BookingSlotCandidate[],
-  options?: { allDaySlots?: readonly string[] },
+  options?: {
+    allDaySlots?: readonly string[];
+    timeOffBlocks?: StaffTimeOffBlock[];
+    slotDate?: string;
+  },
 ): string[] {
   const daySlots = options?.allDaySlots ?? TIME_SLOTS;
-  return allSlots.filter(
-    (slot) =>
-      slotFitsServiceDuration(slot, newDurationMinutes, daySlots) &&
-      !isSlotBlockedForNewBooking(slot, newDurationMinutes, existingBookings),
-  );
+  const timeOff = options?.timeOffBlocks ?? [];
+  const slotDate = options?.slotDate ?? '';
+
+  return allSlots.filter((slot) => {
+    if (!slotFitsServiceDuration(slot, newDurationMinutes, daySlots)) return false;
+    if (isSlotBlockedForNewBooking(slot, newDurationMinutes, existingBookings)) return false;
+    if (slotDate && timeOff.length > 0 && isSlotBlockedByTimeOff(slotDate, slot, newDurationMinutes, timeOff)) {
+      return false;
+    }
+    return true;
+  });
 }
 
 export function getBookedSlots(

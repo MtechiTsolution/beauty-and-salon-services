@@ -36,12 +36,13 @@ import {
   couponsApiExtra,
   employeesApi,
   servicesApi,
+  staffTimeOffApi,
 } from '@mit-salon/shared/api';
 import { CoverImage } from '@mit-salon/shared/components/CoverImage';
 import { branchImageHints } from '@mit-salon/shared/lib/branch-image-hints';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent } from '@mit-salon/shared/components/ui/card';
-import { DatePickerInput } from '@mit-salon/shared/components/DatePickerInput';
+import { BookingDatePickerInput } from '@/features/booking/components/BookingDatePickerInput';
 import { Input } from '@mit-salon/shared/components/ui/input';
 import { Label } from '@mit-salon/shared/components/ui/label';
 import { Textarea } from '@mit-salon/shared/components/ui/textarea';
@@ -61,6 +62,7 @@ import {
   isSlotCoveredByExistingBooking,
   isSlotInPast,
   NO_SERVICE_FOR_DAY_MESSAGE,
+  PAST_BOOKING_DATE_MESSAGE,
   PAST_SLOT_MESSAGE,
   slotFitsServiceDuration,
   slotsForSelectedDate,
@@ -159,6 +161,13 @@ export default function BookAppointmentPage() {
     }
   }, [step, employee, date, todayStr]);
 
+  useEffect(() => {
+    if (!date || date >= todayStr) return;
+    setDate('');
+    setTime('');
+    toast.error(PAST_BOOKING_DATE_MESSAGE);
+  }, [date, todayStr]);
+
   const { data: branches = [] } = useCustomerBranches({ queryKeyPrefix: 'branches-book' });
   const { data: services = [] } = useQuery({
     queryKey: ['services-book'],
@@ -179,6 +188,18 @@ export default function BookAppointmentPage() {
     refetchOnMount: 'always',
     refetchOnWindowFocus: true,
     refetchInterval: step === 3 && date && employee ? 5000 : false,
+  });
+
+  const { data: staffTimeOffBlocks = [] } = useQuery({
+    queryKey: ['staff-time-off-slot', employee?.id, date],
+    queryFn: () =>
+      staffTimeOffApi.list({
+        employee_id: employee!.id,
+        from: date,
+        to: date,
+      }),
+    enabled: !!date && !!employee && step === 3,
+    staleTime: 60_000,
   });
 
   const activeBranches = branches.filter((b) => b.status === 'active');
@@ -248,12 +269,44 @@ export default function BookAppointmentPage() {
       ? packageDurationMinutes(selectedPackage, services)
       : (service?.duration_minutes ?? 0);
   const lineTitle = bookingLineTitle(service, selectedPackage);
-  const staffOptions =
-    branch && activeOfferingType === 'service' && service
-      ? filterStaffForBooking(employees, branch.id, service.id)
-      : branch && activeOfferingType === 'package' && selectedPackage
-        ? filterStaffForPackage(employees, branch.id, selectedPackage.service_ids)
-        : [];
+  const staffOptions = useMemo(
+    () =>
+      branch && activeOfferingType === 'service' && service
+        ? filterStaffForBooking(employees, branch.id, service.id)
+        : branch && activeOfferingType === 'package' && selectedPackage
+          ? filterStaffForPackage(employees, branch.id, selectedPackage.service_ids)
+          : [],
+    [branch, activeOfferingType, service, selectedPackage, employees],
+  );
+  const skipStaffStep = staffOptions.length === 1;
+  const bookingDisabledSteps = useMemo(() => {
+    const disabled: number[] = [];
+    if (offeringPrefilled) disabled.push(1);
+    if (skipStaffStep) disabled.push(2);
+    return disabled;
+  }, [offeringPrefilled, skipStaffStep]);
+
+  useEffect(() => {
+    if (!branch || !hasOffering) return;
+
+    if (staffOptions.length === 1) {
+      const only = staffOptions[0];
+      setEmployee((current) => (current?.id === only.id ? current : only));
+      return;
+    }
+
+    if (employee && staffOptions.length > 1 && !staffOptions.some((e) => e.id === employee.id)) {
+      setEmployee(null);
+    }
+  }, [branch, hasOffering, staffOptions, employee]);
+
+  useEffect(() => {
+    if (step === 2 && skipStaffStep && staffOptions[0]) {
+      setEmployee(staffOptions[0]);
+      setStep(3);
+    }
+  }, [step, skipStaffStep, staffOptions]);
+
   const staffDayBookings = useMemo(
     () => dayBookings.filter((b) => b.status !== 'cancelled'),
     [dayBookings],
@@ -304,9 +357,11 @@ export default function BookAppointmentPage() {
       date && employee && lineDuration > 0
         ? getAvailableSlots(durationDaySlots, lineDuration, staffDayBookings, {
             allDaySlots: TIME_SLOTS,
+            timeOffBlocks: staffTimeOffBlocks,
+            slotDate: date,
           })
         : [],
-    [date, employee, lineDuration, staffDayBookings, durationDaySlots],
+    [date, employee, lineDuration, staffDayBookings, durationDaySlots, staffTimeOffBlocks],
   );
 
   useEffect(() => {
@@ -689,6 +744,7 @@ export default function BookAppointmentPage() {
   const goBack = () => {
     setStep((s) => {
       if (s === 2 && offeringPrefilled) return 0;
+      if (s === 3 && skipStaffStep) return offeringPrefilled ? 0 : 1;
       return Math.max(0, s - 1);
     });
   };
@@ -696,12 +752,14 @@ export default function BookAppointmentPage() {
   const goToStep = (target: number) => {
     if (target >= step || target < 0) return;
     if (target === 1 && offeringPrefilled) return;
+    if (target === 2 && skipStaffStep) return;
     setStep(target);
   };
 
   const goNext = () => {
     setStep((s) => {
-      if (s === 0 && offeringPrefilled && branch) return 2;
+      if (s === 0 && offeringPrefilled && branch) return skipStaffStep ? 3 : 2;
+      if (s === 1 && skipStaffStep) return 3;
       return Math.min(STEP_COUNT - 1, s + 1);
     });
   };
@@ -786,6 +844,7 @@ export default function BookAppointmentPage() {
     (step === 2 && !!employee) ||
     (step === 3 &&
       !!date &&
+      date >= todayStr &&
       !!time &&
       !isSlotInPast(date, time, now) &&
       !isSlotBlockedForNewBooking(time, lineDuration, staffDayBookings)) ||
@@ -796,6 +855,7 @@ export default function BookAppointmentPage() {
     hasOffering &&
     !!employee &&
     !!date &&
+    date >= todayStr &&
     !!time &&
     !!paymentMethod &&
     (isAuthenticated || guestDetailsValid) &&
@@ -1041,7 +1101,7 @@ export default function BookAppointmentPage() {
                 <BookingStepper
                   currentStep={step}
                   onStepClick={goToStep}
-                  disabledSteps={offeringPrefilled ? [1] : undefined}
+                  disabledSteps={bookingDisabledSteps}
                 />
               </div>
               <div className="customer-booking-page-header-action-cell flex shrink-0 items-center justify-end">
@@ -1085,14 +1145,14 @@ export default function BookAppointmentPage() {
                 <BookingStepper
                   currentStep={step}
                   onStepClick={goToStep}
-                  disabledSteps={offeringPrefilled ? [1] : undefined}
+                  disabledSteps={bookingDisabledSteps}
                 />
               </div>
             </div>
         </div>
       </section>
 
-      <section className="customer-container-wide py-4 max-md:py-4 md:py-5">
+      <section className="customer-container-wide customer-booking-page-body py-4 max-md:py-4 md:py-5">
         <div className="customer-booking-flow-wide min-w-0">
         {step === 0 && (
           <div className="customer-booking-step customer-booking-step--locations mx-auto w-full min-w-0">
@@ -1374,7 +1434,7 @@ export default function BookAppointmentPage() {
           </div>
         )}
 
-        {step === 2 && (
+        {step === 2 && !skipStaffStep && (
           <div className="customer-booking-flow">
             <h2 className="font-heading text-2xl font-semibold">Choose your professional</h2>
             <p className="mt-2 text-muted-foreground">
@@ -1486,13 +1546,13 @@ export default function BookAppointmentPage() {
                   <Label htmlFor="date" className="text-base">
                     Appointment date
                   </Label>
-                  <DatePickerInput
+                  <BookingDatePickerInput
                     id="date"
                     className="h-12 text-base"
-                    min={format(startOfToday(), 'yyyy-MM-dd')}
+                    minDate={todayStr}
                     value={date}
-                    onChange={(e) => {
-                      setDate(e.target.value);
+                    onChange={(next) => {
+                      setDate(next);
                       setTime('');
                     }}
                   />
@@ -1787,10 +1847,11 @@ export default function BookAppointmentPage() {
           </div>
         )}
 
-        <nav
-          className="customer-booking-nav mt-12 flex items-center justify-between gap-3 border-t pt-8 sm:gap-4 max-lg:mt-0 max-lg:border-t-0 max-lg:pt-0"
-          aria-label="Booking steps"
-        >
+        </div>
+      </section>
+
+      <nav className="customer-booking-nav" aria-label="Booking steps">
+        <div className="customer-container-wide customer-booking-nav-inner flex items-center justify-between gap-3 sm:gap-4">
           <div className="min-w-0 flex-1">
             {step > 0 && (
               <Button
@@ -1825,9 +1886,8 @@ export default function BookAppointmentPage() {
               </Button>
             )}
           </div>
-        </nav>
         </div>
-      </section>
+      </nav>
     </div>
   );
 }

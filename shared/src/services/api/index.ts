@@ -13,6 +13,9 @@ import type { Branch, Coupon, Employee, Service, ServiceCategory } from '../../t
 export { catalogApi } from './modules/catalog';
 export type { FeaturedCatalogIds } from './modules/catalog';
 
+export { staffTimeOffApi } from './modules/staff-time-off';
+export type { CreateStaffTimeOffPayload } from './modules/staff-time-off';
+
 export { authApi, bookingsApi, payoutsApi, reportsApi };
 export { teamApi } from './modules/team';
 export type {

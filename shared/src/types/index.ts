@@ -194,6 +194,18 @@ export interface ChatMessage extends BaseEntity {
   read_by_salon: boolean;
 }
 
+export interface StaffTimeOff extends BaseEntity {
+  employee_id: string;
+  employee_name?: string;
+  start_date: string;
+  end_date: string;
+  /** NULL = full day off for each date in the range */
+  start_time?: string | null;
+  end_time?: string | null;
+  reason?: string | null;
+  created_by?: string | null;
+}
+
 export interface SalonRegistrationRequest extends BaseEntity {
   email: string;
   full_name: string;

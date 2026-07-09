@@ -794,10 +794,42 @@ body.customer-mobile-menu-open .customer-booking-nav {
 }
 
 .customer-booking-nav {
-  margin-left: auto;
-  margin-right: auto;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 35;
+  box-sizing: border-box;
+  margin: 0;
+  width: 100%;
+  max-width: none;
+  padding: 0.75rem 0;
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+  background: hsl(var(--background) / 0.98);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-top: 1px solid hsl(var(--border) / 0.85);
+  box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.1);
+}
+
+.customer-booking-nav-inner {
   width: 100%;
   max-width: 56rem;
+}
+
+.customer-booking-page-body {
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 1024px) {
+  .customer-booking-page-body {
+    padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .customer-booking-nav {
+    padding-top: 1rem;
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  }
 }
 
 .customer-booking-page {
@@ -853,27 +885,11 @@ body.customer-mobile-menu-open .customer-booking-nav {
   }
 
   .customer-booking-page .customer-booking-flow-wide {
-    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+    padding-bottom: 0;
   }
 
-  .customer-booking-nav {
-    position: sticky;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 35;
-    margin-top: 0.75rem;
-    margin-left: 0;
-    margin-right: 0;
-    width: 100%;
-    max-width: none;
-    box-sizing: border-box;
-    padding: 0.75rem 1rem;
-    padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
-    background: hsl(var(--background) / 0.98);
-    backdrop-filter: blur(10px);
-    border-top: 1px solid hsl(var(--border) / 0.85);
-    box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.1);
+  .customer-booking-page-body {
+    padding-bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px));
   }
 }
 
