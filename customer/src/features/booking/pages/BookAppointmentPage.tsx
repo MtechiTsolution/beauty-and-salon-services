@@ -1,4 +1,6 @@
+import { BookingOfferingRating } from '@/features/booking/components/BookingOfferingRating';
 import { BookingOfferingToggle, type BookingOfferingType } from '@/features/booking/components/BookingOfferingToggle';
+import { BookingSearchField } from '@/features/booking/components/BookingSearchField';
 import { BookingStepper } from '@/features/booking/components/BookingStepper';
 import { CouponPicker } from '@/features/booking/components/CouponPicker';
 import { CatalogPopularBadge } from '@/features/catalog/components/CatalogPopularBadge';
@@ -18,6 +20,11 @@ import {
   packagePrimaryServiceId,
 } from '@/features/booking/lib/bookingOffering';
 import {
+  filterBranchesForBookingSearch,
+  filterPackagesForBookingSearch,
+  filterServicesForBookingSearch,
+} from '@/features/booking/lib/booking-search';
+import {
   getBookableBranches,
   getBranchesForPackage,
   getBranchesForService,
@@ -35,11 +42,21 @@ import {
   bookingsApi,
   couponsApiExtra,
   employeesApi,
+  reviewsApi,
   servicesApi,
   staffTimeOffApi,
 } from '@mit-salon/shared/api';
 import { CoverImage } from '@mit-salon/shared/components/CoverImage';
 import { branchImageHints } from '@mit-salon/shared/lib/branch-image-hints';
+import {
+  branchRatingForBookingChoice,
+  packageRatingAtBranch,
+  packageReviewOfferingIds,
+  serviceRatingAtBranch,
+  sortBranchesForBookingRating,
+  sortOfferingsByBranchRating,
+} from '@mit-salon/shared/lib/branch-offering-reviews';
+import { buildBranchReviewStats } from '@mit-salon/shared/lib/salon-review-stats';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent } from '@mit-salon/shared/components/ui/card';
 import { BookingDatePickerInput } from '@/features/booking/components/BookingDatePickerInput';
@@ -139,6 +156,8 @@ export default function BookAppointmentPage() {
   const [draftReady, setDraftReady] = useState(false);
   const [resumedDraft, setResumedDraft] = useState(false);
   const [clockTick, setClockTick] = useState(0);
+  const [salonSearchQuery, setSalonSearchQuery] = useState('');
+  const [offeringSearchQuery, setOfferingSearchQuery] = useState('');
   const todayStr = format(startOfToday(), 'yyyy-MM-dd');
 
   const bookingEmail = user?.email ?? guestEmail.trim();
@@ -154,6 +173,18 @@ export default function BookAppointmentPage() {
   );
   const guestEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(bookingEmail);
   const guestDetailsValid = bookingName.length > 0 && guestEmailValid;
+
+  useEffect(() => {
+    if (step !== 0 && salonSearchQuery) setSalonSearchQuery('');
+  }, [step, salonSearchQuery]);
+
+  useEffect(() => {
+    if (step !== 1 && offeringSearchQuery) setOfferingSearchQuery('');
+  }, [step, offeringSearchQuery]);
+
+  useEffect(() => {
+    setOfferingSearchQuery('');
+  }, [offeringType]);
 
   useEffect(() => {
     if (step === 3 && employee && !date) {
@@ -180,6 +211,12 @@ export default function BookAppointmentPage() {
     refetchOnMount: 'always',
   });
   const { data: packages = [] } = useActivePackages();
+  const { data: reviews = [] } = useQuery({
+    queryKey: ['reviews-book'],
+    queryFn: () => reviewsApi.list(),
+    staleTime: 60_000,
+  });
+  const branchReviewStats = useMemo(() => buildBranchReviewStats(reviews), [reviews]);
   const { data: dayBookings = [], isFetching: loadingSlots } = useQuery({
     queryKey: ['bookings-slot', date, employee?.id],
     queryFn: () => bookingsApi.filter({ date, employee_id: employee!.id }),
@@ -225,7 +262,14 @@ export default function BookAppointmentPage() {
     } else {
       choices = bookableBranches;
     }
-    return sortBranchesByProximity(choices, coords);
+    const withDistance = sortBranchesByProximity(choices, coords);
+    return sortBranchesForBookingRating(withDistance, (branchId) =>
+      branchRatingForBookingChoice(reviews, branchId, {
+        branchStats: branchReviewStats,
+        prefilledService: servicePrefilled && service ? service : null,
+        prefilledPackage: packagePrefilled && selectedPackage ? selectedPackage : null,
+      }),
+    );
   }, [
     packagePrefilled,
     servicePrefilled,
@@ -235,27 +279,45 @@ export default function BookAppointmentPage() {
     bookableServices,
     bookableBranches,
     coords,
+    reviews,
+    branchReviewStats,
   ]);
+  const filteredBranchChoices = useMemo(
+    () => filterBranchesForBookingSearch(branchChoices, salonSearchQuery),
+    [branchChoices, salonSearchQuery],
+  );
   const branchServices = useMemo(() => {
     if (!branch) return [];
-    return bookableServices
-      .filter((s) => s.branch_ids.includes(branch.id))
-      .sort((a, b) => {
-        const featuredDiff = Number(!!b.is_featured) - Number(!!a.is_featured);
-        if (featuredDiff !== 0) return featuredDiff;
-        return a.title.localeCompare(b.title);
-      });
-  }, [bookableServices, branch]);
+    const list = bookableServices.filter((s) => s.branch_ids.includes(branch.id));
+    return sortOfferingsByBranchRating(
+      list,
+      branch.id,
+      reviews,
+      (s) => [s.id],
+      (s) => s.title,
+    );
+  }, [bookableServices, branch, reviews]);
   const branchPackages = useMemo(() => {
     if (!branch) return [];
-    return bookablePackages
-      .filter((p) => isPackageAvailableAtBranch(p, branch.id, activeBranches, bookableServices))
-      .sort((a, b) => {
-        const featuredDiff = Number(!!b.is_featured) - Number(!!a.is_featured);
-        if (featuredDiff !== 0) return featuredDiff;
-        return a.name.localeCompare(b.name);
-      });
-  }, [bookablePackages, branch, activeBranches, bookableServices]);
+    const list = bookablePackages.filter((p) =>
+      isPackageAvailableAtBranch(p, branch.id, activeBranches, bookableServices),
+    );
+    return sortOfferingsByBranchRating(
+      list,
+      branch.id,
+      reviews,
+      (p) => packageReviewOfferingIds(p),
+      (p) => p.name,
+    );
+  }, [bookablePackages, branch, activeBranches, bookableServices, reviews]);
+  const filteredBranchServices = useMemo(
+    () => filterServicesForBookingSearch(branchServices, offeringSearchQuery),
+    [branchServices, offeringSearchQuery],
+  );
+  const filteredBranchPackages = useMemo(
+    () => filterPackagesForBookingSearch(branchPackages, offeringSearchQuery),
+    [branchPackages, offeringSearchQuery],
+  );
   const activeOfferingType: BookingOfferingType | null = selectedPackage
     ? 'package'
     : service
@@ -278,13 +340,11 @@ export default function BookAppointmentPage() {
           : [],
     [branch, activeOfferingType, service, selectedPackage, employees],
   );
-  const skipStaffStep = staffOptions.length === 1;
   const bookingDisabledSteps = useMemo(() => {
     const disabled: number[] = [];
     if (offeringPrefilled) disabled.push(1);
-    if (skipStaffStep) disabled.push(2);
     return disabled;
-  }, [offeringPrefilled, skipStaffStep]);
+  }, [offeringPrefilled]);
 
   useEffect(() => {
     if (!branch || !hasOffering) return;
@@ -299,13 +359,6 @@ export default function BookAppointmentPage() {
       setEmployee(null);
     }
   }, [branch, hasOffering, staffOptions, employee]);
-
-  useEffect(() => {
-    if (step === 2 && skipStaffStep && staffOptions[0]) {
-      setEmployee(staffOptions[0]);
-      setStep(3);
-    }
-  }, [step, skipStaffStep, staffOptions]);
 
   const staffDayBookings = useMemo(
     () => dayBookings.filter((b) => b.status !== 'cancelled'),
@@ -744,7 +797,6 @@ export default function BookAppointmentPage() {
   const goBack = () => {
     setStep((s) => {
       if (s === 2 && offeringPrefilled) return 0;
-      if (s === 3 && skipStaffStep) return offeringPrefilled ? 0 : 1;
       return Math.max(0, s - 1);
     });
   };
@@ -752,16 +804,11 @@ export default function BookAppointmentPage() {
   const goToStep = (target: number) => {
     if (target >= step || target < 0) return;
     if (target === 1 && offeringPrefilled) return;
-    if (target === 2 && skipStaffStep) return;
     setStep(target);
   };
 
   const goNext = () => {
-    setStep((s) => {
-      if (s === 0 && offeringPrefilled && branch) return skipStaffStep ? 3 : 2;
-      if (s === 1 && skipStaffStep) return 3;
-      return Math.min(STEP_COUNT - 1, s + 1);
-    });
+    setStep((s) => Math.min(STEP_COUNT - 1, s + 1));
   };
 
   const selectOfferingType = (type: BookingOfferingType) => {
@@ -1176,7 +1223,8 @@ export default function BookAppointmentPage() {
                       variant="chip"
                     />
                   </span>{' '}
-                  — {branchChoices.length} salon{branchChoices.length !== 1 ? 's' : ''} available.
+                  — {branchChoices.length} salon{branchChoices.length !== 1 ? 's' : ''} available. Salons with
+                  reviews for this package are listed first.
                 </>
               ) : servicePrefilled && service ? (
                 <>
@@ -1190,11 +1238,13 @@ export default function BookAppointmentPage() {
                       variant="chip"
                     />
                   </span>{' '}
-                  — {branchChoices.length} salon{branchChoices.length !== 1 ? 's' : ''} available.
+                  — {branchChoices.length} salon{branchChoices.length !== 1 ? 's' : ''} available. Salons with
+                  reviews for this service are listed first.
                 </>
               ) : (
                 <>
-                  {branchChoices.length} salon{branchChoices.length !== 1 ? 's' : ''} available — tap to select.
+                  {branchChoices.length} salon{branchChoices.length !== 1 ? 's' : ''} available — salons with
+                  reviews are listed first. Tap to select.
                 </>
               )}
             </p>
@@ -1228,6 +1278,18 @@ export default function BookAppointmentPage() {
                 </span>
               </div>
             )}
+            {branchChoices.length > 0 && (
+              <BookingSearchField
+                id="booking-salon-search"
+                className="mt-4 md:mt-5"
+                value={salonSearchQuery}
+                onChange={setSalonSearchQuery}
+                placeholder="Search salons by name, city, or address…"
+                resultCount={filteredBranchChoices.length}
+                totalCount={branchChoices.length}
+                resultLabel="salons"
+              />
+            )}
             <div className="customer-booking-cards-scroll customer-booking-cards-grid customer-booking-cards-grid--locations mt-4 md:mt-5">
               {branchChoices.length === 0 ? (
                 <p className="col-span-full py-12 text-center text-muted-foreground">
@@ -1239,8 +1301,12 @@ export default function BookAppointmentPage() {
                       </>
                     )}
                 </p>
+              ) : filteredBranchChoices.length === 0 ? (
+                <p className="col-span-full py-12 text-center text-muted-foreground">
+                  No salons match your search. Try a different name, city, or address.
+                </p>
               ) : (
-                branchChoices.map((b) => (
+                filteredBranchChoices.map((b) => (
                   <Card
                     key={b.id}
                     className={cn(
@@ -1287,6 +1353,22 @@ export default function BookAppointmentPage() {
                         className="mt-3"
                         variant="compact"
                       />
+                      <BookingOfferingRating
+                        className="mt-2"
+                        showStars={false}
+                        stats={branchRatingForBookingChoice(reviews, b.id, {
+                          branchStats: branchReviewStats,
+                          prefilledService: servicePrefilled && service ? service : null,
+                          prefilledPackage: packagePrefilled && selectedPackage ? selectedPackage : null,
+                        })}
+                        prefix={
+                          offeringPrefilled && (service || selectedPackage)
+                            ? packagePrefilled
+                              ? 'Package rating at this salon'
+                              : 'Service rating at this salon'
+                            : undefined
+                        }
+                      />
                     </CardContent>
                   </Card>
                 ))
@@ -1306,11 +1388,28 @@ export default function BookAppointmentPage() {
             </div>
 
             {offeringType === 'service' ? (
+              <>
+                {branchServices.length > 0 && (
+                  <BookingSearchField
+                    id="booking-service-search"
+                    className="mt-6"
+                    value={offeringSearchQuery}
+                    onChange={setOfferingSearchQuery}
+                    placeholder="Search services by name or description…"
+                    resultCount={filteredBranchServices.length}
+                    totalCount={branchServices.length}
+                    resultLabel="services"
+                  />
+                )}
               <div className="customer-booking-cards-scroll customer-booking-cards-grid mt-8">
                 {branchServices.length === 0 ? (
                   <p className="col-span-full text-muted-foreground">No services at this branch.</p>
+                ) : filteredBranchServices.length === 0 ? (
+                  <p className="col-span-full text-muted-foreground">
+                    No services match your search. Try another keyword.
+                  </p>
                 ) : (
-                  branchServices.map((s) => {
+                  filteredBranchServices.map((s) => {
                     const isSelected = service?.id === s.id;
                     return (
                     <Card
@@ -1347,11 +1446,15 @@ export default function BookAppointmentPage() {
                         />
                       </div>
                       <CardContent className="customer-offering-card-body flex items-end justify-between gap-4 p-6">
-                        <div>
+                        <div className="min-w-0 flex-1">
                           <h3 className={cn('customer-offering-card-title font-heading text-lg font-semibold', isSelected && 'text-primary')}>
                             {s.title}
                           </h3>
-                          <p className="mt-1 flex items-center gap-1 text-sm text-muted-foreground">
+                          <BookingOfferingRating
+                            className="mt-2"
+                            stats={branch && serviceRatingAtBranch(reviews, branch.id, s)}
+                          />
+                          <p className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
                             <Scissors className="h-4 w-4" />
                             {s.duration_minutes} minutes
                           </p>
@@ -1363,14 +1466,32 @@ export default function BookAppointmentPage() {
                   })
                 )}
               </div>
+              </>
             ) : (
+              <>
+                {branchPackages.length > 0 && (
+                  <BookingSearchField
+                    id="booking-package-search"
+                    className="mt-6"
+                    value={offeringSearchQuery}
+                    onChange={setOfferingSearchQuery}
+                    placeholder="Search packages by name or description…"
+                    resultCount={filteredBranchPackages.length}
+                    totalCount={branchPackages.length}
+                    resultLabel="packages"
+                  />
+                )}
               <div className="customer-booking-cards-scroll customer-booking-cards-grid mt-8">
                 {branchPackages.length === 0 ? (
                   <p className="col-span-full text-muted-foreground">
                     No packages at this branch yet. Try a single service instead.
                   </p>
+                ) : filteredBranchPackages.length === 0 ? (
+                  <p className="col-span-full text-muted-foreground">
+                    No packages match your search. Try another keyword.
+                  </p>
                 ) : (
-                  branchPackages.map((p) => {
+                  filteredBranchPackages.map((p) => {
                     const isSelected = selectedPackage?.id === p.id;
                     return (
                     <Card
@@ -1407,10 +1528,14 @@ export default function BookAppointmentPage() {
                         />
                       </div>
                       <CardContent className="customer-offering-card-body flex items-end justify-between gap-4 p-6">
-                        <div>
+                        <div className="min-w-0 flex-1">
                           <h3 className={cn('customer-offering-card-title font-heading text-lg font-semibold', isSelected && 'text-primary')}>
                             {p.name}
                           </h3>
+                          <BookingOfferingRating
+                            className="mt-2"
+                            stats={branch && packageRatingAtBranch(reviews, branch.id, p)}
+                          />
                           {p.description && (
                             <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{p.description}</p>
                           )}
@@ -1430,13 +1555,20 @@ export default function BookAppointmentPage() {
                   })
                 )}
               </div>
+              </>
             )}
           </div>
         )}
 
-        {step === 2 && !skipStaffStep && (
+        {step === 2 && (
           <div className="customer-booking-flow">
             <h2 className="font-heading text-2xl font-semibold">Choose your professional</h2>
+            {staffOptions.length === 1 && employee ? (
+              <p className="mt-2 text-sm text-muted-foreground">
+                Only one stylist is available for this booking — they are pre-selected. Tap Continue when
+                you&apos;re ready.
+              </p>
+            ) : (
             <p className="mt-2 text-muted-foreground">
               {packagePrefilled && selectedPackage ? (
                 <span className="inline-flex flex-wrap items-center gap-2">
@@ -1483,6 +1615,7 @@ export default function BookAppointmentPage() {
                 </span>
               )}
             </p>
+            )}
             <div className="customer-booking-cards-scroll customer-booking-cards-grid customer-booking-cards-grid--compact mt-8">
               {staffOptions.length === 0 ? (
                 <p className="text-muted-foreground">

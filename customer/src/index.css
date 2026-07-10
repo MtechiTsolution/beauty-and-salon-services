@@ -642,6 +642,16 @@ body.customer-mobile-menu-open .customer-booking-nav {
   max-width: 72rem;
 }
 
+.customer-booking-search-wrap:focus-within {
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+  border-radius: 9999px;
+}
+
+.customer-booking-search-clear:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
 /* Booking stepper — compact grid on mobile, flex row on desktop */
 .booking-stepper {
   box-sizing: border-box;
