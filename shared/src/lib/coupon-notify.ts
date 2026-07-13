@@ -1,15 +1,18 @@
 import { formatCouponDiscountLabel, formatCouponExpiry } from './coupon-ui';
+import { DEFAULT_APP_CURRENCY, formatMoney, type AppCurrencyCode } from './currency';
 import type { Coupon, Notification } from '../types';
 
 export const COUPON_NOTIFICATION_TITLE = 'Coupon available for you';
 
 export function buildCouponNotificationMessage(
   coupon: Pick<Coupon, 'code' | 'discount_type' | 'discount_value' | 'min_order' | 'expiry_date'>,
+  currency: AppCurrencyCode | string = DEFAULT_APP_CURRENCY,
+  rate = 1,
 ): string {
-  const discount = formatCouponDiscountLabel(coupon);
+  const discount = formatCouponDiscountLabel(coupon, currency, rate);
   const parts = [`Your coupon code is ${coupon.code} — ${discount}.`];
   if (Number(coupon.min_order) > 0) {
-    parts.push(`Minimum order: $${coupon.min_order}.`);
+    parts.push(`Minimum order: ${formatMoney(Number(coupon.min_order), currency, { rate })}.`);
   }
   const expiry = formatCouponExpiry(coupon.expiry_date);
   if (expiry) parts.push(`Valid until ${expiry}.`);

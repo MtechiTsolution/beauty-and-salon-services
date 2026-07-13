@@ -1,4 +1,8 @@
 import { useAuth } from '@/features/auth/context/AuthContext';
+import {
+  contactPathForBranch,
+  useBookingBranch,
+} from '@/features/booking/context/BookingBranchContext';
 import { customerNavLinks } from '@/features/layout/customer-nav-links';
 import {
   CUSTOMER_HOME_PATH,
@@ -8,10 +12,10 @@ import { AppLogo } from '@mit-salon/shared/components/AppLogo';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { cn } from '@mit-salon/shared/lib/utils';
 import { useLogoutConfirm } from '@mit-salon/shared/hooks/useLogoutConfirm';
-import { LogOut, X } from 'lucide-react';
-import { useEffect } from 'react';
+import { FileText, LogOut, Phone, RotateCcw, X } from 'lucide-react';
+import { useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useMatch, useNavigate } from 'react-router-dom';
 
 const mainNavLinks = customerNavLinks.filter((l) => l.path !== '/profile');
 const profileLink = customerNavLinks.find((l) => l.path === '/profile');
@@ -24,6 +28,8 @@ type CustomerMobileDrawerProps = {
 export function CustomerMobileDrawer({ open, onClose }: CustomerMobileDrawerProps) {
   const location = useLocation();
   const navigate = useNavigate();
+  const isBookPage = Boolean(useMatch('/book'));
+  const { bookingBranch } = useBookingBranch();
   const { user, isAuthenticated, logout } = useAuth();
   const { requestLogout, loading: loggingOut, logoutDialog } = useLogoutConfirm(logout, {
     onSuccess: () => {
@@ -31,6 +37,23 @@ export function CustomerMobileDrawer({ open, onClose }: CustomerMobileDrawerProp
       navigate('/landing');
     },
   });
+
+  const drawerLinks = useMemo(() => {
+    if (isBookPage && bookingBranch) {
+      const q = `?branch=${encodeURIComponent(bookingBranch.id)}`;
+      return [
+        { label: 'Privacy Policy', path: `/privacy${q}`, icon: FileText, description: 'How we use your data' },
+        { label: 'Refund Policy', path: `/refund${q}`, icon: RotateCcw, description: 'Cancellations & refunds' },
+        {
+          label: 'Contact',
+          path: contactPathForBranch(bookingBranch.id),
+          icon: Phone,
+          description: `Reach ${bookingBranch.name}`,
+        },
+      ];
+    }
+    return mainNavLinks;
+  }, [bookingBranch, isBookPage]);
 
   useEffect(() => {
     if (!open) return;
@@ -76,22 +99,30 @@ export function CustomerMobileDrawer({ open, onClose }: CustomerMobileDrawerProp
             className="min-w-0 flex-1 rounded-lg text-left transition hover:bg-muted/40"
           >
             <AppLogo size="md" showText textClassName="text-lg text-foreground" />
-            <p className="mt-1 truncate text-xs text-muted-foreground">Salon booking & care</p>
+            <p className="mt-1 truncate text-xs text-muted-foreground">
+              {isBookPage && bookingBranch
+                ? `Booking · ${bookingBranch.name}`
+                : 'Salon booking & care'}
+            </p>
           </Link>
           <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Close">
             <X className="h-5 w-5" />
           </Button>
         </div>
 
-        <nav className="customer-drawer-nav" aria-label="Main navigation">
-          {mainNavLinks.map((link) => {
+        <nav
+          className="customer-drawer-nav"
+          aria-label={isBookPage && bookingBranch ? 'Booking policies' : 'Main navigation'}
+        >
+          {drawerLinks.map((link) => {
             const Icon = link.icon;
+            const base = link.path.split('?')[0];
             const active =
-              location.pathname === link.path ||
-              (link.path !== '/book' && location.pathname.startsWith(`${link.path}/`));
+              location.pathname === base ||
+              (base !== '/book' && location.pathname.startsWith(`${base}/`));
             return (
               <Link
-                key={link.path}
+                key={`${link.label}-${link.path}`}
                 to={link.path}
                 onClick={onClose}
                 className={cn('customer-drawer-link', active && 'customer-drawer-link--active')}
@@ -101,18 +132,18 @@ export function CustomerMobileDrawer({ open, onClose }: CustomerMobileDrawerProp
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block font-medium leading-snug">{link.label}</span>
-                  {link.description && (
+                  {'description' in link && link.description ? (
                     <span className="block text-xs leading-snug text-muted-foreground">
                       {link.description}
                     </span>
-                  )}
+                  ) : null}
                 </span>
               </Link>
             );
           })}
         </nav>
 
-        {profileLink && ProfileIcon && (
+        {!(isBookPage && bookingBranch) && profileLink && ProfileIcon && (
           <div className="customer-drawer-footer">
             {isAuthenticated && user ? (
               <div

@@ -16,17 +16,21 @@ import MessageThreadPage from '@/features/messages/pages/MessageThreadPage';
 import MessagesPage from '@/features/messages/pages/MessagesPage';
 import NotificationsPage from '@/features/notifications/pages/NotificationsPage';
 import ContactPage from '@/features/contact/pages/ContactPage';
+import PrivacyPolicyPage from '@/features/legal/pages/PrivacyPolicyPage';
+import RefundPolicyPage from '@/features/legal/pages/RefundPolicyPage';
 import SalonProfilePage from '@/features/salons/pages/SalonProfilePage';
 import SalonsPage from '@/features/salons/pages/SalonsPage';
 import ProfilePage from '@/features/profile/pages/ProfilePage';
 import LandingPage from '@/features/welcome/pages/LandingPage';
 import WelcomePage from '@/features/welcome/pages/WelcomePage';
+import { ScrollToTop } from '@/features/layout/ScrollToTop';
 import NotFoundPage from '@/pages/NotFoundPage';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 export function AppRouter() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<WelcomePage />} />
         <Route path="/landing" element={<LandingPage />} />
@@ -40,6 +44,9 @@ export function AppRouter() {
           <Route path="/book" element={<BookAppointmentPage />} />
           <Route path="/salons" element={<SalonsPage />} />
           <Route path="/salons/:branchId" element={<SalonProfilePage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/refund" element={<RefundPolicyPage />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/explore" element={<ExplorePage />} />
             <Route path="/packages" element={<PackagesPage />} />
@@ -51,7 +58,6 @@ export function AppRouter() {
             <Route path="/messages/booking/:bookingId" element={<BookingChatRedirectPage />} />
             <Route path="/messages/:chatId" element={<MessageThreadPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
-            <Route path="/contact" element={<ContactPage />} />
             <Route path="/profile" element={<ProfilePage />} />
           </Route>
         </Route>

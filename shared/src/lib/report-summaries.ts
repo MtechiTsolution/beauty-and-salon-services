@@ -1,5 +1,6 @@
 import type { ReportModule } from './report-modules';
 import { getReportModule } from './report-modules';
+import { DEFAULT_APP_CURRENCY, formatMoney, type AppCurrencyCode } from './currency';
 
 export type ModuleReportSummary = {
   module: ReportModule;
@@ -12,7 +13,12 @@ function capitalize(s: string) {
   return s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-export function buildModuleSummary(module: ReportModule, rows: Record<string, unknown>[]): ModuleReportSummary {
+export function buildModuleSummary(
+  module: ReportModule,
+  rows: Record<string, unknown>[],
+  currency: AppCurrencyCode | string = DEFAULT_APP_CURRENCY,
+  rate = 1,
+): ModuleReportSummary {
   const meta = getReportModule(module);
   const count = rows.length;
 
@@ -32,7 +38,7 @@ export function buildModuleSummary(module: ReportModule, rows: Record<string, un
         { label: 'Records in range', value: count },
         {
           label: 'Revenue (paid)',
-          value: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(revenue),
+          value: formatMoney(revenue, currency, { rate }),
         },
       ],
       breakdown,
@@ -50,7 +56,7 @@ export function buildModuleSummary(module: ReportModule, rows: Record<string, un
         { label: 'With bookings', value: withBookings },
         {
           label: 'Paid total',
-          value: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(paidTotal),
+          value: formatMoney(paidTotal, currency, { rate }),
         },
       ],
     };

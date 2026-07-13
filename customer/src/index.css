@@ -4730,6 +4730,268 @@ body.customer-mobile-menu-open .customer-booking-nav {
   border-top: 1px solid hsl(var(--border) / 0.55);
 }
 
+/* Booking flow — selected salon footer */
+.booking-salon-footer {
+  border-top: 1px solid hsl(var(--border) / 0.55);
+  background: hsl(var(--background));
+}
+
+.booking-salon-footer__shell {
+  padding: 1.25rem 0 1.5rem;
+}
+
+.booking-salon-footer__card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.125rem;
+  border: 1px solid hsl(var(--border) / 0.75);
+  background:
+    linear-gradient(165deg, hsl(var(--card)) 0%, hsl(var(--background)) 55%, hsl(var(--muted) / 0.28) 100%);
+  box-shadow:
+    0 1px 2px hsl(var(--foreground) / 0.04),
+    0 18px 40px hsl(var(--foreground) / 0.04);
+}
+
+.booking-salon-footer__accent {
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(var(--primary) / 0.35) 20%,
+    hsl(var(--primary)) 50%,
+    hsl(var(--primary) / 0.35) 80%,
+    transparent 100%
+  );
+}
+
+.booking-salon-footer__inner {
+  padding: 1.375rem 1.25rem 1.25rem;
+}
+
+.booking-salon-footer__header {
+  display: grid;
+  gap: 0.5rem;
+  padding-bottom: 1.125rem;
+  border-bottom: 1px solid hsl(var(--border) / 0.55);
+}
+
+.booking-salon-footer__eyebrow {
+  margin: 0;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: hsl(var(--primary));
+}
+
+.booking-salon-footer__title {
+  margin: 0.2rem 0 0;
+  font-family: var(--font-heading);
+  font-size: 1.375rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  color: hsl(var(--foreground));
+}
+
+.booking-salon-footer__lede {
+  margin: 0;
+  max-width: 34rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: hsl(var(--muted-foreground));
+}
+
+.booking-salon-footer__grid {
+  display: grid;
+  gap: 1.25rem;
+  margin-top: 1.125rem;
+}
+
+.booking-salon-footer__section {
+  min-width: 0;
+}
+
+.booking-salon-footer__section-title {
+  margin: 0 0 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+}
+
+.booking-salon-footer__contacts {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.booking-salon-footer__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid hsl(var(--border) / 0.65);
+  background: hsl(var(--background) / 0.72);
+}
+
+.booking-salon-footer__row--link {
+  text-decoration: none;
+  color: inherit;
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease;
+}
+
+.booking-salon-footer__row--link:hover {
+  border-color: hsl(var(--primary) / 0.4);
+  background: hsl(var(--primary) / 0.05);
+}
+
+.booking-salon-footer__icon {
+  display: inline-flex;
+  height: 1.875rem;
+  width: 1.875rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  background: hsl(var(--primary) / 0.1);
+  color: hsl(var(--primary));
+}
+
+.booking-salon-footer__row-label {
+  display: block;
+  font-size: 0.625rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+}
+
+.booking-salon-footer__row-value {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.8125rem;
+  font-weight: 550;
+  line-height: 1.35;
+  color: hsl(var(--foreground));
+  overflow-wrap: anywhere;
+}
+
+.booking-salon-footer__policy-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.booking-salon-footer__policy-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 2.5rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: 0.7rem;
+  border: 1px solid hsl(var(--border) / 0.7);
+  background: hsl(var(--background) / 0.72);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  text-decoration: none;
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.booking-salon-footer__policy-arrow {
+  color: hsl(var(--muted-foreground));
+  transition: color 0.18s ease, transform 0.18s ease;
+}
+
+.booking-salon-footer__policy-link:hover {
+  border-color: hsl(var(--primary) / 0.4);
+  background: hsl(var(--primary) / 0.06);
+  color: hsl(var(--primary));
+}
+
+.booking-salon-footer__policy-link:hover .booking-salon-footer__policy-arrow {
+  color: hsl(var(--primary));
+  transform: translateX(2px);
+}
+
+.booking-salon-footer__bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 1.125rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid hsl(var(--border) / 0.55);
+}
+
+.booking-salon-footer__bottom-note {
+  margin: 0;
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.booking-salon-footer__bottom-note strong {
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+@media (min-width: 768px) {
+  .booking-salon-footer__shell {
+    padding: 1.5rem 0 1.75rem;
+  }
+
+  .booking-salon-footer__inner {
+    padding: 1.5rem 1.5rem 1.25rem;
+  }
+
+  .booking-salon-footer__header {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr);
+    align-items: end;
+    gap: 1.25rem;
+  }
+
+  .booking-salon-footer__title {
+    font-size: 1.5rem;
+  }
+
+  .booking-salon-footer__lede {
+    text-align: right;
+    justify-self: end;
+  }
+
+  .booking-salon-footer__grid {
+    grid-template-columns: minmax(0, 1.15fr) minmax(15rem, 0.85fr);
+    gap: 1.5rem;
+    align-items: stretch;
+  }
+
+  .booking-salon-footer__section {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .booking-salon-footer__contacts,
+  .booking-salon-footer__policy-list {
+    flex: 1;
+  }
+
+  .booking-salon-footer__bottom {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
 @media (min-width: 1280px) {
   .customer-app-footer-desktop {
     padding: 2.75rem max(2rem, env(safe-area-inset-right)) 2.75rem max(2rem, env(safe-area-inset-left));

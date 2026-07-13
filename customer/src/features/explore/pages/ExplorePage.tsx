@@ -16,6 +16,7 @@ import { CoverImage } from '@mit-salon/shared/components/CoverImage';
 import { filterCustomerServices } from '@mit-salon/shared/lib/customer-catalog';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent } from '@mit-salon/shared/components/ui/card';
+import { useFormatMoney } from '@mit-salon/shared/hooks/useCurrency';
 import type { Service } from '@mit-salon/shared/types';
 import { useQuery } from '@tanstack/react-query';
 import { Clock, MapPin, MapPinned, Scissors } from 'lucide-react';
@@ -23,6 +24,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 export default function ExplorePage() {
+  const formatMoney = useFormatMoney();
   const [bookingService, setBookingService] = useState<Service | null>(null);
   const { data: branches = [] } = useCustomerBranches({ queryKeyPrefix: 'branches-explore' });
   const { data: services = [] } = useQuery({
@@ -169,7 +171,7 @@ export default function ExplorePage() {
                   {s.description?.trim() || '\u00A0'}
                 </p>
                 <div className="customer-explore-card__meta mt-4 flex shrink-0 items-center justify-between">
-                  <span className="text-xl font-bold text-primary">${s.price}</span>
+                  <span className="text-xl font-bold text-primary">{formatMoney(s.price)}</span>
                   <span className="flex items-center gap-1 text-sm text-muted-foreground">
                     <Clock className="h-4 w-4" />
                     {s.duration_minutes} min

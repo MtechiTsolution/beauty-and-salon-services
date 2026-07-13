@@ -10,6 +10,7 @@ import { servicesApi } from '@mit-salon/shared/api';
 import { CoverImage } from '@mit-salon/shared/components/CoverImage';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent } from '@mit-salon/shared/components/ui/card';
+import { useFormatMoney } from '@mit-salon/shared/hooks/useCurrency';
 import { branchImageHints } from '@mit-salon/shared/lib/branch-image-hints';
 import { filterCustomerServices } from '@mit-salon/shared/lib/customer-catalog';
 import { IMAGES } from '@mit-salon/shared/lib/images';
@@ -19,6 +20,7 @@ import { Link } from 'react-router-dom';
 import { useMemo } from 'react';
 
 export default function HomePage() {
+  const formatMoney = useFormatMoney();
   const { data: services = [] } = useQuery({ queryKey: ['services-home'], queryFn: () => servicesApi.list() });
   const { data: branches = [] } = useCustomerBranches({ queryKeyPrefix: 'branches-home' });
   const { data: activePackages = [] } = useActivePackages();
@@ -100,7 +102,7 @@ export default function HomePage() {
                 <h3 className="font-heading text-lg font-semibold">{service.title}</h3>
                 <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{service.description}</p>
                 <div className="flex items-center justify-between mt-4 text-sm">
-                  <span className="font-semibold text-primary">${service.price}</span>
+                  <span className="font-semibold text-primary">{formatMoney(service.price)}</span>
                   <span className="flex items-center gap-1 text-muted-foreground"><Clock className="w-4 h-4" />{service.duration_minutes} min</span>
                 </div>
               </CardContent>

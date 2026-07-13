@@ -2,6 +2,7 @@ import { CatalogPopularBadge } from '@/features/catalog/components/CatalogPopula
 import { CoverImage } from '@mit-salon/shared/components/CoverImage';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card } from '@mit-salon/shared/components/ui/card';
+import { useFormatMoney } from '@mit-salon/shared/hooks/useCurrency';
 import { cn } from '@mit-salon/shared/lib/utils';
 import type { Package } from '@mit-salon/shared/types';
 import { CalendarDays, Layers, MapPin, Sparkles } from 'lucide-react';
@@ -17,11 +18,6 @@ type CustomerPackageCardProps = {
   className?: string;
 };
 
-function pricePerSession(pkg: Package): string {
-  if (!pkg.total_sessions) return '—';
-  return `$${(pkg.price / pkg.total_sessions).toFixed(0)}`;
-}
-
 const bookButtonClass =
   'mt-auto h-9 w-full rounded-full text-sm font-semibold shadow-sm sm:h-10';
 
@@ -34,7 +30,10 @@ export function CustomerPackageCard({
   compact = false,
   className,
 }: CustomerPackageCardProps) {
-  const perSession = pricePerSession(pkg);
+  const formatMoney = useFormatMoney();
+  const perSession = pkg.total_sessions
+    ? formatMoney(pkg.price / pkg.total_sessions, { maximumFractionDigits: 0 })
+    : '—';
 
   return (
     <Card
@@ -62,7 +61,7 @@ export function CustomerPackageCard({
         />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent sm:from-black/75 sm:via-black/20" />
         <div className="customer-package-card__badges-row">
-          <span className="customer-package-price-badge">${pkg.price.toFixed(0)}</span>
+          <span className="customer-package-price-badge">{formatMoney(pkg.price, { maximumFractionDigits: 0 })}</span>
           {pkg.total_sessions > 1 ? (
             <span className="customer-package-savings-badge">{perSession}/session</span>
           ) : null}

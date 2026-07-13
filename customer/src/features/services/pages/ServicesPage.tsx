@@ -6,6 +6,7 @@ import { categoriesApi } from '@mit-salon/shared/api';
 import { CoverImage } from '@mit-salon/shared/components/CoverImage';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent } from '@mit-salon/shared/components/ui/card';
+import { useFormatMoney } from '@mit-salon/shared/hooks/useCurrency';
 import type { Service } from '@mit-salon/shared/types';
 import { useQuery } from '@tanstack/react-query';
 import { Clock, Grid3X3, RefreshCw } from 'lucide-react';
@@ -13,6 +14,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 export default function ServicesPage() {
+  const formatMoney = useFormatMoney();
   const [bookingService, setBookingService] = useState<Service | null>(null);
   const {
     data: services = [],
@@ -152,7 +154,7 @@ export default function ServicesPage() {
                       <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{service.description}</p>
                       <div className="mt-4 flex items-center justify-between gap-3">
                         <div className="flex justify-between text-sm">
-                          <span className="font-bold text-primary">${service.price}</span>
+                          <span className="font-bold text-primary">{formatMoney(service.price)}</span>
                           <span className="flex items-center gap-1 text-muted-foreground">
                             <Clock className="h-4 w-4" />
                             {service.duration_minutes}m

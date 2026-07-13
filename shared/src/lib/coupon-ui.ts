@@ -1,11 +1,14 @@
 import type { Coupon } from '../types';
+import { DEFAULT_APP_CURRENCY, formatMoney, type AppCurrencyCode } from './currency';
 
 export function formatCouponDiscountLabel(
   coupon: Pick<Coupon, 'discount_type' | 'discount_value'>,
+  currency: AppCurrencyCode | string = DEFAULT_APP_CURRENCY,
+  rate = 1,
 ): string {
   return coupon.discount_type === 'percentage'
     ? `${coupon.discount_value}% off`
-    : `$${coupon.discount_value} off`;
+    : `${formatMoney(coupon.discount_value, currency, { rate })} off`;
 }
 
 export function formatCouponExpiry(expiryDate?: string | null): string | null {

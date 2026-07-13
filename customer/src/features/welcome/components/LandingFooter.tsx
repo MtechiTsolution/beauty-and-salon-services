@@ -11,11 +11,11 @@ import type { MouseEvent } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 const footerAnchors = [
-  { label: 'Features', href: '#features' },
-  { label: 'Services', href: '#services' },
-  { label: 'Packages', href: '#packages' },
-  { label: 'Locations', href: '#locations' },
-  { label: 'Reviews', href: '#reviews' },
+  { label: 'Features', href: '/landing#features' },
+  { label: 'Services', href: '/landing#services' },
+  { label: 'Packages', href: '/landing#packages' },
+  { label: 'Locations', href: '/landing#locations' },
+  { label: 'Reviews', href: '/landing#reviews' },
 ];
 
 const supportHourLines = SALON_SUPPORT.hours.split(' · ');
@@ -57,9 +57,9 @@ export function LandingFooter() {
               <ul className="mt-5 space-y-3 max-md:mt-2.5 max-md:space-y-1.5">
                 {footerAnchors.map((item) => (
                   <li key={item.href}>
-                    <a href={item.href} className="footer-link max-md:text-sm">
+                    <Link to={item.href} className="footer-link max-md:text-sm">
                       {item.label}
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -129,6 +129,12 @@ export function LandingFooter() {
             © {new Date().getFullYear()} {APP_NAME}. All rights reserved.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 lg:justify-end max-md:grid max-md:w-full max-md:grid-cols-3 max-md:gap-2 max-md:gap-x-2">
+            <Link to="/privacy" className="footer-link footer-mobile-action max-md:text-center max-md:text-sm">
+              Privacy Policy
+            </Link>
+            <Link to="/refund" className="footer-link footer-mobile-action max-md:text-center max-md:text-sm">
+              Refund Policy
+            </Link>
             {isAuthenticated ? (
               <>
                 <Link to="/book" className="footer-link footer-mobile-action max-md:text-center max-md:text-sm">

@@ -2,6 +2,7 @@ import { BookingStatusHighlights } from '@/features/my-bookings/components/Booki
 import { StarRating } from '@mit-salon/shared/components/StarRating';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent } from '@mit-salon/shared/components/ui/card';
+import { useFormatMoney } from '@mit-salon/shared/hooks/useCurrency';
 import { canCustomerCancelBooking } from '@mit-salon/shared/lib/booking-customer';
 import { formatBookingAppointmentTime } from '@mit-salon/shared/lib/booking-slots';
 import { reviewUnavailableMessage } from '@mit-salon/shared/lib/booking-reviews';
@@ -76,6 +77,7 @@ export function BookingCard({
   isCancelling,
   compact,
 }: BookingCardProps) {
+  const formatMoney = useFormatMoney();
   const canCancel = canCustomerCancelBooking(b) && !!onCancel;
   const reviewHint = !showReviewButton && !review ? reviewUnavailableMessage(b) : null;
   const stateUi = BOOKING_STATE_UI[b.status];
@@ -166,7 +168,7 @@ export function BookingCard({
               <p className="customer-booking-card-eyebrow">{stateUi.eyebrow}</p>
               {compact ? (
                 <p className="customer-booking-card-price-inline font-heading text-lg font-bold text-primary">
-                  ${b.final_price.toFixed(0)}
+                  {formatMoney(b.final_price, { maximumFractionDigits: 0 })}
                 </p>
               ) : null}
             </div>
@@ -280,7 +282,7 @@ export function BookingCard({
           {!compact ? (
             <div className="customer-booking-card-price">
               <p className="customer-booking-card-price-label">Total amount</p>
-              <p className="customer-booking-card-price-value">${b.final_price.toFixed(2)}</p>
+              <p className="customer-booking-card-price-value">{formatMoney(b.final_price)}</p>
             </div>
           ) : null}
         </div>

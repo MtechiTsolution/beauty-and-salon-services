@@ -1,3 +1,4 @@
+import { contactPathForBranch, useBookingBranch } from '@/features/booking/context/BookingBranchContext';
 import { customerNavLinks } from '@/features/layout/customer-nav-links';
 import { CustomerMobileDrawer } from '@/features/layout/CustomerMobileDrawer';
 import { CustomerProfileMenu } from '@/features/layout/CustomerProfileMenu';
@@ -9,8 +10,8 @@ import { AppLogo } from '@mit-salon/shared/components/AppLogo';
 import { cn } from '@mit-salon/shared/lib/utils';
 import { Menu } from 'lucide-react';
 import type { MouseEvent } from 'react';
-import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { Link, useLocation, useMatch } from 'react-router-dom';
 
 const desktopNavLinks = customerNavLinks.filter(
   (l) => l.path !== '/profile',
@@ -19,14 +20,30 @@ const desktopNavLinks = customerNavLinks.filter(
 export function CustomerNavbar() {
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const isBookPage = Boolean(useMatch('/book'));
+  const { bookingBranch } = useBookingBranch();
+
+  const navLinks = useMemo(
+    () =>
+      desktopNavLinks.map((link) =>
+        link.path === '/contact' && isBookPage && bookingBranch
+          ? { ...link, path: contactPathForBranch(bookingBranch.id) }
+          : link,
+      ),
+    [bookingBranch, isBookPage],
+  );
 
   const onHomeClick = (event: MouseEvent<HTMLAnchorElement>) => {
     handleCustomerHomeClick(event, location.pathname);
   };
 
-  const isActive = (path: string) =>
-    location.pathname === path ||
-    (path !== '/book' && location.pathname.startsWith(`${path}/`));
+  const isActive = (path: string) => {
+    const base = path.split('?')[0];
+    return (
+      location.pathname === base ||
+      (base !== '/book' && location.pathname.startsWith(`${base}/`))
+    );
+  };
 
   return (
     <>
@@ -50,9 +67,9 @@ export function CustomerNavbar() {
             </Link>
 
             <nav className="hidden flex-1 items-center justify-center gap-1 lg:flex">
-              {desktopNavLinks.map((link) => (
+              {navLinks.map((link) => (
                 <Link
-                  key={link.path}
+                  key={`${link.label}-${link.path}`}
                   to={link.path}
                   className={cn(
                     'rounded-lg px-4 py-2.5 text-sm font-medium transition-colors',

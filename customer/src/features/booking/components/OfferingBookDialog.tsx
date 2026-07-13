@@ -6,6 +6,7 @@ import {
 import { useCustomerBranches } from '@/features/location/hooks/useCustomerBranches';
 import { servicesApi } from '@mit-salon/shared/api';
 import { CoverImage } from '@mit-salon/shared/components/CoverImage';
+import { useFormatMoney } from '@mit-salon/shared/hooks/useCurrency';
 import { branchImageHints } from '@mit-salon/shared/lib/branch-image-hints';
 import { packageDurationMinutes } from '@mit-salon/shared/lib/package-duration';
 import { Button } from '@mit-salon/shared/components/ui/button';
@@ -29,6 +30,7 @@ type OfferingBookDialogProps = {
 
 export function OfferingBookDialog({ service, pkg, open, onOpenChange }: OfferingBookDialogProps) {
   const navigate = useNavigate();
+  const formatMoney = useFormatMoney();
   const resolvedService = service ?? null;
   const resolvedPackage = pkg ?? null;
   const offering = resolvedService ?? resolvedPackage;
@@ -66,12 +68,12 @@ export function OfferingBookDialog({ service, pkg, open, onOpenChange }: Offerin
   const title = isPackage ? resolvedPackage.name : resolvedService!.title;
   const subtitle = isPackage ? (
     <>
-      ${resolvedPackage.price} · {resolvedPackage.total_sessions} session
+      {formatMoney(resolvedPackage.price)} · {resolvedPackage.total_sessions} session
       {resolvedPackage.total_sessions === 1 ? '' : 's'} · ~{packageDurationMinutes(resolvedPackage, services)} min visit
     </>
   ) : (
     <>
-      ${resolvedService!.price} · {resolvedService!.duration_minutes} min
+      {formatMoney(resolvedService!.price)} · {resolvedService!.duration_minutes} min
     </>
   );
 

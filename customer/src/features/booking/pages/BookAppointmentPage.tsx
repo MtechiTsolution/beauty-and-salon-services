@@ -6,6 +6,7 @@ import { CouponPicker } from '@/features/booking/components/CouponPicker';
 import { CatalogPopularBadge } from '@/features/catalog/components/CatalogPopularBadge';
 import { BookingStatusHighlights } from '@/features/my-bookings/components/BookingStatusHighlights';
 import { CUSTOMER_BOOKING_STEPS } from '@/features/booking/lib/booking-steps';
+import { useBookingBranch } from '@/features/booking/context/BookingBranchContext';
 import {
   clearActiveBookingDraft,
   clearAllBookingDrafts,
@@ -47,6 +48,7 @@ import {
   staffTimeOffApi,
 } from '@mit-salon/shared/api';
 import { CoverImage } from '@mit-salon/shared/components/CoverImage';
+import { useFormatMoney } from '@mit-salon/shared/hooks/useCurrency';
 import { branchImageHints } from '@mit-salon/shared/lib/branch-image-hints';
 import {
   branchRatingForBookingChoice,
@@ -127,16 +129,36 @@ export default function BookAppointmentPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const formatMoney = useFormatMoney();
+  const { setBookingBranch } = useBookingBranch();
   const [step, setStep] = useState(0);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [step]);
+
   const [packagePrefilled, setPackagePrefilled] = useState(false);
   const [servicePrefilled, setServicePrefilled] = useState(false);
   const offeringPrefilled = packagePrefilled || servicePrefilled;
   const [urlBookingApplied, setUrlBookingApplied] = useState(false);
   const [branch, setBranch] = useState<Branch | null>(null);
+
+  useEffect(() => {
+    if (branch) {
+      setBookingBranch({
+        id: branch.id,
+        name: branch.name,
+        phone: branch.phone,
+        email: branch.email,
+        address: branch.address,
+        city: branch.city,
+        opening_time: branch.opening_time,
+        closing_time: branch.closing_time,
+      });
+    } else {
+      setBookingBranch(null);
+    }
+  }, [branch, setBookingBranch]);
   const [offeringType, setOfferingType] = useState<BookingOfferingType>('service');
   const [service, setService] = useState<Service | null>(null);
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
@@ -346,6 +368,11 @@ export default function BookAppointmentPage() {
     return disabled;
   }, [offeringPrefilled]);
 
+  const staffOptionIds = useMemo(
+    () => staffOptions.map((e) => e.id).join(','),
+    [staffOptions],
+  );
+
   useEffect(() => {
     if (!branch || !hasOffering) return;
 
@@ -355,10 +382,9 @@ export default function BookAppointmentPage() {
       return;
     }
 
-    if (employee && staffOptions.length > 1 && !staffOptions.some((e) => e.id === employee.id)) {
-      setEmployee(null);
-    }
-  }, [branch, hasOffering, staffOptions, employee]);
+    // Multiple (or zero) staff: never auto-select when the available list changes.
+    setEmployee(null);
+  }, [branch?.id, hasOffering, activeOfferingType, service?.id, selectedPackage?.id, staffOptionIds, staffOptions]);
 
   const staffDayBookings = useMemo(
     () => dayBookings.filter((b) => b.status !== 'cancelled'),
@@ -786,12 +812,7 @@ export default function BookAppointmentPage() {
     setTime('');
     setDiscount(0);
     setCouponCode('');
-
-    if ((options?.keepPackage && selectedPackage) || (options?.keepService && service)) {
-      setStep(2);
-    } else {
-      setStep(1);
-    }
+    // Do not auto-advance — user confirms with Continue (especially when multiple salons exist).
   };
 
   const goBack = () => {
@@ -808,7 +829,14 @@ export default function BookAppointmentPage() {
   };
 
   const goNext = () => {
-    setStep((s) => Math.min(STEP_COUNT - 1, s + 1));
+    setStep((s) => {
+      const next = Math.min(STEP_COUNT - 1, s + 1);
+      // After salon selection with a prefilled service/package, skip the offering step.
+      if (s === 0 && offeringPrefilled && next === 1) {
+        return 2;
+      }
+      return next;
+    });
   };
 
   const selectOfferingType = (type: BookingOfferingType) => {
@@ -879,7 +907,7 @@ export default function BookAppointmentPage() {
           : coupon.discount_value;
       setCouponCode(code.toUpperCase());
       setDiscount(amt);
-      toast.success(`Discount $${amt.toFixed(2)} applied`);
+      toast.success(`Discount ${formatMoney(amt)} applied`);
     } finally {
       setCouponApplying(false);
     }
@@ -1072,7 +1100,7 @@ export default function BookAppointmentPage() {
             )}
 
             <div className="customer-booking-confirm-price mt-5 md:mt-6">
-              <p className="text-2xl font-bold text-primary md:text-3xl">${finalPrice.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-primary md:text-3xl">{formatMoney(finalPrice)}</p>
               <p className="mt-1 text-sm text-muted-foreground">{paymentLabel}</p>
             </div>
 
@@ -1225,6 +1253,9 @@ export default function BookAppointmentPage() {
                   </span>{' '}
                   — {branchChoices.length} salon{branchChoices.length !== 1 ? 's' : ''} available. Salons with
                   reviews for this package are listed first.
+                  {branchChoices.length > 1
+                    ? ' Select a salon, then tap Continue — nothing is chosen automatically.'
+                    : null}
                 </>
               ) : servicePrefilled && service ? (
                 <>
@@ -1240,11 +1271,15 @@ export default function BookAppointmentPage() {
                   </span>{' '}
                   — {branchChoices.length} salon{branchChoices.length !== 1 ? 's' : ''} available. Salons with
                   reviews for this service are listed first.
+                  {branchChoices.length > 1
+                    ? ' Select a salon, then tap Continue — nothing is chosen automatically.'
+                    : null}
                 </>
               ) : (
                 <>
                   {branchChoices.length} salon{branchChoices.length !== 1 ? 's' : ''} available — salons with
-                  reviews are listed first. Tap to select.
+                  reviews are listed first. Tap to select
+                  {branchChoices.length > 1 ? ', then Continue' : ''}.
                 </>
               )}
             </p>
@@ -1459,7 +1494,7 @@ export default function BookAppointmentPage() {
                             {s.duration_minutes} minutes
                           </p>
                         </div>
-                        <span className="text-2xl font-bold text-primary">${s.price}</span>
+                        <span className="text-2xl font-bold text-primary">{formatMoney(s.price)}</span>
                       </CardContent>
                     </Card>
                     );
@@ -1548,7 +1583,7 @@ export default function BookAppointmentPage() {
                             {packageDurationMinutes(p, services)} min visit
                           </p>
                         </div>
-                        <span className="text-2xl font-bold text-primary">${p.price}</span>
+                        <span className="text-2xl font-bold text-primary">{formatMoney(p.price)}</span>
                       </CardContent>
                     </Card>
                     );
@@ -1567,6 +1602,11 @@ export default function BookAppointmentPage() {
               <p className="mt-2 text-sm text-muted-foreground">
                 Only one stylist is available for this booking — they are pre-selected. Tap Continue when
                 you&apos;re ready.
+              </p>
+            ) : staffOptions.length > 1 ? (
+              <p className="mt-2 text-muted-foreground">
+                {staffOptions.length} professionals available — choose one to continue (none are selected
+                automatically).
               </p>
             ) : (
             <p className="mt-2 text-muted-foreground">
@@ -1783,7 +1823,7 @@ export default function BookAppointmentPage() {
           <div className="customer-booking-flow mx-auto max-w-2xl">
             <h2 className="font-heading text-2xl font-semibold">Payment method</h2>
             <p className="mt-2 text-muted-foreground">
-              Total: <span className="font-bold text-primary">${finalPrice.toFixed(2)}</span>
+              Total: <span className="font-bold text-primary">{formatMoney(finalPrice)}</span>
             </p>
             <div className="mt-8 space-y-4 text-left">
               {PAYMENT_METHODS.map((method) => {
@@ -1963,7 +2003,7 @@ export default function BookAppointmentPage() {
                     ) : null}
                   </div>
                 ) : null}
-                <p className="font-heading text-2xl font-bold">Total: ${finalPrice.toFixed(2)}</p>
+                <p className="font-heading text-2xl font-bold">Total: {formatMoney(finalPrice)}</p>
                 <div className="space-y-2">
                   <Label htmlFor="notes">Special requests (optional)</Label>
                   <Textarea

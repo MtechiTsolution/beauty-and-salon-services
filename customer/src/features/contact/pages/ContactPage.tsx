@@ -12,7 +12,7 @@ import {
   Phone,
   Scissors,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 function ContactLink({
   href,
@@ -44,10 +44,23 @@ function ContactLink({
 }
 
 export default function ContactPage() {
+  const [searchParams] = useSearchParams();
+  const branchId = searchParams.get('branch')?.trim() || null;
   const { data: branches = [], isLoading } = useCustomerBranches({ queryKeyPrefix: 'branches-contact' });
 
   const activeBranches = branches.filter((b) => b.status === 'active');
-  const phoneHref = `tel:${SALON_SUPPORT.phone.replace(/[^\d+]/g, '')}`;
+  const scopedBranch = branchId
+    ? activeBranches.find((b) => b.id === branchId) ?? null
+    : null;
+  const displayBranches = scopedBranch ? [scopedBranch] : activeBranches;
+  const isScoped = Boolean(branchId);
+
+  const heroPhone = scopedBranch?.phone || SALON_SUPPORT.phone;
+  const heroEmail = scopedBranch?.email || SALON_SUPPORT.email;
+  const phoneHref = `tel:${heroPhone.replace(/[^\d+]/g, '')}`;
+  const hoursLabel = scopedBranch
+    ? `${scopedBranch.opening_time ?? '09:00'} – ${scopedBranch.closing_time ?? '19:00'}`
+    : SALON_SUPPORT.hours;
 
   return (
     <div className="customer-page">
@@ -57,27 +70,29 @@ export default function ContactPage() {
             <Scissors className="h-4 w-4" /> We&apos;re here to help
           </span>
           <h1 className="font-heading mt-4 text-3xl font-bold tracking-tight md:text-5xl">
-            Contact {APP_NAME}
+            {scopedBranch ? `Contact ${scopedBranch.name}` : `Contact ${APP_NAME}`}
           </h1>
           <p className="mt-3 max-w-2xl text-base text-muted-foreground md:text-lg">
-            Reach our reception team for booking help, service questions, or directions to any location.
+            {scopedBranch
+              ? 'Reach this salon for booking help, service questions, or directions.'
+              : `Reach our reception team for booking help, service questions, or directions to any location.`}
           </p>
+          {isScoped && !isLoading && !scopedBranch && (
+            <p className="mt-4 text-sm text-amber-700 dark:text-amber-400">
+              That salon could not be found. Showing all locations instead.
+            </p>
+          )}
         </div>
       </section>
 
       <section className="customer-container-wide py-10 md:py-14">
         <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-3">
+          <ContactLink href={phoneHref} icon={Phone} label="Call us" value={heroPhone} />
           <ContactLink
-            href={phoneHref}
-            icon={Phone}
-            label="Call us"
-            value={SALON_SUPPORT.phone}
-          />
-          <ContactLink
-            href={`mailto:${SALON_SUPPORT.email}`}
+            href={`mailto:${heroEmail}`}
             icon={Mail}
             label="Email"
-            value={SALON_SUPPORT.email}
+            value={heroEmail}
           />
           <div className="flex items-start gap-3 rounded-xl border border-border/60 bg-background/80 p-4 md:col-span-1">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -87,47 +102,79 @@ export default function ContactPage() {
               <span className="block text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Opening hours
               </span>
-              <span className="mt-0.5 block text-sm font-medium leading-relaxed">{SALON_SUPPORT.hours}</span>
+              <span className="mt-0.5 block text-sm font-medium leading-relaxed">{hoursLabel}</span>
             </span>
           </div>
         </div>
 
         <div className="mx-auto mt-8 flex max-w-5xl flex-col gap-3 sm:flex-row sm:justify-center">
           <Button asChild size="lg" className="rounded-full px-8">
-            <Link to="/book">Book an appointment</Link>
-          </Button>
-          <Button asChild size="lg" variant="outline" className="rounded-full px-8">
-            <Link to="/messages">
-              <MessageCircle className="mr-2 h-4 w-4" />
-              Message the salon
+            <Link
+              to={
+                scopedBranch
+                  ? `/book?branch=${encodeURIComponent(scopedBranch.id)}`
+                  : '/book'
+              }
+            >
+              Book an appointment
             </Link>
           </Button>
+          {!isScoped && (
+            <Button asChild size="lg" variant="outline" className="rounded-full px-8">
+              <Link to="/messages">
+                <MessageCircle className="mr-2 h-4 w-4" />
+                Message the salon
+              </Link>
+            </Button>
+          )}
+          {scopedBranch && (
+            <Button asChild size="lg" variant="outline" className="rounded-full px-8">
+              <Link to={`/salons/${encodeURIComponent(scopedBranch.id)}`}>View salon profile</Link>
+            </Button>
+          )}
         </div>
       </section>
 
       <section className="border-t bg-muted/20">
         <div className="customer-container-wide py-12 md:py-16">
-          <h2 className="font-heading text-2xl font-bold md:text-3xl">Our salons</h2>
+          <h2 className="font-heading text-2xl font-bold md:text-3xl">
+            {scopedBranch ? 'Salon details' : 'Our salons'}
+          </h2>
           <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-muted-foreground">
-              Contact details for each {APP_NAME} location.
+              {scopedBranch
+                ? `Contact details for ${scopedBranch.name}.`
+                : `Contact details for each ${APP_NAME} location.`}
             </p>
-            <Button asChild variant="outline" className="shrink-0 rounded-full">
-              <Link to="/salons">Browse all salon profiles</Link>
-            </Button>
+            {!scopedBranch && (
+              <Button asChild variant="outline" className="shrink-0 rounded-full">
+                <Link to="/salons">Browse all salon profiles</Link>
+              </Button>
+            )}
+            {scopedBranch && (
+              <Button asChild variant="outline" className="shrink-0 rounded-full">
+                <Link to="/contact">View all salons</Link>
+              </Button>
+            )}
           </div>
 
           {isLoading ? (
             <p className="mt-8 text-muted-foreground">Loading locations…</p>
-          ) : activeBranches.length === 0 ? (
+          ) : displayBranches.length === 0 ? (
             <Card className="mt-8 border-0 shadow-md">
               <CardContent className="py-12 text-center text-muted-foreground">
                 No salon locations listed yet. Use the general contact details above.
               </CardContent>
             </Card>
           ) : (
-            <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2">
-              {activeBranches.map((b) => (
+            <div
+              className={
+                scopedBranch
+                  ? 'mt-8 mx-auto grid max-w-2xl grid-cols-1 gap-6'
+                  : 'mt-8 grid grid-cols-1 gap-6 md:grid-cols-2'
+              }
+            >
+              {displayBranches.map((b) => (
                 <Card key={b.id} className="customer-card-hover overflow-hidden border-0 shadow-md">
                   <div className="aspect-[16/7] overflow-hidden">
                     <CoverImage

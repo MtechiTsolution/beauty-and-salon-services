@@ -9,11 +9,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@mit-salon/shared/components/ui/select';
+import { useCurrency, useFormatMoney } from '@mit-salon/shared/hooks/useCurrency';
 import type { CustomerCouponOption } from '@mit-salon/shared/lib/coupon-validate';
 import {
   formatCouponDiscountLabel,
   formatCouponExpiry,
 } from '@mit-salon/shared/lib/coupon-ui';
+import type { AppCurrencyCode } from '@mit-salon/shared/lib/currency';
 import { cn } from '@mit-salon/shared/lib/utils';
 import { Check, CheckCircle2, Loader2, Tag } from 'lucide-react';
 
@@ -32,9 +34,13 @@ type CouponPickerProps = {
 
 const NO_COUPON_VALUE = '__no_coupon__';
 
-function couponSummaryLabel(option: CustomerCouponOption): string {
+function couponSummaryLabel(
+  option: CustomerCouponOption,
+  currency: AppCurrencyCode | string,
+  rate = 1,
+): string {
   const { coupon } = option;
-  const discount = formatCouponDiscountLabel(coupon);
+  const discount = formatCouponDiscountLabel(coupon, currency, rate);
   const expiry = formatCouponExpiry(coupon.expiry_date);
   return expiry ? `${coupon.code} · ${discount} · Expires ${expiry}` : `${coupon.code} · ${discount}`;
 }
@@ -44,10 +50,11 @@ type CouponSelectOptionProps = {
 };
 
 function CouponSelectItem({ option }: CouponSelectOptionProps) {
+  const { currency, rate } = useCurrency();
   const { coupon } = option;
-  const discount = formatCouponDiscountLabel(coupon);
+  const discount = formatCouponDiscountLabel(coupon, currency, rate);
   const expiry = formatCouponExpiry(coupon.expiry_date);
-  const summary = couponSummaryLabel(option);
+  const summary = couponSummaryLabel(option, currency, rate);
 
   return (
     <SelectPrimitive.Item
@@ -88,6 +95,8 @@ export function CouponPicker({
   isApplying,
   signedIn,
 }: CouponPickerProps) {
+  const { currency, rate } = useCurrency();
+  const formatMoney = useFormatMoney();
   const isApplied = appliedDiscount > 0 && selectedCode.trim().length > 0;
   const available = useMemo(() => options.filter((o) => o.eligible), [options]);
 
@@ -125,7 +134,7 @@ export function CouponPicker({
 
   const selectedSummary =
     selectedOption && normalizedSelectValue !== NO_COUPON_VALUE
-      ? couponSummaryLabel(selectedOption)
+      ? couponSummaryLabel(selectedOption, currency, rate)
       : null;
 
   return (
@@ -151,8 +160,8 @@ export function CouponPicker({
             <div className="min-w-0">
               <p className="truncate font-mono text-sm font-bold text-green-900 dark:text-green-100">{selectedCode}</p>
               <p className="text-sm text-green-700 dark:text-green-300">
-                Applied — you save ${appliedDiscount.toFixed(2)}
-                {selectedCoupon ? ` (${formatCouponDiscountLabel(selectedCoupon)})` : ''}
+                Applied — you save {formatMoney(appliedDiscount)}
+                {selectedCoupon ? ` (${formatCouponDiscountLabel(selectedCoupon, currency, rate)})` : ''}
               </p>
             </div>
           </div>
@@ -160,45 +169,34 @@ export function CouponPicker({
             type="button"
             variant="outline"
             size="sm"
-            className="h-9 shrink-0 rounded-full border-green-300 bg-white dark:border-green-800 dark:bg-background"
+            className="shrink-0 rounded-full"
             onClick={handleClear}
           >
-            Change coupon
+            Remove
           </Button>
         </div>
       ) : (
-        <div className="customer-coupon-picker__controls space-y-3">
-          <Select value={normalizedSelectValue} onValueChange={handleSelect}>
-            <SelectTrigger
-              className="customer-coupon-select-trigger h-auto min-h-11 py-2.5"
-              disabled={available.length === 0}
-            >
-              {selectedSummary ? (
-                <span className="customer-coupon-select-trigger__value">{selectedSummary}</span>
-              ) : (
-                <SelectValue placeholder={placeholder} />
-              )}
-            </SelectTrigger>
-            <SelectContent
-              position="popper"
-              sideOffset={6}
-              collisionPadding={16}
-              className="customer-coupon-select-content"
-            >
-              <SelectItem value={NO_COUPON_VALUE} className="customer-coupon-select-item customer-coupon-select-item--plain">
-                No coupon
-              </SelectItem>
-              {available.map((option) => (
-                <CouponSelectItem key={option.coupon.id} option={option} />
-              ))}
-            </SelectContent>
-          </Select>
-
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+          <div className="min-w-0 flex-1 space-y-2">
+            <Select value={normalizedSelectValue} onValueChange={handleSelect} disabled={available.length === 0}>
+              <SelectTrigger className="h-11 rounded-xl">
+                <SelectValue placeholder={placeholder}>
+                  {selectedSummary ?? placeholder}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_COUPON_VALUE}>No coupon</SelectItem>
+                {available.map((option) => (
+                  <CouponSelectItem key={option.coupon.id} option={option} />
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <Button
             type="button"
-            className="customer-coupon-apply-btn h-11 w-full rounded-full sm:w-auto sm:min-w-[8.5rem]"
-            disabled={!selectedCode.trim() || isApplying || normalizedSelectValue === NO_COUPON_VALUE}
-            onClick={() => void onApply(selectedCode.trim())}
+            className="h-11 shrink-0 rounded-full px-6"
+            disabled={!selectedCode.trim() || isApplying || orderAmount <= 0}
+            onClick={() => onApply(selectedCode)}
           >
             {isApplying ? (
               <>
@@ -206,7 +204,7 @@ export function CouponPicker({
                 Applying…
               </>
             ) : (
-              'Apply coupon'
+              'Apply'
             )}
           </Button>
         </div>

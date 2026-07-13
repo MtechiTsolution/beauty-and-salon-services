@@ -5,6 +5,7 @@ import { LandingCoverImage } from '@/features/welcome/components/LandingCoverIma
 import { ServiceCardReviews } from '@/features/reviews/components/ServiceCardReviews';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent } from '@mit-salon/shared/components/ui/card';
+import { useFormatMoney } from '@mit-salon/shared/hooks/useCurrency';
 import type { Review, Service } from '@mit-salon/shared/types';
 import { Clock, Scissors } from 'lucide-react';
 import { useState } from 'react';
@@ -18,6 +19,7 @@ type LandingServicesCarouselProps = {
 };
 
 export function LandingServicesCarousel({ services, reviews = [] }: LandingServicesCarouselProps) {
+  const formatMoney = useFormatMoney();
   const [bookingService, setBookingService] = useState<Service | null>(null);
 
   if (services.length === 0) return null;
@@ -70,7 +72,7 @@ export function LandingServicesCarousel({ services, reviews = [] }: LandingServi
               </p>
               <div className="mt-auto border-t border-border/50 pt-3">
                 <div className="flex items-center justify-center gap-3">
-                  <p className="text-lg font-bold tracking-tight text-primary">${service.price}</p>
+                  <p className="text-lg font-bold tracking-tight text-primary">{formatMoney(service.price)}</p>
                   <p className="flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm">
                     <Clock className="h-4 w-4 text-primary/70" />
                     {service.duration_minutes} min

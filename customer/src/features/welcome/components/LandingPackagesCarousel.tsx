@@ -6,6 +6,7 @@ import { LandingCoverImage } from '@/features/welcome/components/LandingCoverIma
 import { formatBranchLocationsLabel } from '@mit-salon/shared/lib/branch-location-sort';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent } from '@mit-salon/shared/components/ui/card';
+import { useFormatMoney } from '@mit-salon/shared/hooks/useCurrency';
 import type { Branch, Package, Service } from '@mit-salon/shared/types';
 import { CalendarDays, Gift, Layers, MapPin } from 'lucide-react';
 import { useMemo, useState } from 'react';
@@ -20,6 +21,7 @@ type LandingPackagesCarouselProps = {
 };
 
 export function LandingPackagesCarousel({ packages, branches, services }: LandingPackagesCarouselProps) {
+  const formatMoney = useFormatMoney();
   const [bookingPackage, setBookingPackage] = useState<Package | null>(null);
 
   const visiblePackages = useMemo(
@@ -98,7 +100,7 @@ export function LandingPackagesCarousel({ packages, branches, services }: Landin
                       {pkg.validity_days} days
                     </span>
                   </p>
-                  <p className="mt-2 text-lg font-bold tracking-tight text-primary">${pkg.price.toFixed(0)}</p>
+                  <p className="mt-2 text-lg font-bold tracking-tight text-primary">{formatMoney(pkg.price, { maximumFractionDigits: 0 })}</p>
                   {pkg.description?.trim() ? (
                     <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground sm:text-sm">
                       {pkg.description.trim()}

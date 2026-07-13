@@ -2,6 +2,7 @@ import { bookServiceUrl } from '@/features/booking/lib/booking-links';
 import { CatalogPopularBadge } from '@/features/catalog/components/CatalogPopularBadge';
 import { CoverImage } from '@mit-salon/shared/components/CoverImage';
 import { Button } from '@mit-salon/shared/components/ui/button';
+import { useFormatMoney } from '@mit-salon/shared/hooks/useCurrency';
 import type { Service } from '@mit-salon/shared/types';
 import { Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -12,6 +13,7 @@ type SalonProfileServiceRowProps = {
 };
 
 export function SalonProfileServiceRow({ service, branchId }: SalonProfileServiceRowProps) {
+  const formatMoney = useFormatMoney();
   return (
     <article
       className={`customer-salon-service-row group${service.is_featured ? ' customer-salon-service-row--featured' : ''}`}
@@ -46,7 +48,7 @@ export function SalonProfileServiceRow({ service, branchId }: SalonProfileServic
           </p>
         </div>
         <div className="customer-salon-service-row__actions">
-          <p className="customer-salon-service-row__price">${service.price}</p>
+          <p className="customer-salon-service-row__price">{formatMoney(service.price)}</p>
           <Button asChild size="sm" className="rounded-full px-5">
             <Link to={bookServiceUrl(service.id, branchId)}>Book</Link>
           </Button>

@@ -5,6 +5,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from '@mit-salon/shared/components/ui/dialog';
+import { useCurrency } from '@mit-salon/shared/hooks/useCurrency';
 import {
   customerCancelConfirmDescription,
   customerCancelConfirmTitle,
@@ -28,6 +29,7 @@ export function CancelBookingConfirmDialog({
   onConfirm,
   isCancelling,
 }: CancelBookingConfirmDialogProps) {
+  const { currency, rate } = useCurrency();
   if (!booking) return null;
 
   const timeLabel = formatBookingAppointmentTime(booking);
@@ -47,7 +49,7 @@ export function CancelBookingConfirmDialog({
               {customerCancelConfirmTitle()}
             </DialogTitle>
             <DialogDescription className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              {customerCancelConfirmDescription(booking)}
+              {customerCancelConfirmDescription(booking, currency, rate)}
             </DialogDescription>
           </div>
 
