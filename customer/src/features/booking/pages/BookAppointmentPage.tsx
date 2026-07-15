@@ -7,6 +7,7 @@ import { CatalogPopularBadge } from '@/features/catalog/components/CatalogPopula
 import { BookingStatusHighlights } from '@/features/my-bookings/components/BookingStatusHighlights';
 import { CUSTOMER_BOOKING_STEPS } from '@/features/booking/lib/booking-steps';
 import { useBookingBranch } from '@/features/booking/context/BookingBranchContext';
+import { BookingSalonFooter } from '@/features/layout/CustomerFooter';
 import {
   clearActiveBookingDraft,
   clearAllBookingDrafts,
@@ -112,7 +113,7 @@ import {
   Star,
   User,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -123,6 +124,7 @@ const PAYMENT_ICONS: Record<PaymentMethodId, typeof CreditCard> = {
 };
 
 const STEP_COUNT = CUSTOMER_BOOKING_STEPS.length;
+const BOOKING_DRAFT_RESUME_TOAST_ID = 'booking-draft-resume';
 
 export default function BookAppointmentPage() {
   const { user, isAuthenticated } = useAuth();
@@ -154,6 +156,7 @@ export default function BookAppointmentPage() {
         city: branch.city,
         opening_time: branch.opening_time,
         closing_time: branch.closing_time,
+        image_url: branch.image_url,
       });
     } else {
       setBookingBranch(null);
@@ -177,6 +180,7 @@ export default function BookAppointmentPage() {
   const [confirmedBooking, setConfirmedBooking] = useState<Booking | null>(null);
   const [draftReady, setDraftReady] = useState(false);
   const [resumedDraft, setResumedDraft] = useState(false);
+  const draftResumeHandledRef = useRef(false);
   const [clockTick, setClockTick] = useState(0);
   const [salonSearchQuery, setSalonSearchQuery] = useState('');
   const [offeringSearchQuery, setOfferingSearchQuery] = useState('');
@@ -221,18 +225,31 @@ export default function BookAppointmentPage() {
     toast.error(PAST_BOOKING_DATE_MESSAGE);
   }, [date, todayStr]);
 
-  const { data: branches = [] } = useCustomerBranches({ queryKeyPrefix: 'branches-book' });
+  const { data: branches = [] } = useCustomerBranches({
+    queryKeyPrefix: 'branches-book',
+    staleTime: 0,
+    refetchInterval: 10_000,
+  });
   const { data: services = [] } = useQuery({
     queryKey: ['services-book'],
     queryFn: () => servicesApi.list(),
+    staleTime: 0,
     refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: 10_000,
   });
   const { data: employees = [] } = useQuery({
     queryKey: ['employees-book'],
     queryFn: () => employeesApi.list(),
+    staleTime: 0,
     refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: 10_000,
   });
-  const { data: packages = [] } = useActivePackages();
+  const { data: packages = [] } = useActivePackages(true, {
+    staleTime: 0,
+    refetchInterval: 10_000,
+  });
   const { data: reviews = [] } = useQuery({
     queryKey: ['reviews-book'],
     queryFn: () => reviewsApi.list(),
@@ -258,7 +275,10 @@ export default function BookAppointmentPage() {
         to: date,
       }),
     enabled: !!date && !!employee && step === 3,
-    staleTime: 60_000,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: step === 3 && date && employee ? 5000 : false,
   });
 
   const activeBranches = branches.filter((b) => b.status === 'active');
@@ -489,6 +509,10 @@ export default function BookAppointmentPage() {
     queryKey: ['customer-coupon-options', bookingEmail, linePrice, couponScope.branchId, couponScope.categoryId],
     queryFn: () => couponsApiExtra.listOptions(bookingEmail, linePrice, couponScope),
     enabled: !!bookingEmail && hasOffering && linePrice > 0,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: !!bookingEmail && hasOffering && linePrice > 0 ? 5_000 : false,
   });
 
   const hasProgress = step > 0 || !!branch;
@@ -626,11 +650,13 @@ export default function BookAppointmentPage() {
 
   useEffect(() => {
     if (!draftScope || draftReady || done || urlBookingApplied) return;
+    if (draftResumeHandledRef.current) return;
     if (!branches.length || !services.length || !employees.length) return;
     if (searchParams.get('package') || searchParams.get('service') || searchParams.get('branch')) return;
 
     const draft = loadActiveBookingDraft(draftScope);
     if (!draft) {
+      draftResumeHandledRef.current = true;
       setDraftReady(true);
       return;
     }
@@ -641,9 +667,13 @@ export default function BookAppointmentPage() {
 
     if (draft.branchId && !restoredBranch) {
       clearActiveBookingDraft(draftScope);
+      draftResumeHandledRef.current = true;
       setDraftReady(true);
       return;
     }
+
+    // Mark handled before state updates so Strict Mode's double effect only toasts once.
+    draftResumeHandledRef.current = true;
 
     if (restoredBranch) setBranch(restoredBranch);
     setOfferingType(draft.offeringType);
@@ -676,7 +706,9 @@ export default function BookAppointmentPage() {
     setStep(resumeStep);
     setResumedDraft(true);
     setDraftReady(true);
-    toast.info(`Resuming your booking from step ${resumeStep + 1}`);
+    toast.info(`Resuming your booking from step ${resumeStep + 1}`, {
+      id: BOOKING_DRAFT_RESUME_TOAST_ID,
+    });
   }, [
     draftScope,
     branches.length,
@@ -1162,8 +1194,8 @@ export default function BookAppointmentPage() {
   }
 
   return (
-    <div className="customer-page customer-booking-page min-w-0 w-full max-w-full overflow-x-hidden pb-4 lg:pb-16">
-      <section className="customer-booking-page-header border-b bg-card/95 backdrop-blur-md max-lg:sticky max-lg:z-40 max-lg:shadow-sm supports-[backdrop-filter]:bg-card/90">
+    <div className="customer-page customer-booking-page min-w-0 w-full max-w-full pb-0">
+      <section className="customer-booking-page-header border-b bg-card/95 backdrop-blur-md supports-[backdrop-filter]:bg-card/90">
         <div className="customer-container-wide customer-booking-page-header-inner py-4 max-md:py-3 lg:pb-3 lg:pt-4">
             {/* Desktop: title | stepper | start again in one row */}
             <div className="customer-booking-page-header-desktop hidden w-full lg:grid lg:grid-cols-[minmax(0,max-content)_minmax(0,1fr)_minmax(0,max-content)] lg:items-start lg:gap-x-6 xl:gap-x-8">
@@ -1227,6 +1259,8 @@ export default function BookAppointmentPage() {
         </div>
       </section>
 
+      <div className="customer-booking-main">
+      <div className="customer-booking-scroll">
       <section className="customer-container-wide customer-booking-page-body py-4 max-md:py-4 md:py-5">
         <div className="customer-booking-flow-wide min-w-0">
         {step === 0 && (
@@ -1355,7 +1389,7 @@ export default function BookAppointmentPage() {
                       })
                     }
                   >
-                    <div className="customer-service-card-media aspect-[16/10] overflow-hidden lg:aspect-video">
+                    <div className="customer-service-card-media aspect-[2/1] overflow-hidden">
                       <CoverImage
                         src={b.image_url}
                         alt={b.name}
@@ -1372,24 +1406,19 @@ export default function BookAppointmentPage() {
                         className="landing-showcase-card__nearby-badge"
                       />
                     </div>
-                    <CardContent className="customer-branch-card-body p-4 md:p-5 text-left">
-                      <div className="grid grid-cols-[1.125rem_minmax(0,1fr)] gap-x-2 gap-y-2">
-                        <h3 className="col-start-2 font-heading text-xl font-semibold leading-snug">{b.name}</h3>
-                        <MapPin className="col-start-1 row-start-2 mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                        <p className="customer-branch-card-address col-start-2 row-start-2 min-w-0 text-sm leading-relaxed text-muted-foreground">
+                    <CardContent className="customer-branch-card-body p-3 text-left md:p-3.5">
+                      <div className="grid grid-cols-[1rem_minmax(0,1fr)] gap-x-1.5 gap-y-1">
+                        <h3 className="col-start-2 font-heading text-base font-semibold leading-snug md:text-[1.05rem]">
+                          {b.name}
+                        </h3>
+                        <MapPin className="col-start-1 row-start-2 mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                        <p className="customer-branch-card-address col-start-2 row-start-2 min-w-0 text-xs leading-snug text-muted-foreground md:text-[0.8125rem]">
                           {b.address}
                           {b.city ? `, ${b.city}` : ''}
                         </p>
                       </div>
-                      <BranchNearYouLabel
-                        distanceKm={b.distance_km}
-                        isNearest={branchChoices.find((x) => x.distance_km != null)?.id === b.id}
-                        branch={b}
-                        className="mt-3"
-                        variant="compact"
-                      />
                       <BookingOfferingRating
-                        className="mt-2"
+                        className="mt-1.5"
                         showStars={false}
                         stats={branchRatingForBookingChoice(reviews, b.id, {
                           branchStats: branchReviewStats,
@@ -1450,7 +1479,7 @@ export default function BookAppointmentPage() {
                     <Card
                       key={s.id}
                       className={cn(
-                        'customer-card-hover customer-offering-card relative cursor-pointer overflow-hidden border-2 shadow-md transition-all',
+                        'customer-card-hover customer-offering-card relative flex h-full cursor-pointer flex-col overflow-hidden border-2 shadow-md transition-all',
                         isSelected
                           ? 'customer-offering-card--selected border-primary'
                           : 'border-transparent bg-card',
@@ -1463,7 +1492,7 @@ export default function BookAppointmentPage() {
                           Selected
                         </div>
                       )}
-                      <div className="customer-service-card-media relative aspect-[16/9] overflow-hidden">
+                      <div className="customer-service-card-media relative aspect-[2/1] shrink-0 overflow-hidden">
                         <CoverImage
                           src={s.image_url}
                           alt={s.title}
@@ -1480,21 +1509,29 @@ export default function BookAppointmentPage() {
                           variant="overlay"
                         />
                       </div>
-                      <CardContent className="customer-offering-card-body flex items-end justify-between gap-4 p-6">
-                        <div className="min-w-0 flex-1">
-                          <h3 className={cn('customer-offering-card-title font-heading text-lg font-semibold', isSelected && 'text-primary')}>
-                            {s.title}
-                          </h3>
-                          <BookingOfferingRating
-                            className="mt-2"
-                            stats={branch && serviceRatingAtBranch(reviews, branch.id, s)}
-                          />
-                          <p className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
-                            <Scissors className="h-4 w-4" />
-                            {s.duration_minutes} minutes
-                          </p>
+                      <CardContent className="customer-offering-card-body flex flex-1 flex-col p-3.5 md:p-4">
+                        <h3
+                          className={cn(
+                            'customer-offering-card-title font-heading text-base font-semibold leading-snug',
+                            isSelected && 'text-primary',
+                          )}
+                        >
+                          {s.title}
+                        </h3>
+                        <div className="customer-offering-card-rating mt-1.5 flex min-h-[1.5rem] items-center justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <BookingOfferingRating
+                              stats={branch && serviceRatingAtBranch(reviews, branch.id, s)}
+                            />
+                          </div>
+                          <span className="shrink-0 text-lg font-bold text-primary md:text-xl">
+                            {formatMoney(s.price)}
+                          </span>
                         </div>
-                        <span className="text-2xl font-bold text-primary">{formatMoney(s.price)}</span>
+                        <p className="customer-offering-card-meta mt-auto flex items-center gap-1 pt-2 text-xs text-muted-foreground md:text-sm">
+                          <Scissors className="h-3.5 w-3.5 shrink-0" />
+                          {s.duration_minutes} minutes
+                        </p>
                       </CardContent>
                     </Card>
                     );
@@ -1532,7 +1569,7 @@ export default function BookAppointmentPage() {
                     <Card
                       key={p.id}
                       className={cn(
-                        'customer-card-hover customer-offering-card relative cursor-pointer overflow-hidden border-2 shadow-md transition-all',
+                        'customer-card-hover customer-offering-card relative flex h-full cursor-pointer flex-col overflow-hidden border-2 shadow-md transition-all',
                         isSelected
                           ? 'customer-offering-card--selected border-primary'
                           : 'border-transparent bg-card',
@@ -1545,7 +1582,7 @@ export default function BookAppointmentPage() {
                           Selected
                         </div>
                       )}
-                      <div className="customer-service-card-media relative aspect-[16/9] overflow-hidden">
+                      <div className="customer-service-card-media relative aspect-[2/1] shrink-0 overflow-hidden">
                         <CoverImage
                           src={p.image_url}
                           alt={p.name}
@@ -1562,28 +1599,42 @@ export default function BookAppointmentPage() {
                           variant="overlay"
                         />
                       </div>
-                      <CardContent className="customer-offering-card-body flex items-end justify-between gap-4 p-6">
-                        <div className="min-w-0 flex-1">
-                          <h3 className={cn('customer-offering-card-title font-heading text-lg font-semibold', isSelected && 'text-primary')}>
-                            {p.name}
-                          </h3>
-                          <BookingOfferingRating
-                            className="mt-2"
-                            stats={branch && packageRatingAtBranch(reviews, branch.id, p)}
-                          />
-                          {p.description && (
-                            <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{p.description}</p>
+                      <CardContent className="customer-offering-card-body flex flex-1 flex-col p-3.5 md:p-4">
+                        <h3
+                          className={cn(
+                            'customer-offering-card-title font-heading text-base font-semibold leading-snug',
+                            isSelected && 'text-primary',
                           )}
-                          <p className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
-                            <Gift className="h-4 w-4" />
-                            {p.total_sessions} session{p.total_sessions !== 1 ? 's' : ''} · {p.validity_days} days
+                        >
+                          {p.name}
+                        </h3>
+                        <div className="customer-offering-card-rating mt-1.5 flex min-h-[1.5rem] items-center justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <BookingOfferingRating
+                              stats={branch && packageRatingAtBranch(reviews, branch.id, p)}
+                            />
+                          </div>
+                          <span className="shrink-0 text-lg font-bold text-primary md:text-xl">
+                            {formatMoney(p.price)}
+                          </span>
+                        </div>
+                        {p.description ? (
+                          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground md:text-sm">
+                            {p.description}
                           </p>
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            Includes {p.service_ids.length} service{p.service_ids.length !== 1 ? 's' : ''} · ~
+                        ) : null}
+                        <div className="customer-offering-card-meta mt-auto pt-2">
+                          <p className="flex items-center gap-1 text-xs text-muted-foreground md:text-sm">
+                            <Gift className="h-3.5 w-3.5 shrink-0" />
+                            {p.total_sessions} session{p.total_sessions !== 1 ? 's' : ''} · {p.validity_days}{' '}
+                            days
+                          </p>
+                          <p className="mt-0.5 text-[0.6875rem] text-muted-foreground md:text-xs">
+                            Includes {p.service_ids.length} service
+                            {p.service_ids.length !== 1 ? 's' : ''} · ~
                             {packageDurationMinutes(p, services)} min visit
                           </p>
                         </div>
-                        <span className="text-2xl font-bold text-primary">{formatMoney(p.price)}</span>
                       </CardContent>
                     </Card>
                     );
@@ -2024,43 +2075,43 @@ export default function BookAppointmentPage() {
       </section>
 
       <nav className="customer-booking-nav" aria-label="Booking steps">
-        <div className="customer-container-wide customer-booking-nav-inner flex items-center justify-between gap-3 sm:gap-4">
-          <div className="min-w-0 flex-1">
-            {step > 0 && (
-              <Button
-                variant="outline"
-                size="lg"
-                className="w-full max-w-[9.5rem] rounded-full px-4 sm:w-auto sm:px-8 max-lg:min-h-11 max-lg:max-w-none"
-                onClick={goBack}
-              >
-                <ChevronLeft className="mr-1 h-4 w-4 shrink-0" /> Back
-              </Button>
-            )}
-          </div>
-          <div className="flex shrink-0 justify-end">
-            {step < STEP_COUNT - 1 ? (
-              <Button
-                size="lg"
-                className="rounded-full px-6 shadow-md sm:px-10 max-lg:min-h-11 max-lg:px-7 max-lg:font-semibold"
-                disabled={!canGoNext}
-                onClick={goNext}
-              >
-                Continue <ChevronRight className="ml-1 h-4 w-4 shrink-0" />
-              </Button>
-            ) : (
-              <Button
-                size="lg"
-                className="rounded-full px-5 sm:px-10 max-lg:min-h-11 max-lg:px-7 max-lg:font-semibold"
-                disabled={bookMutation.isPending || !canConfirm}
-                title={!canConfirm && confirmBlockReason ? confirmBlockReason : undefined}
-                onClick={submit}
-              >
-                {bookMutation.isPending ? 'Confirming...' : 'Confirm booking'}
-              </Button>
-            )}
-          </div>
+        <div className="customer-booking-nav-inner">
+          {step > 0 ? (
+            <Button
+              variant="outline"
+              size="default"
+              className="customer-booking-nav-btn customer-booking-nav-btn--back"
+              onClick={goBack}
+            >
+              <ChevronLeft className="mr-1 h-3.5 w-3.5 shrink-0" /> Back
+            </Button>
+          ) : null}
+          {step < STEP_COUNT - 1 ? (
+            <Button
+              size="default"
+              className="customer-booking-nav-btn customer-booking-nav-btn--continue"
+              disabled={!canGoNext}
+              onClick={goNext}
+            >
+              Continue <ChevronRight className="ml-1 h-3.5 w-3.5 shrink-0" />
+            </Button>
+          ) : (
+            <Button
+              size="default"
+              className="customer-booking-nav-btn customer-booking-nav-btn--continue"
+              disabled={bookMutation.isPending || !canConfirm}
+              title={!canConfirm && confirmBlockReason ? confirmBlockReason : undefined}
+              onClick={submit}
+            >
+              {bookMutation.isPending ? 'Confirming...' : 'Confirm booking'}
+            </Button>
+          )}
         </div>
       </nav>
+
+      {branch ? <BookingSalonFooter /> : null}
+      </div>
+      </div>
     </div>
   );
 }

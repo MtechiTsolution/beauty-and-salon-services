@@ -6,6 +6,7 @@ import { CustomerNavbar } from './CustomerNavbar';
 
 export function CustomerLayout() {
   const isChatThread = useMatch('/messages/:chatId');
+  const isBookPage = Boolean(useMatch('/book'));
 
   return (
     <BookingBranchProvider>
@@ -13,6 +14,7 @@ export function CustomerLayout() {
         className={cn(
           'customer-app-shell flex min-h-screen min-h-[100dvh] w-full min-w-0 max-w-full flex-col overflow-x-hidden',
           isChatThread && 'h-dvh max-h-dvh overflow-hidden',
+          isBookPage && 'customer-app-shell--booking',
         )}
       >
         <CustomerNavbar />

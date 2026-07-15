@@ -176,25 +176,23 @@ export function CouponPicker({
           </Button>
         </div>
       ) : (
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <div className="min-w-0 flex-1 space-y-2">
-            <Select value={normalizedSelectValue} onValueChange={handleSelect} disabled={available.length === 0}>
-              <SelectTrigger className="h-11 rounded-xl">
-                <SelectValue placeholder={placeholder}>
-                  {selectedSummary ?? placeholder}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NO_COUPON_VALUE}>No coupon</SelectItem>
-                {available.map((option) => (
-                  <CouponSelectItem key={option.coupon.id} option={option} />
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="flex flex-col gap-3">
+          <Select value={normalizedSelectValue} onValueChange={handleSelect} disabled={available.length === 0}>
+            <SelectTrigger className="h-11 w-full rounded-xl">
+              <SelectValue placeholder={placeholder}>
+                {selectedSummary ?? placeholder}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NO_COUPON_VALUE}>No coupon</SelectItem>
+              {available.map((option) => (
+                <CouponSelectItem key={option.coupon.id} option={option} />
+              ))}
+            </SelectContent>
+          </Select>
           <Button
             type="button"
-            className="h-11 shrink-0 rounded-full px-6"
+            className="h-11 w-full rounded-full px-6"
             disabled={!selectedCode.trim() || isApplying || orderAmount <= 0}
             onClick={() => onApply(selectedCode)}
           >

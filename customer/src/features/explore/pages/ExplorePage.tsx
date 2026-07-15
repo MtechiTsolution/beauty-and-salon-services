@@ -112,7 +112,7 @@ export default function ExplorePage() {
             <Link to="/salons">View all salons</Link>
           </Button>
         </div>
-        <div className="customer-explore-grid mt-8 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="customer-explore-grid mt-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {sortedSalons.map((b) => (
             <SalonCard key={b.id} salon={b} isNearest={nearest?.id === b.id} />
           ))}
@@ -143,10 +143,10 @@ export default function ExplorePage() {
       <section className="mt-8 border-t border-border/60 pt-6 md:mt-10 md:pt-8">
         <h2 className="font-heading text-2xl font-bold md:text-3xl">Popular services</h2>
         <p className="mt-2 text-muted-foreground">Expert care tailored to your style.</p>
-        <div className="customer-explore-grid mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="customer-explore-grid mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {popularServices.map((s) => (
             <Card key={s.id} className="customer-explore-card customer-card-hover overflow-hidden border-0 shadow-md">
-              <div className="customer-service-card-media customer-explore-card__media aspect-[4/3] shrink-0 overflow-hidden">
+              <div className="customer-service-card-media customer-explore-card__media aspect-[2/1] shrink-0 overflow-hidden">
                 <CoverImage
                   src={s.image_url}
                   alt={s.title}
@@ -163,29 +163,30 @@ export default function ExplorePage() {
                   variant="overlay"
                 />
               </div>
-              <CardContent className="customer-explore-card__body p-6">
-                <h3 className="customer-explore-card__title font-heading text-lg font-semibold leading-snug">
+              <CardContent className="customer-explore-card__body p-3.5 md:p-4">
+                <h3 className="customer-explore-card__title font-heading text-base font-semibold leading-snug">
                   {s.title}
                 </h3>
-                <p className="customer-explore-card__description mt-2 line-clamp-2 text-sm text-muted-foreground">
+                <p className="customer-explore-card__description mt-1.5 line-clamp-2 text-xs text-muted-foreground md:text-sm">
                   {s.description?.trim() || '\u00A0'}
                 </p>
-                <div className="customer-explore-card__meta mt-4 flex shrink-0 items-center justify-between">
-                  <span className="text-xl font-bold text-primary">{formatMoney(s.price)}</span>
-                  <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <Clock className="h-4 w-4" />
+                <div className="customer-explore-card__meta mt-3 flex shrink-0 items-center justify-between">
+                  <span className="text-base font-bold text-primary md:text-lg">{formatMoney(s.price)}</span>
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground md:text-sm">
+                    <Clock className="h-3.5 w-3.5" />
                     {s.duration_minutes} min
                   </span>
                 </div>
                 <ServiceCardReviews
                   service={s}
                   reviews={reviews}
-                  className="customer-explore-card__reviews mt-4"
+                  className="customer-explore-card__reviews mt-3"
                 />
                 <Button
                   type="button"
                   variant="outline"
-                  className="customer-explore-card__cta mt-4 w-full rounded-full"
+                  size="sm"
+                  className="customer-explore-card__cta mt-3 h-8 w-full rounded-full text-xs"
                   onClick={() => setBookingService(s)}
                 >
                   Book this service

@@ -49,7 +49,7 @@ export function SalonProfileServiceRow({ service, branchId }: SalonProfileServic
         </div>
         <div className="customer-salon-service-row__actions">
           <p className="customer-salon-service-row__price">{formatMoney(service.price)}</p>
-          <Button asChild size="sm" className="rounded-full px-5">
+          <Button asChild size="sm" className="h-8 rounded-full px-4 text-xs">
             <Link to={bookServiceUrl(service.id, branchId)}>Book</Link>
           </Button>
         </div>

@@ -12,8 +12,11 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
   const url = API_BASE ? `${API_BASE}${path}` : path;
   const res = await fetch(url, {
     ...options,
+    cache: 'no-store',
     headers: {
       'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache',
+      Pragma: 'no-cache',
       ...authHeaders(),
       ...(options.headers as Record<string, string>),
     },

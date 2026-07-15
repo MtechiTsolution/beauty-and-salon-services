@@ -11,7 +11,7 @@ import { Clock, Scissors } from 'lucide-react';
 import { useState } from 'react';
 
 const bookButtonClass =
-  'mt-3 h-9 w-full rounded-full text-sm font-semibold max-md:mt-2.5 sm:mt-auto sm:h-10';
+  'mt-2.5 h-8 w-full rounded-full text-xs font-semibold max-md:mt-2 sm:mt-auto sm:h-9 sm:text-sm';
 
 type LandingServicesCarouselProps = {
   services: Service[];
@@ -45,7 +45,7 @@ export function LandingServicesCarousel({ services, reviews = [] }: LandingServi
             key={service.id}
             className="landing-showcase-card landing-showcase-card--media landing-showcase-card--compact flex h-full w-full flex-col overflow-hidden"
           >
-            <div className="landing-showcase-card__media-wrap landing-media-frame landing-media-frame--compact aspect-[5/3] shrink-0 overflow-hidden">
+            <div className="landing-showcase-card__media-wrap landing-media-frame landing-media-frame--compact aspect-[2/1] shrink-0 overflow-hidden">
               <LandingCoverImage
                 src={service.image_url}
                 alt={service.title}
@@ -63,25 +63,25 @@ export function LandingServicesCarousel({ services, reviews = [] }: LandingServi
                 className="landing-showcase-card__popular-badge"
               />
             </div>
-            <CardContent className="flex flex-col p-4 text-center sm:flex-1 sm:p-5">
-              <h3 className="font-heading line-clamp-2 text-lg font-semibold leading-snug tracking-tight">
+            <CardContent className="flex flex-col p-3 text-center sm:flex-1 sm:p-3.5">
+              <h3 className="font-heading line-clamp-2 text-base font-semibold leading-snug tracking-tight">
                 {service.title}
               </h3>
-              <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground sm:text-sm">
+              <p className="mt-1 line-clamp-2 text-xs leading-snug text-muted-foreground">
                 {service.description?.trim() || '\u00A0'}
               </p>
-              <div className="mt-auto border-t border-border/50 pt-3">
-                <div className="flex items-center justify-center gap-3">
-                  <p className="text-lg font-bold tracking-tight text-primary">{formatMoney(service.price)}</p>
-                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground sm:text-sm">
-                    <Clock className="h-4 w-4 text-primary/70" />
+              <div className="mt-auto border-t border-border/50 pt-2.5">
+                <div className="flex items-center justify-center gap-2.5">
+                  <p className="text-base font-bold tracking-tight text-primary">{formatMoney(service.price)}</p>
+                  <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Clock className="h-3.5 w-3.5 text-primary/70" />
                     {service.duration_minutes} min
                   </p>
                 </div>
                 <ServiceCardReviews
                   service={service}
                   reviews={reviews}
-                  className="mt-2 [&>div:first-child]:justify-center"
+                  className="mt-1.5 [&>div:first-child]:justify-center"
                 />
                 <Button
                   type="button"

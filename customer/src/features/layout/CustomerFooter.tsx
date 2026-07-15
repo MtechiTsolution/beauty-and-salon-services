@@ -3,56 +3,23 @@ import {
   useBookingBranch,
 } from '@/features/booking/context/BookingBranchContext';
 import { LandingFooter } from '@/features/welcome/components/LandingFooter';
+import { CoverImage } from '@mit-salon/shared/components/CoverImage';
 import { APP_NAME } from '@mit-salon/shared/lib/constants';
+import { branchImageHints } from '@mit-salon/shared/lib/branch-image-hints';
 import { Clock, Mail, MapPin, Phone } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 import { Link, useMatch } from 'react-router-dom';
 
 function bookingLegalLinks(branchId: string) {
   const q = `?branch=${encodeURIComponent(branchId)}`;
   return [
-    { label: 'Privacy Policy', path: `/privacy${q}` },
-    { label: 'Refund Policy', path: `/refund${q}` },
-    { label: 'Contact salon', path: contactPathForBranch(branchId) },
+    { label: 'Privacy', path: `/privacy${q}` },
+    { label: 'Refunds', path: `/refund${q}` },
+    { label: 'Contact', path: contactPathForBranch(branchId) },
   ];
 }
 
-function SalonContactRow({
-  icon: Icon,
-  label,
-  value,
-  href,
-}: {
-  icon: LucideIcon;
-  label: string;
-  value: string;
-  href?: string;
-}) {
-  const inner = (
-    <>
-      <span className="booking-salon-footer__icon" aria-hidden>
-        <Icon className="h-3.5 w-3.5" strokeWidth={2.25} />
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="booking-salon-footer__row-label">{label}</span>
-        <span className="booking-salon-footer__row-value">{value}</span>
-      </span>
-    </>
-  );
-
-  if (href) {
-    return (
-      <a href={href} className="booking-salon-footer__row booking-salon-footer__row--link">
-        {inner}
-      </a>
-    );
-  }
-
-  return <div className="booking-salon-footer__row">{inner}</div>;
-}
-
-/** Salon-only footer while booking a specific salon. */
-function BookingSalonFooter() {
+/** Full-bleed selected-salon footer for the booking flow. */
+export function BookingSalonFooter() {
   const { bookingBranch } = useBookingBranch();
   if (!bookingBranch) return null;
 
@@ -70,82 +37,84 @@ function BookingSalonFooter() {
     : undefined;
 
   return (
-    <footer className="booking-salon-footer mt-auto">
-      <div className="booking-salon-footer__shell">
-        <div className="customer-container-wide">
-          <div className="booking-salon-footer__card">
-            <div className="booking-salon-footer__accent" aria-hidden />
+    <footer className="booking-salon-footer">
+      <div className="booking-salon-footer__rail" aria-hidden />
 
-            <div className="booking-salon-footer__inner">
-              <header className="booking-salon-footer__header">
-                <div>
-                  <p className="booking-salon-footer__eyebrow">Selected for booking</p>
-                  <h2 className="booking-salon-footer__title">{bookingBranch.name}</h2>
-                </div>
-                <p className="booking-salon-footer__lede">
-                  Contact this location for directions, timing, or booking questions.
-                </p>
-              </header>
-
-              <div className="booking-salon-footer__grid">
-                <section className="booking-salon-footer__section" aria-label="Salon contact">
-                  <h3 className="booking-salon-footer__section-title">Location details</h3>
-                  <div className="booking-salon-footer__contacts">
-                    {addressLine ? (
-                      <SalonContactRow icon={MapPin} label="Address" value={addressLine} />
-                    ) : null}
-                    {bookingBranch.phone ? (
-                      <SalonContactRow
-                        icon={Phone}
-                        label="Phone"
-                        value={bookingBranch.phone}
-                        href={phoneHref}
-                      />
-                    ) : null}
-                    {bookingBranch.email ? (
-                      <SalonContactRow
-                        icon={Mail}
-                        label="Email"
-                        value={bookingBranch.email}
-                        href={`mailto:${bookingBranch.email}`}
-                      />
-                    ) : null}
-                    {hours ? (
-                      <SalonContactRow icon={Clock} label="Hours" value={hours} />
-                    ) : null}
-                  </div>
-                </section>
-
-                <section className="booking-salon-footer__section" aria-label="Policies">
-                  <h3 className="booking-salon-footer__section-title">Policies & support</h3>
-                  <nav>
-                    <ul className="booking-salon-footer__policy-list">
-                      {links.map((link) => (
-                        <li key={link.path}>
-                          <Link to={link.path} className="booking-salon-footer__policy-link">
-                            <span>{link.label}</span>
-                            <span className="booking-salon-footer__policy-arrow" aria-hidden>
-                              →
-                            </span>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </nav>
-                </section>
-              </div>
-
-              <div className="booking-salon-footer__bottom">
-                <p className="footer-copyright">
-                  © {new Date().getFullYear()} {APP_NAME}. All rights reserved.
-                </p>
-                <p className="booking-salon-footer__bottom-note">
-                  Booking at <strong>{bookingBranch.name}</strong>
-                </p>
-              </div>
+      <div className="booking-salon-footer__body">
+        <div className="booking-salon-footer__head">
+          <div className="booking-salon-footer__identity">
+            <div className="booking-salon-footer__avatar">
+              <CoverImage
+                src={bookingBranch.image_url}
+                alt={bookingBranch.name}
+                kind="branch"
+                entityId={bookingBranch.id}
+                entityName={bookingBranch.name}
+                entityDescription={branchImageHints({
+                  name: bookingBranch.name,
+                  address: bookingBranch.address ?? '',
+                  city: bookingBranch.city ?? '',
+                  description: '',
+                })}
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <div className="booking-salon-footer__titles">
+              <p className="booking-salon-footer__kicker">Booking location</p>
+              <h2 className="booking-salon-footer__title font-heading">{bookingBranch.name}</h2>
             </div>
           </div>
+
+          <Link
+            to={`/salons/${encodeURIComponent(bookingBranch.id)}`}
+            className="booking-salon-footer__cta"
+          >
+            Open salon page
+          </Link>
         </div>
+
+        <div className="booking-salon-footer__facts">
+          <ul className="booking-salon-footer__facts-left" aria-label="Contact">
+            {bookingBranch.email ? (
+              <li>
+                <Mail aria-hidden className="booking-salon-footer__fact-icon" />
+                <a href={`mailto:${bookingBranch.email}`}>{bookingBranch.email}</a>
+              </li>
+            ) : null}
+            {bookingBranch.phone ? (
+              <li>
+                <Phone aria-hidden className="booking-salon-footer__fact-icon" />
+                <a href={phoneHref}>{bookingBranch.phone}</a>
+              </li>
+            ) : null}
+          </ul>
+
+          <ul className="booking-salon-footer__facts-right" aria-label="Location and hours">
+            {addressLine ? (
+              <li>
+                <MapPin aria-hidden className="booking-salon-footer__fact-icon" />
+                <span>{addressLine}</span>
+              </li>
+            ) : null}
+            {hours ? (
+              <li>
+                <Clock aria-hidden className="booking-salon-footer__fact-icon" />
+                <span>{hours}</span>
+              </li>
+            ) : null}
+          </ul>
+        </div>
+      </div>
+
+      <div className="booking-salon-footer__foot">
+        <span>© {new Date().getFullYear()} {APP_NAME}</span>
+        <nav aria-label="Policies">
+          {links.map((link) => (
+            <Link key={link.path} to={link.path}>
+              {link.label}
+            </Link>
+          ))}
+        </nav>
       </div>
     </footer>
   );
@@ -153,15 +122,14 @@ function BookingSalonFooter() {
 
 /**
  * Site footer:
- * - Book page: hide the general footer; show salon details only after a salon is selected.
+ * - Book page: handled inside BookAppointmentPage (salon strip + actions at page bottom).
  * - Every other section: show the general MIT Salon footer.
  */
 export function CustomerFooter() {
   const isBookPage = Boolean(useMatch('/book'));
-  const { bookingBranch } = useBookingBranch();
 
   if (isBookPage) {
-    return bookingBranch ? <BookingSalonFooter /> : null;
+    return null;
   }
 
   return <LandingFooter />;

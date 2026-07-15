@@ -4,11 +4,15 @@ import { filterCustomerPackages } from '@mit-salon/shared/lib/customer-catalog';
 import type { Package } from '@mit-salon/shared/types';
 import { useQuery } from '@tanstack/react-query';
 
-export function useActivePackages(enabled = true) {
+export function useActivePackages(
+  enabled = true,
+  options?: { refetchInterval?: number | false; staleTime?: number },
+) {
   const { data: branches = [] } = useCustomerBranches({
     queryKeyPrefix: 'branches-catalog',
     enabled,
-    staleTime: 60_000,
+    staleTime: options?.staleTime ?? 60_000,
+    refetchInterval: options?.refetchInterval,
   });
 
   return useQuery({
@@ -16,7 +20,9 @@ export function useActivePackages(enabled = true) {
     queryFn: () => packagesApi.list(),
     enabled,
     refetchOnMount: 'always',
-    staleTime: 0,
+    refetchOnWindowFocus: true,
+    staleTime: options?.staleTime ?? 0,
+    refetchInterval: options?.refetchInterval,
     select: (rows) =>
       filterCustomerPackages(
         rows.filter((p) => p.status === 'active') as Package[],

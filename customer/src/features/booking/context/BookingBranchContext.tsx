@@ -16,6 +16,7 @@ export type BookingBranchInfo = {
   city?: string | null;
   opening_time?: string | null;
   closing_time?: string | null;
+  image_url?: string | null;
 } | null;
 
 type BookingBranchContextValue = {

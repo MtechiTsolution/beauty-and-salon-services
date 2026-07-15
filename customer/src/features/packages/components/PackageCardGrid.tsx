@@ -68,8 +68,8 @@ export function PackageCardGrid({
 
   const gridClass =
     columns === '2'
-      ? 'grid grid-cols-1 gap-6 md:grid-cols-2'
-      : 'grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3';
+      ? 'grid grid-cols-1 gap-4 md:grid-cols-2'
+      : 'grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4';
 
   return (
     <>

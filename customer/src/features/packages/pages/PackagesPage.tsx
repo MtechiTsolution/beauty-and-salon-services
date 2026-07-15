@@ -57,9 +57,9 @@ export default function PackagesPage() {
         </div>
 
         {isLoading ? (
-          <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="customer-package-skeleton h-[22rem] animate-pulse rounded-2xl bg-muted/50" />
+          <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="customer-package-skeleton h-[16rem] animate-pulse rounded-2xl bg-muted/50" />
             ))}
           </div>
         ) : isError ? (

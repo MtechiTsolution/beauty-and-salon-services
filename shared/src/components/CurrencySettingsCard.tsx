@@ -175,18 +175,6 @@ export function CurrencySettingsCard({
               {previewAsOf ? (
                 <p className="mt-1 text-xs text-muted-foreground">Rates as of {previewAsOf}</p>
               ) : null}
-              <p className="mt-2 text-xs text-muted-foreground">
-                Exchange rates via{' '}
-                <a
-                  href="https://www.exchangerate-api.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="underline underline-offset-2"
-                >
-                  ExchangeRate-API
-                </a>
-                . Catalog amounts stay in base currency; apps show converted values.
-              </p>
             </div>
 
             {canEdit ? (

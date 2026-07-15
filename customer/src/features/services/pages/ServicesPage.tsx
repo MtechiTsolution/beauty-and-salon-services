@@ -83,9 +83,9 @@ export default function ServicesPage() {
         </div>
 
         {isLoading ? (
-          <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="customer-package-skeleton h-[22rem] animate-pulse rounded-2xl bg-muted/50" />
+          <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="customer-package-skeleton h-[16rem] animate-pulse rounded-2xl bg-muted/50" />
             ))}
           </div>
         ) : isError ? (
@@ -111,12 +111,12 @@ export default function ServicesPage() {
             <p className="mt-2 text-sm text-muted-foreground md:text-base">
               {active.length} treatment{active.length === 1 ? '' : 's'} available to book.
             </p>
-            <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {active.map((service) => {
                 const cat = categories.find((c) => c.id === service.category_id);
                 return (
                   <Card key={service.id} className="customer-card-hover overflow-hidden border-border/70 shadow-md">
-                    <div className="customer-service-card-media aspect-[5/3] overflow-hidden">
+                    <div className="customer-service-card-media aspect-[2/1] overflow-hidden">
                       <CoverImage
                         src={service.image_url}
                         alt={service.title}
@@ -133,10 +133,10 @@ export default function ServicesPage() {
                         variant="overlay"
                       />
                     </div>
-                    <CardContent className="p-5 sm:p-6">
+                    <CardContent className="p-3.5 sm:p-4">
                       {cat && (
                         <div className="flex items-center gap-2">
-                          <div className="h-6 w-6 overflow-hidden rounded-md border border-border/60">
+                          <div className="h-5 w-5 overflow-hidden rounded-md border border-border/60">
                             <CoverImage
                               src={cat.image_url}
                               alt={cat.name}
@@ -144,26 +144,26 @@ export default function ServicesPage() {
                               entityId={cat.id}
                               entityName={cat.name}
                               entityDescription={cat.description}
-                              className="h-6 w-6"
+                              className="h-5 w-5"
                             />
                           </div>
-                          <span className="text-xs font-medium text-primary">{cat.name}</span>
+                          <span className="text-[0.6875rem] font-medium text-primary">{cat.name}</span>
                         </div>
                       )}
-                      <h3 className="mt-2 font-heading text-lg font-semibold">{service.title}</h3>
-                      <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{service.description}</p>
-                      <div className="mt-4 flex items-center justify-between gap-3">
-                        <div className="flex justify-between text-sm">
+                      <h3 className="mt-1.5 font-heading text-base font-semibold leading-snug">{service.title}</h3>
+                      <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground md:text-sm">{service.description}</p>
+                      <div className="mt-3 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-3 text-sm">
                           <span className="font-bold text-primary">{formatMoney(service.price)}</span>
-                          <span className="flex items-center gap-1 text-muted-foreground">
-                            <Clock className="h-4 w-4" />
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Clock className="h-3.5 w-3.5" />
                             {service.duration_minutes}m
                           </span>
                         </div>
                         <Button
                           type="button"
                           size="sm"
-                          className="shrink-0 rounded-full px-4"
+                          className="h-8 shrink-0 rounded-full px-3 text-xs"
                           onClick={() => setBookingService(service)}
                         >
                           Book

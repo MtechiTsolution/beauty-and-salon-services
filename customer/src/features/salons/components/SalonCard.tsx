@@ -25,7 +25,7 @@ export function SalonCard({ salon, isNearest = false, reviewStats = null, classN
 
   return (
     <Card className={cn('customer-explore-card customer-card-hover overflow-hidden border-0 shadow-md', className)}>
-      <div className="customer-service-card-media customer-explore-card__media relative aspect-[16/10] shrink-0 overflow-hidden">
+      <div className="customer-service-card-media customer-explore-card__media relative aspect-[2/1] shrink-0 overflow-hidden">
         <Link to={`/salons/${encodeURIComponent(salon.id)}`} className="block h-full">
           <CoverImage
             src={salon.image_url}
@@ -53,46 +53,39 @@ export function SalonCard({ salon, isNearest = false, reviewStats = null, classN
           />
         ) : null}
       </div>
-      <CardContent className="customer-explore-card__body customer-branch-card-body p-6 text-left">
+      <CardContent className="customer-explore-card__body customer-branch-card-body p-3.5 text-left md:p-4">
         <Link to={`/salons/${encodeURIComponent(salon.id)}`} className="group block">
-          <div className="grid grid-cols-[1.125rem_minmax(0,1fr)] gap-x-2 gap-y-2">
-            <h3 className="customer-explore-card__title col-start-2 font-heading text-xl font-semibold leading-snug transition group-hover:text-primary">
+          <div className="grid grid-cols-[1rem_minmax(0,1fr)] gap-x-1.5 gap-y-1">
+            <h3 className="customer-explore-card__title col-start-2 font-heading text-base font-semibold leading-snug transition group-hover:text-primary md:text-[1.05rem]">
               {salon.name}
             </h3>
-            <MapPin className="col-start-1 row-start-2 mt-0.5 h-4 w-4 shrink-0 text-primary" />
-            <p className="customer-explore-card__address col-start-2 row-start-2 min-w-0 text-sm leading-relaxed text-muted-foreground">
+            <MapPin className="col-start-1 row-start-2 mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+            <p className="customer-explore-card__address col-start-2 row-start-2 min-w-0 text-xs leading-snug text-muted-foreground md:text-[0.8125rem]">
               {salon.address}
               {salon.city ? `, ${salon.city}` : ''}
             </p>
           </div>
         </Link>
-        <BranchNearYouLabel
-          distanceKm={salon.distance_km}
-          isNearest={isNearest}
-          branch={salon}
-          className="mt-3"
-          variant="compact"
-        />
         {ratingLabel ? (
-          <p className="customer-salon-card__rating mt-2 flex items-center gap-1.5 text-sm font-medium text-foreground">
-            <Star className="h-4 w-4 shrink-0 fill-accent text-accent" aria-hidden />
+          <p className="customer-salon-card__rating mt-1.5 flex items-center gap-1 text-xs font-medium text-foreground md:text-sm">
+            <Star className="h-3.5 w-3.5 shrink-0 fill-accent text-accent" aria-hidden />
             {ratingLabel}
           </p>
         ) : null}
         {hours ? (
-          <p className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Clock className="h-4 w-4 shrink-0 text-primary" />
+          <p className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground md:text-sm">
+            <Clock className="h-3.5 w-3.5 shrink-0 text-primary" />
             {hours}
           </p>
         ) : null}
-        <p className="customer-explore-card__description mt-3 line-clamp-2 text-sm text-muted-foreground">
+        <p className="customer-explore-card__description mt-2 line-clamp-2 text-xs text-muted-foreground md:text-sm">
           {salon.description?.trim() || 'View services, packages, and reviews for this salon.'}
         </p>
-        <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-          <Button asChild variant="outline" className="flex-1 rounded-full">
+        <div className="mt-3 flex flex-col gap-1.5 sm:flex-row">
+          <Button asChild variant="outline" size="sm" className="h-8 flex-1 rounded-full text-xs">
             <Link to={`/salons/${encodeURIComponent(salon.id)}`}>View profile</Link>
           </Button>
-          <Button asChild className="flex-1 rounded-full">
+          <Button asChild size="sm" className="h-8 flex-1 rounded-full text-xs">
             <Link to={bookBranchUrl(salon.id)}>Book here</Link>
           </Button>
         </div>

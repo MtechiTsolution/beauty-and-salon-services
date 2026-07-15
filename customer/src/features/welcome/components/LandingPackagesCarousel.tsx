@@ -12,7 +12,7 @@ import { CalendarDays, Gift, Layers, MapPin } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 const bookButtonClass =
-  'mt-3 h-9 w-full rounded-full text-sm font-semibold max-md:mt-2.5 sm:mt-auto sm:h-10';
+  'mt-2.5 h-8 w-full rounded-full text-xs font-semibold max-md:mt-2 sm:mt-auto sm:h-9 sm:text-sm';
 
 type LandingPackagesCarouselProps = {
   packages: Package[];
@@ -68,7 +68,7 @@ export function LandingPackagesCarousel({ packages, branches, services }: Landin
                 key={pkg.id}
                 className="landing-showcase-card landing-showcase-card--media landing-showcase-card--compact flex h-full w-full flex-col overflow-hidden"
               >
-                <div className="landing-showcase-card__media-wrap landing-media-frame landing-media-frame--compact aspect-[5/3] shrink-0 overflow-hidden">
+                <div className="landing-showcase-card__media-wrap landing-media-frame landing-media-frame--compact aspect-[2/1] shrink-0 overflow-hidden">
                   <LandingCoverImage
                     src={pkg.image_url}
                     alt={pkg.name}
@@ -86,29 +86,31 @@ export function LandingPackagesCarousel({ packages, branches, services }: Landin
                     className="landing-showcase-card__popular-badge"
                   />
                 </div>
-                <CardContent className="flex flex-col p-4 text-center sm:flex-1 sm:p-5">
-                  <h3 className="font-heading line-clamp-2 text-lg font-semibold leading-snug tracking-tight">
+                <CardContent className="flex flex-col p-3 text-center sm:flex-1 sm:p-3.5">
+                  <h3 className="font-heading line-clamp-2 text-base font-semibold leading-snug tracking-tight">
                     {pkg.name}
                   </h3>
-                  <p className="mt-1.5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs text-muted-foreground sm:text-sm">
+                  <p className="mt-1 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                     <span className="inline-flex items-center gap-1">
-                      <Layers className="h-3.5 w-3.5 text-primary" />
+                      <Layers className="h-3 w-3 text-primary" />
                       {pkg.total_sessions} session{pkg.total_sessions === 1 ? '' : 's'}
                     </span>
                     <span className="inline-flex items-center gap-1">
-                      <CalendarDays className="h-3.5 w-3.5 text-primary" />
+                      <CalendarDays className="h-3 w-3 text-primary" />
                       {pkg.validity_days} days
                     </span>
                   </p>
-                  <p className="mt-2 text-lg font-bold tracking-tight text-primary">{formatMoney(pkg.price, { maximumFractionDigits: 0 })}</p>
+                  <p className="mt-1.5 text-base font-bold tracking-tight text-primary">
+                    {formatMoney(pkg.price, { maximumFractionDigits: 0 })}
+                  </p>
                   {pkg.description?.trim() ? (
-                    <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground sm:text-sm">
+                    <p className="mt-1.5 line-clamp-2 text-xs leading-snug text-muted-foreground">
                       {pkg.description.trim()}
                     </p>
                   ) : null}
                   {locationLabel ? (
-                    <p className="mt-2 flex items-center justify-center gap-1.5 text-xs font-medium text-muted-foreground sm:text-sm">
-                      <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
+                    <p className="mt-1.5 flex items-center justify-center gap-1 text-xs font-medium text-muted-foreground">
+                      <MapPin className="h-3 w-3 shrink-0 text-primary" />
                       <span className="line-clamp-1">{locationLabel}</span>
                     </p>
                   ) : null}

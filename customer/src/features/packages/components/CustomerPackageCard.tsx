@@ -19,7 +19,7 @@ type CustomerPackageCardProps = {
 };
 
 const bookButtonClass =
-  'mt-auto h-9 w-full rounded-full text-sm font-semibold shadow-sm sm:h-10';
+  'mt-auto h-8 w-full rounded-full text-xs font-semibold shadow-sm sm:h-9 sm:text-sm';
 
 export function CustomerPackageCard({
   pkg,
@@ -45,7 +45,7 @@ export function CustomerPackageCard({
       <div
         className={cn(
           'customer-package-card__media relative shrink-0 overflow-hidden',
-          compact ? 'aspect-[5/3] min-h-[10.5rem] sm:min-h-[11.5rem]' : 'aspect-[5/3]',
+          compact ? 'aspect-[2/1] min-h-[8.5rem] sm:min-h-[9.5rem]' : 'aspect-[2/1]',
         )}
       >
         <CoverImage
@@ -73,8 +73,8 @@ export function CustomerPackageCard({
           variant="overlay"
           className="customer-package-card__featured-badge"
         />
-        <div className="customer-package-card__title-wrap absolute inset-x-0 bottom-0 p-2.5 sm:p-4">
-          <h3 className="customer-package-card__title font-heading text-base font-semibold tracking-tight text-white drop-shadow-sm sm:text-lg">
+        <div className="customer-package-card__title-wrap absolute inset-x-0 bottom-0 p-2 sm:p-3">
+          <h3 className="customer-package-card__title font-heading text-sm font-semibold tracking-tight text-white drop-shadow-sm sm:text-base">
             {pkg.name}
           </h3>
         </div>
@@ -83,35 +83,35 @@ export function CustomerPackageCard({
       <div
         className={cn(
           'customer-package-card__body flex flex-1 flex-col',
-          compact ? 'p-3.5 sm:p-4' : 'p-5 sm:p-6',
+          compact ? 'p-3 sm:p-3.5' : 'p-3.5 sm:p-4',
         )}
       >
-        <div className="customer-package-chips flex flex-wrap gap-1.5 sm:gap-2">
+        <div className="customer-package-chips flex flex-wrap gap-1 sm:gap-1.5">
           <span className="customer-package-chip">
-            <Layers className="h-3.5 w-3.5" />
+            <Layers className="h-3 w-3" />
             {pkg.total_sessions} session{pkg.total_sessions === 1 ? '' : 's'}
           </span>
           <span className="customer-package-chip">
-            <CalendarDays className="h-3.5 w-3.5" />
+            <CalendarDays className="h-3 w-3" />
             {pkg.validity_days} days
           </span>
           <span className="customer-package-chip customer-package-chip--accent">
-            <Sparkles className="h-3.5 w-3.5" />
+            <Sparkles className="h-3 w-3" />
             Bundle
           </span>
         </div>
 
-        <p className="customer-package-card__desc mt-2 line-clamp-2 text-xs leading-relaxed text-muted-foreground sm:text-sm">
+        <p className="customer-package-card__desc mt-1.5 line-clamp-2 text-xs leading-snug text-muted-foreground">
           {pkg.description?.trim() || '\u00A0'}
         </p>
 
         {locationLabel ? (
-          <p className="customer-package-card__location mt-2 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-            <MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />
+          <p className="customer-package-card__location mt-1.5 flex items-center gap-1 text-xs font-medium text-muted-foreground">
+            <MapPin className="h-3 w-3 shrink-0 text-primary" />
             <span className="min-w-0 truncate">{locationLabel}</span>
           </p>
         ) : (
-          <p className="customer-package-card__location mt-2 min-h-[1.25rem] sm:min-h-[1.25rem]" aria-hidden>
+          <p className="customer-package-card__location mt-1.5 min-h-[1rem]" aria-hidden>
             {'\u00A0'}
           </p>
         )}

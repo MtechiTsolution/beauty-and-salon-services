@@ -78,10 +78,10 @@ export default function HomePage() {
 
       <section className="py-20 max-w-7xl mx-auto px-4">
         <h2 className="font-heading text-3xl font-bold text-center mb-12">Featured Services</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {featuredServices.map((service) => (
             <Card key={service.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="customer-service-card-media h-48 overflow-hidden">
+              <div className="customer-service-card-media aspect-[2/1] overflow-hidden">
                 <CoverImage
                   src={service.image_url}
                   alt={service.title}
@@ -89,7 +89,7 @@ export default function HomePage() {
                   entityId={service.id}
                   entityName={service.title}
                   entityDescription={service.description}
-                  className="h-48 hover:scale-105 transition-transform duration-500"
+                  className="h-full w-full object-cover transition-transform duration-500 hover:scale-105"
                 />
                 <CatalogPopularBadge
                   entityType="service"
@@ -98,12 +98,15 @@ export default function HomePage() {
                   variant="overlay"
                 />
               </div>
-              <CardContent className="p-6">
-                <h3 className="font-heading text-lg font-semibold">{service.title}</h3>
-                <p className="text-sm text-muted-foreground mt-2 line-clamp-2">{service.description}</p>
-                <div className="flex items-center justify-between mt-4 text-sm">
+              <CardContent className="p-3.5 md:p-4">
+                <h3 className="font-heading text-base font-semibold leading-snug">{service.title}</h3>
+                <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground md:text-sm">{service.description}</p>
+                <div className="mt-3 flex items-center justify-between text-sm">
                   <span className="font-semibold text-primary">{formatMoney(service.price)}</span>
-                  <span className="flex items-center gap-1 text-muted-foreground"><Clock className="w-4 h-4" />{service.duration_minutes} min</span>
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Clock className="h-3.5 w-3.5" />
+                    {service.duration_minutes} min
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -116,8 +119,8 @@ export default function HomePage() {
           <h2 className="font-heading text-3xl font-bold text-center mb-10">Our Locations</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {bookableBranches.map((b) => (
-              <Card key={b.id} className="overflow-hidden hover:shadow-md transition-shadow">
-                <div className="customer-service-card-media h-36 overflow-hidden">
+              <Card key={b.id} className="overflow-hidden transition-shadow hover:shadow-md">
+                <div className="customer-service-card-media aspect-[2/1] overflow-hidden">
                   <CoverImage
                     src={b.image_url}
                     alt={b.name}
@@ -125,7 +128,7 @@ export default function HomePage() {
                     entityId={b.id}
                     entityName={b.name}
                     entityDescription={branchImageHints(b)}
-                    className="h-36"
+                    className="h-full w-full object-cover"
                   />
                   <BranchNearYouLabel
                     distanceKm={b.distance_km}
@@ -134,20 +137,15 @@ export default function HomePage() {
                     className="landing-showcase-card__nearby-badge"
                   />
                 </div>
-                <CardContent className="p-4">
-                  <h3 className="font-semibold">{b.name}</h3>
-                  <BranchNearYouLabel
-                    distanceKm={b.distance_km}
-                    isNearest={nearest?.id === b.id}
-                    branch={b}
-                    className="mt-1"
-                    variant="compact"
-                  />
-                  <p className="text-sm text-muted-foreground mt-1 flex items-start gap-1">
-                    <MapPin className="w-4 h-4 shrink-0 mt-0.5 text-primary" />
-                    <span>{b.address}, {b.city}</span>
+                <CardContent className="p-3">
+                  <h3 className="text-sm font-semibold leading-snug">{b.name}</h3>
+                  <p className="mt-1 flex items-start gap-1 text-xs text-muted-foreground">
+                    <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                    <span className="line-clamp-2">
+                      {b.address}, {b.city}
+                    </span>
                   </p>
-                  <Button asChild variant="outline" size="sm" className="mt-3 w-full rounded-full">
+                  <Button asChild variant="outline" size="sm" className="mt-2.5 h-8 w-full rounded-full text-xs">
                     <Link to={`/book?branch=${encodeURIComponent(b.id)}`}>Book here</Link>
                   </Button>
                 </CardContent>
