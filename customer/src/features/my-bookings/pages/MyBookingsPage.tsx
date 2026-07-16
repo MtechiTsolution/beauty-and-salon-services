@@ -260,7 +260,7 @@ export default function MyBookingsPage() {
             })}
           </div>
         ) : (
-          <div className="mt-8 space-y-5">
+          <div className="mx-auto mt-6 max-w-md space-y-3">
             {filteredBookings.map((b) => {
               const review = getReviewForBooking(myReviews, b);
               const showReviewButton =
@@ -274,6 +274,7 @@ export default function MyBookingsPage() {
                   onReview={() => setReviewBooking(b)}
                   onCancel={() => setCancelTarget(b)}
                   isCancelling={cancelBooking.isPending && cancelBooking.variables?.id === b.id}
+                  dense
                 />
               );
             })}

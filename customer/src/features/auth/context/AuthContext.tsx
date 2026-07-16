@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       isAuthenticated: !!user,
       login: async (email, password) => {
-        const u = await authApi.login(email, password);
+        const u = await authApi.login(email.trim(), password, 'customer');
         setUser(u);
         return u;
       },

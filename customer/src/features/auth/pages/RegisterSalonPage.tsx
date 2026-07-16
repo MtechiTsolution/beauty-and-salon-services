@@ -3,14 +3,27 @@ import {
   type SalonRegisterStep,
 } from '@/features/auth/components/SalonRegisterStepper';
 import { AppLogo } from '@mit-salon/shared/components/AppLogo';
+import { FieldError, FormPasswordField, FormTextField } from '@mit-salon/shared/components/FormField';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@mit-salon/shared/components/ui/card';
 import { CoverImage } from '@mit-salon/shared/components/CoverImage';
-import { Input } from '@mit-salon/shared/components/ui/input';
-import { PasswordInput } from '@mit-salon/shared/components/ui/password-input';
-import { Label } from '@mit-salon/shared/components/ui/label';
 import { Textarea } from '@mit-salon/shared/components/ui/textarea';
 import { APP_NAME } from '@mit-salon/shared/lib/constants';
+import {
+  type FieldErrors,
+  hasFieldErrors,
+  normalizeEmail,
+  validateAddress,
+  validateDescription,
+  validateEmail,
+  validateFullName,
+  validateOptionalEmail,
+  validateOtp,
+  validatePassword,
+  validatePhone,
+  validateSalonName,
+  validateTimeRange,
+} from '@mit-salon/shared/lib/form-validation';
 import { IMAGES } from '@mit-salon/shared/lib/images';
 import { useSalonRegistrationStatusWatch } from '@mit-salon/shared/hooks/useSalonRegistrationStatusWatch';
 import { authApi } from '@mit-salon/shared/api';
@@ -37,6 +50,21 @@ const STEP_TITLES: Record<SalonRegisterStep, string> = {
 
 const ADMIN_APP_URL = import.meta.env.VITE_ADMIN_APP_URL ?? 'http://localhost:5174';
 
+type SalonFields =
+  | 'email'
+  | 'otp'
+  | 'fullName'
+  | 'phone'
+  | 'password'
+  | 'confirmPassword'
+  | 'salonName'
+  | 'address'
+  | 'salonPhone'
+  | 'salonEmail'
+  | 'openingTime'
+  | 'closingTime'
+  | 'description';
+
 export default function RegisterSalonPage() {
   const [step, setStep] = useState<SalonRegisterStep>('email');
   const [loading, setLoading] = useState(false);
@@ -60,6 +88,11 @@ export default function RegisterSalonPage() {
   const [description, setDescription] = useState('');
 
   const [registeredSalonName, setRegisteredSalonName] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors<SalonFields>>({});
+
+  const clearFieldError = (field: SalonFields) => {
+    setFieldErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev));
+  };
 
   useSalonRegistrationStatusWatch({
     email,
@@ -76,11 +109,16 @@ export default function RegisterSalonPage() {
 
   const sendOtp = async (e?: React.FormEvent) => {
     e?.preventDefault();
+    const errors: FieldErrors<SalonFields> = { email: validateEmail(email) };
+    setFieldErrors(errors);
+    if (hasFieldErrors(errors)) return;
+
     setLoading(true);
     try {
-      const result = await authApi.sendSalonRegisterOtp(email.trim());
+      const result = await authApi.sendSalonRegisterOtp(normalizeEmail(email));
       setStep('otp');
       setOtp('');
+      setFieldErrors({});
       toast.success(result.message);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not send verification code');
@@ -91,9 +129,13 @@ export default function RegisterSalonPage() {
 
   const verifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+    const errors: FieldErrors<SalonFields> = { otp: validateOtp(otp) };
+    setFieldErrors(errors);
+    if (hasFieldErrors(errors)) return;
+
     setLoading(true);
     try {
-      const result = await authApi.verifySalonRegisterOtp(email.trim(), otp.trim());
+      const result = await authApi.verifySalonRegisterOtp(normalizeEmail(email), otp.trim());
       setRegistrationToken(result.registrationToken);
       setStep('account');
       toast.success(result.message);
@@ -106,37 +148,44 @@ export default function RegisterSalonPage() {
 
   const goToSalon = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      toast.error('Passwords do not match');
-      return;
+    const passwordError = validatePassword(password);
+    const errors: FieldErrors<SalonFields> = {
+      fullName: validateFullName(fullName),
+      phone: validatePhone(phone),
+    };
+    if (passwordError) {
+      errors.password = passwordError;
+    } else if (!confirmPassword.trim()) {
+      errors.confirmPassword = 'Confirm your password';
+    } else if (password !== confirmPassword) {
+      errors.password = 'Passwords do not match';
+      errors.confirmPassword = 'Passwords do not match';
     }
-    if (password.trim().length < 6) {
-      toast.error('Password must be at least 6 characters');
-      return;
-    }
-    if (!fullName.trim()) {
-      toast.error('Your name is required');
-      return;
-    }
-    setSalonEmail((prev) => prev || email.trim());
+    setFieldErrors(errors);
+    if (hasFieldErrors(errors)) return;
+
+    setSalonEmail((prev) => prev || normalizeEmail(email));
     setStep('salon');
+    setFieldErrors({});
   };
 
   const goToReview = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!salonName.trim()) {
-      toast.error('Salon name is required');
-      return;
-    }
-    if (!address.trim()) {
-      toast.error('Salon address is required');
-      return;
-    }
-    if (openingTime >= closingTime) {
-      toast.error('Closing time must be after opening time');
-      return;
-    }
+    const timeError = validateTimeRange(openingTime, closingTime);
+    const errors: FieldErrors<SalonFields> = {
+      salonName: validateSalonName(salonName),
+      address: validateAddress(address),
+      salonPhone: validatePhone(salonPhone),
+      salonEmail: validateOptionalEmail(salonEmail),
+      description: validateDescription(description),
+      openingTime: timeError,
+      closingTime: timeError,
+    };
+    setFieldErrors(errors);
+    if (hasFieldErrors(errors)) return;
+
     setStep('review');
+    setFieldErrors({});
   };
 
   const submitRegistration = async () => {
@@ -209,19 +258,20 @@ export default function RegisterSalonPage() {
 
             {step === 'email' && (
               <form onSubmit={sendOtp} className="space-y-5">
-                <div className="space-y-2">
-                  <Label htmlFor="owner-email">Business owner email</Label>
-                  <Input
-                    id="owner-email"
-                    type="email"
-                    className="h-11"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@yoursalon.com"
-                    required
-                    autoComplete="email"
-                  />
-                </div>
+                <FormTextField
+                  id="owner-email"
+                  label="Business owner email"
+                  type="email"
+                  className="h-11"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    clearFieldError('email');
+                  }}
+                  error={fieldErrors.email}
+                  placeholder="you@yoursalon.com"
+                  autoComplete="email"
+                />
                 <Button type="submit" className="h-11 w-full rounded-full" disabled={loading}>
                   {loading ? 'Sending code…' : 'Send verification code'}
                 </Button>
@@ -233,22 +283,22 @@ export default function RegisterSalonPage() {
                 <p className="text-sm text-muted-foreground">
                   Code sent to <span className="font-medium text-foreground">{maskEmail(email)}</span>
                 </p>
-                <div className="space-y-2">
-                  <Label htmlFor="otp">Verification code</Label>
-                  <Input
-                    id="otp"
-                    type="text"
-                    inputMode="numeric"
-                    pattern="\d{6}"
-                    maxLength={6}
-                    className="h-11 text-center text-lg tracking-[0.35em]"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    placeholder="000000"
-                    required
-                    autoComplete="one-time-code"
-                  />
-                </div>
+                <FormTextField
+                  id="otp"
+                  label="Verification code"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  className="h-11 text-center text-lg tracking-[0.35em]"
+                  value={otp}
+                  onChange={(e) => {
+                    setOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
+                    clearFieldError('otp');
+                  }}
+                  error={fieldErrors.otp}
+                  placeholder="000000"
+                  autoComplete="one-time-code"
+                />
                 <Button type="submit" className="h-11 w-full rounded-full" disabled={loading || otp.length !== 6}>
                   {loading ? 'Verifying…' : 'Verify email'}
                 </Button>
@@ -277,49 +327,53 @@ export default function RegisterSalonPage() {
 
             {step === 'account' && (
               <form onSubmit={goToSalon} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="full-name">Your full name</Label>
-                  <Input
-                    id="full-name"
-                    className="h-11"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone (optional)</Label>
-                  <Input
-                    id="phone"
-                    className="h-11"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <PasswordInput
-                    id="password"
-                    className="h-11"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    minLength={6}
-                    required
-                    autoComplete="new-password"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Confirm password</Label>
-                  <PasswordInput
-                    id="confirm-password"
-                    className="h-11"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    minLength={6}
-                    required
-                    autoComplete="new-password"
-                  />
-                </div>
+                <FormTextField
+                  id="full-name"
+                  label="Your full name"
+                  className="h-11"
+                  value={fullName}
+                  onChange={(e) => {
+                    setFullName(e.target.value);
+                    clearFieldError('fullName');
+                  }}
+                  error={fieldErrors.fullName}
+                />
+                <FormTextField
+                  id="phone"
+                  label="Phone (optional)"
+                  type="tel"
+                  className="h-11"
+                  value={phone}
+                  onChange={(e) => {
+                    setPhone(e.target.value);
+                    clearFieldError('phone');
+                  }}
+                  error={fieldErrors.phone}
+                />
+                <FormPasswordField
+                  id="password"
+                  label="Password"
+                  className="h-11"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    clearFieldError('password');
+                  }}
+                  error={fieldErrors.password}
+                  autoComplete="new-password"
+                />
+                <FormPasswordField
+                  id="confirm-password"
+                  label="Confirm password"
+                  className="h-11"
+                  value={confirmPassword}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    clearFieldError('confirmPassword');
+                  }}
+                  error={fieldErrors.confirmPassword}
+                  autoComplete="new-password"
+                />
                 <Button type="submit" className="h-11 w-full rounded-full">
                   Continue to salon details
                 </Button>
@@ -328,86 +382,108 @@ export default function RegisterSalonPage() {
 
             {step === 'salon' && (
               <form onSubmit={goToReview} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="salon-name">Salon name</Label>
-                  <Input
-                    id="salon-name"
+                <FormTextField
+                  id="salon-name"
+                  label="Salon name"
+                  className="h-11"
+                  value={salonName}
+                  onChange={(e) => {
+                    setSalonName(e.target.value);
+                    clearFieldError('salonName');
+                  }}
+                  error={fieldErrors.salonName}
+                  placeholder="e.g. MIT Salon Downtown"
+                />
+                <FormTextField
+                  id="address"
+                  label="Street address"
+                  className="h-11"
+                  value={address}
+                  onChange={(e) => {
+                    setAddress(e.target.value);
+                    clearFieldError('address');
+                  }}
+                  error={fieldErrors.address}
+                />
+                <FormTextField
+                  id="city"
+                  label="City (optional)"
+                  className="h-11"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FormTextField
+                    id="salon-phone"
+                    label="Salon phone (optional)"
+                    type="tel"
                     className="h-11"
-                    value={salonName}
-                    onChange={(e) => setSalonName(e.target.value)}
-                    placeholder="e.g. MIT Salon Downtown"
-                    required
+                    value={salonPhone}
+                    onChange={(e) => {
+                      setSalonPhone(e.target.value);
+                      clearFieldError('salonPhone');
+                    }}
+                    error={fieldErrors.salonPhone}
+                  />
+                  <FormTextField
+                    id="salon-email"
+                    label="Salon contact email (optional)"
+                    type="email"
+                    className="h-11"
+                    value={salonEmail}
+                    onChange={(e) => {
+                      setSalonEmail(e.target.value);
+                      clearFieldError('salonEmail');
+                    }}
+                    error={fieldErrors.salonEmail}
+                    placeholder={email}
+                  />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FormTextField
+                    id="open"
+                    label="Opening time"
+                    type="time"
+                    className="h-11"
+                    value={openingTime}
+                    onChange={(e) => {
+                      setOpeningTime(e.target.value);
+                      clearFieldError('openingTime');
+                      clearFieldError('closingTime');
+                    }}
+                    error={fieldErrors.openingTime}
+                  />
+                  <FormTextField
+                    id="close"
+                    label="Closing time"
+                    type="time"
+                    className="h-11"
+                    value={closingTime}
+                    onChange={(e) => {
+                      setClosingTime(e.target.value);
+                      clearFieldError('openingTime');
+                      clearFieldError('closingTime');
+                    }}
+                    error={fieldErrors.closingTime}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="address">Street address</Label>
-                  <Input
-                    id="address"
-                    className="h-11"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="city">City (optional)</Label>
-                  <Input id="city" className="h-11" value={city} onChange={(e) => setCity(e.target.value)} />
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="salon-phone">Salon phone (optional)</Label>
-                    <Input
-                      id="salon-phone"
-                      className="h-11"
-                      value={salonPhone}
-                      onChange={(e) => setSalonPhone(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="salon-email">Salon contact email (optional)</Label>
-                    <Input
-                      id="salon-email"
-                      type="email"
-                      className="h-11"
-                      value={salonEmail}
-                      onChange={(e) => setSalonEmail(e.target.value)}
-                      placeholder={email}
-                    />
-                  </div>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="open">Opening time</Label>
-                    <Input
-                      id="open"
-                      type="time"
-                      className="h-11"
-                      value={openingTime}
-                      onChange={(e) => setOpeningTime(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="close">Closing time</Label>
-                    <Input
-                      id="close"
-                      type="time"
-                      className="h-11"
-                      value={closingTime}
-                      onChange={(e) => setClosingTime(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description (optional)</Label>
+                  <label htmlFor="description" className="text-sm font-medium leading-none">
+                    Description (optional)
+                  </label>
                   <Textarea
                     id="description"
                     rows={3}
                     value={description}
-                    onChange={(e) => setDescription(e.target.value)}
+                    onChange={(e) => {
+                      setDescription(e.target.value);
+                      clearFieldError('description');
+                    }}
                     placeholder="A short note about your salon for customers"
+                    className={fieldErrors.description ? 'border-destructive' : undefined}
+                    aria-invalid={!!fieldErrors.description}
                   />
+                  <FieldError message={fieldErrors.description} />
                 </div>
                 <div className="flex gap-3">
                   <Button type="button" variant="outline" className="h-11 flex-1 rounded-full" onClick={() => setStep('account')}>

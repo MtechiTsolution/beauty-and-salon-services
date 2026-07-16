@@ -1,19 +1,27 @@
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { ThemeToggle } from '@mit-salon/shared/components/ThemeToggle';
+import { FieldError, FormTextField } from '@mit-salon/shared/components/FormField';
 import { authApi } from '@mit-salon/shared/api';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@mit-salon/shared/components/ui/card';
 import { Input } from '@mit-salon/shared/components/ui/input';
 import { Label } from '@mit-salon/shared/components/ui/label';
 import { useLogoutConfirm } from '@mit-salon/shared/hooks/useLogoutConfirm';
+import {
+  type FieldErrors,
+  hasFieldErrors,
+  normalizeEmail,
+  validateEmail,
+  validateFullName,
+  validateOtp,
+  validatePhone,
+} from '@mit-salon/shared/lib/form-validation';
 import { Moon, User, LogOut } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-function normalizeEmail(value: string) {
-  return value.trim().toLowerCase();
-}
+type ProfileFields = 'full_name' | 'phone' | 'newEmail' | 'otp';
 
 export default function ProfilePage() {
   const { user, updateProfile, refresh, logout } = useAuth();
@@ -28,6 +36,7 @@ export default function ProfilePage() {
   const [codeSentTo, setCodeSentTo] = useState('');
   const [saving, setSaving] = useState(false);
   const [emailLoading, setEmailLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors<ProfileFields>>({});
   const { requestLogout, loading: loggingOut, logoutDialog } = useLogoutConfirm(logout, {
     onSuccess: () => navigate('/landing'),
   });
@@ -61,12 +70,19 @@ export default function ProfilePage() {
     }
   };
 
+  const clearFieldError = (field: ProfileFields) => {
+    setFieldErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev));
+  };
+
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.full_name.trim()) {
-      toast.error('Full name is required');
-      return;
-    }
+    const errors: FieldErrors<ProfileFields> = {
+      full_name: validateFullName(form.full_name),
+      phone: validatePhone(form.phone),
+    };
+    setFieldErrors((prev) => ({ ...prev, ...errors }));
+    if (hasFieldErrors(errors)) return;
+
     setSaving(true);
     try {
       await updateProfile({
@@ -82,8 +98,13 @@ export default function ProfilePage() {
   };
 
   const sendEmailCode = async () => {
+    const emailError = validateEmail(newEmail);
+    if (emailError) {
+      setFieldErrors((prev) => ({ ...prev, newEmail: emailError }));
+      return;
+    }
     if (!emailChanged) {
-      toast.error('Enter a new email address first');
+      setFieldErrors((prev) => ({ ...prev, newEmail: 'Enter a new email address first' }));
       return;
     }
     setEmailLoading(true);
@@ -106,10 +127,14 @@ export default function ProfilePage() {
       toast.error('You changed the email. Send a new verification code first.');
       return;
     }
-    if (otp.length !== 6) {
-      toast.error('Enter the 6-digit verification code');
-      return;
-    }
+    const otpError = validateOtp(otp);
+    const emailError = validateEmail(newEmail);
+    const errors: FieldErrors<ProfileFields> = {
+      otp: otpError,
+      newEmail: emailError,
+    };
+    setFieldErrors((prev) => ({ ...prev, ...errors }));
+    if (hasFieldErrors(errors)) return;
 
     setEmailLoading(true);
     try {
@@ -151,20 +176,28 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={save} className="space-y-4">
-              <div className="space-y-2">
-                <Label>Full name</Label>
-                <Input
-                  value={form.full_name}
-                  onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Phone</Label>
-                <Input
-                  value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                />
-              </div>
+              <FormTextField
+                id="full_name"
+                label="Full name"
+                value={form.full_name}
+                onChange={(e) => {
+                  setForm({ ...form, full_name: e.target.value });
+                  clearFieldError('full_name');
+                }}
+                error={fieldErrors.full_name}
+              />
+              <FormTextField
+                id="phone"
+                label="Phone (optional)"
+                type="tel"
+                value={form.phone}
+                onChange={(e) => {
+                  setForm({ ...form, phone: e.target.value });
+                  clearFieldError('phone');
+                }}
+                error={fieldErrors.phone}
+                autoComplete="tel"
+              />
 
               <div className="space-y-4 border-t border-border/60 pt-4">
                 <div>
@@ -174,17 +207,18 @@ export default function ProfilePage() {
                     before updating it.
                   </p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="profile-email">Email address</Label>
-                  <Input
-                    id="profile-email"
-                    type="email"
-                    value={newEmail}
-                    onChange={(e) => handleNewEmailChange(e.target.value)}
-                    autoComplete="email"
-                    required
-                  />
-                </div>
+                <FormTextField
+                  id="profile-email"
+                  label="Email address"
+                  type="email"
+                  value={newEmail}
+                  onChange={(e) => {
+                    handleNewEmailChange(e.target.value);
+                    clearFieldError('newEmail');
+                  }}
+                  error={fieldErrors.newEmail}
+                  autoComplete="email"
+                />
 
                 {emailChanged && (
                   <>
@@ -200,17 +234,19 @@ export default function ProfilePage() {
                           id="profile-otp"
                           type="text"
                           inputMode="numeric"
-                          pattern="\d{6}"
                           maxLength={6}
-                          className="text-center text-lg tracking-[0.35em]"
+                          className={fieldErrors.otp ? 'border-destructive text-center text-lg tracking-[0.35em]' : 'text-center text-lg tracking-[0.35em]'}
+                          aria-invalid={!!fieldErrors.otp}
                           value={otp}
                           onChange={(e) => {
                             setOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
                             setChangeToken('');
+                            clearFieldError('otp');
                           }}
                           placeholder="000000"
                           autoComplete="one-time-code"
                         />
+                        <FieldError message={fieldErrors.otp} />
                       </div>
                     )}
                     <div className="flex flex-col gap-2 sm:flex-row">

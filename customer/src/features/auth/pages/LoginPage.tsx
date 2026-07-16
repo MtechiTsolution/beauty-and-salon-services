@@ -1,16 +1,23 @@
 import { useAuth } from '@/features/auth/context/AuthContext';
 import { AppLogo } from '@mit-salon/shared/components/AppLogo';
+import { FormPasswordField, FormTextField } from '@mit-salon/shared/components/FormField';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@mit-salon/shared/components/ui/card';
 import { CoverImage } from '@mit-salon/shared/components/CoverImage';
-import { Input } from '@mit-salon/shared/components/ui/input';
-import { PasswordInput } from '@mit-salon/shared/components/ui/password-input';
-import { Label } from '@mit-salon/shared/components/ui/label';
 import { APP_NAME } from '@mit-salon/shared/lib/constants';
+import {
+  type FieldErrors,
+  hasFieldErrors,
+  normalizeEmail,
+  validateEmail,
+  validatePassword,
+} from '@mit-salon/shared/lib/form-validation';
 import { IMAGES } from '@mit-salon/shared/lib/images';
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
+
+type LoginFields = 'email' | 'password';
 
 export default function LoginPage() {
   const { login, logout } = useAuth();
@@ -20,22 +27,36 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors<LoginFields>>({});
   const [loading, setLoading] = useState(false);
+
+  const clearFieldError = (field: LoginFields) => {
+    setFieldErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const errors: FieldErrors<LoginFields> = {
+      email: validateEmail(email),
+      password: validatePassword(password),
+    };
+    setFieldErrors(errors);
+    if (hasFieldErrors(errors)) return;
+
     setLoading(true);
     try {
-      const user = await login(email, password);
+      const user = await login(normalizeEmail(email), password);
       if (user?.role !== 'customer') {
         await logout();
-        toast.error('This account uses salon admin (5174) or platform admin (5175) — open that port manually.');
+        toast.error(
+          'This account uses salon admin (5174) or platform admin (5175) — open that port manually.',
+        );
         return;
       }
       toast.success('Welcome back!');
       navigate(from, { replace: true });
-    } catch {
-      toast.error('Invalid credentials');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Invalid email or password');
     } finally {
       setLoading(false);
     }
@@ -61,22 +82,39 @@ export default function LoginPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" className="h-11" value={email} onChange={(e) => setEmail(e.target.value)} required />
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <Label htmlFor="password">Password</Label>
+              <FormTextField
+                id="email"
+                label="Email"
+                type="email"
+                className="h-11"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  clearFieldError('email');
+                }}
+                error={fieldErrors.email}
+                autoComplete="email"
+              />
+              <FormPasswordField
+                id="password"
+                label="Password"
+                className="h-11"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  clearFieldError('password');
+                }}
+                error={fieldErrors.password}
+                labelExtra={
                   <Link
                     to="/forgot-password"
                     className="text-sm font-medium text-primary underline-offset-4 hover:underline"
                   >
                     Forgot password?
                   </Link>
-                </div>
-                <PasswordInput id="password" className="h-11" value={password} onChange={(e) => setPassword(e.target.value)} required />
-              </div>
+                }
+                autoComplete="current-password"
+              />
               <Button type="submit" className="customer-primary-btn customer-btn-glow h-11 w-full rounded-full" disabled={loading}>
                 {loading ? 'Signing in...' : 'Sign in'}
               </Button>

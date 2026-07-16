@@ -1,27 +1,56 @@
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { FormPasswordField, FormTextField } from '@mit-salon/shared/components/FormField';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@mit-salon/shared/components/ui/card';
 import { CoverImage } from '@mit-salon/shared/components/CoverImage';
-import { Input } from '@mit-salon/shared/components/ui/input';
-import { PasswordInput } from '@mit-salon/shared/components/ui/password-input';
-import { Label } from '@mit-salon/shared/components/ui/label';
 import { APP_NAME } from '@mit-salon/shared/lib/constants';
+import {
+  type FieldErrors,
+  hasFieldErrors,
+  normalizeEmail,
+  validateEmail,
+  validateFullName,
+  validatePassword,
+  validatePhone,
+  MIN_PASSWORD_LENGTH,
+} from '@mit-salon/shared/lib/form-validation';
 import { IMAGES } from '@mit-salon/shared/lib/images';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
+type RegisterFields = 'full_name' | 'email' | 'phone' | 'password';
+
 export default function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', full_name: '', password: '', phone: '' });
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors<RegisterFields>>({});
   const [loading, setLoading] = useState(false);
+
+  const clearFieldError = (field: RegisterFields) => {
+    setFieldErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const errors: FieldErrors<RegisterFields> = {
+      full_name: validateFullName(form.full_name),
+      email: validateEmail(form.email),
+      phone: validatePhone(form.phone),
+      password: validatePassword(form.password),
+    };
+    setFieldErrors(errors);
+    if (hasFieldErrors(errors)) return;
+
     setLoading(true);
     try {
-      await register(form);
+      await register({
+        ...form,
+        email: normalizeEmail(form.email),
+        full_name: form.full_name.trim(),
+        phone: form.phone.trim() || undefined,
+      });
       toast.success('Account created!');
       navigate('/book');
     } catch (err) {
@@ -48,32 +77,57 @@ export default function RegisterPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              {(['full_name', 'email', 'phone'] as const).map((field) => (
-                <div key={field} className="space-y-2">
-                  <Label htmlFor={field}>
-                    {field === 'full_name' ? 'Full name' : field.charAt(0).toUpperCase() + field.slice(1)}
-                  </Label>
-                  <Input
-                    id={field}
-                    className="h-11"
-                    type={field === 'email' ? 'email' : 'text'}
-                    required={field !== 'phone'}
-                    value={form[field]}
-                    onChange={(e) => setForm({ ...form, [field]: e.target.value })}
-                  />
-                </div>
-              ))}
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <PasswordInput
-                  id="password"
-                  className="h-11"
-                  required
-                  value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  autoComplete="new-password"
-                />
-              </div>
+              <FormTextField
+                id="full_name"
+                label="Full name"
+                className="h-11"
+                value={form.full_name}
+                onChange={(e) => {
+                  setForm({ ...form, full_name: e.target.value });
+                  clearFieldError('full_name');
+                }}
+                error={fieldErrors.full_name}
+                autoComplete="name"
+              />
+              <FormTextField
+                id="email"
+                label="Email"
+                type="email"
+                className="h-11"
+                value={form.email}
+                onChange={(e) => {
+                  setForm({ ...form, email: e.target.value });
+                  clearFieldError('email');
+                }}
+                error={fieldErrors.email}
+                autoComplete="email"
+              />
+              <FormTextField
+                id="phone"
+                label="Phone (optional)"
+                type="tel"
+                className="h-11"
+                value={form.phone}
+                onChange={(e) => {
+                  setForm({ ...form, phone: e.target.value });
+                  clearFieldError('phone');
+                }}
+                error={fieldErrors.phone}
+                autoComplete="tel"
+              />
+              <FormPasswordField
+                id="password"
+                label="Password"
+                className="h-11"
+                value={form.password}
+                onChange={(e) => {
+                  setForm({ ...form, password: e.target.value });
+                  clearFieldError('password');
+                }}
+                error={fieldErrors.password}
+                hint={`At least ${MIN_PASSWORD_LENGTH} characters`}
+                autoComplete="new-password"
+              />
               <Button type="submit" className="customer-primary-btn customer-btn-glow h-11 w-full rounded-full" disabled={loading}>
                 {loading ? 'Creating account...' : 'Create account'}
               </Button>

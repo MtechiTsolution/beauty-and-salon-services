@@ -2,7 +2,7 @@ import { assertSlotNotInPast, assertStaffSlotAvailable } from '../../../lib/book
 import type { SalonScopeParams } from '../../../lib/salon-scope';
 import { apiRequest } from '../client';
 import { createRestCrudApi } from './rest-crud';
-import type { Booking } from '../../../types';
+import type { Booking, BookingPhoto, BookingPhotoKind } from '../../../types';
 
 export type CreateBookingPayload = Omit<Booking, 'id' | 'created_at' | 'updated_at'> & {
   booking_source?: 'phone' | 'walk_in';
@@ -53,6 +53,23 @@ export const bookingsApi = {
     return apiRequest<Booking>(`/bookings/${id}`, {
       method: 'PATCH',
       body: JSON.stringify({ status: 'cancelled', customer_email: customerEmail }),
+    });
+  },
+  async listPhotos(bookingId: string): Promise<BookingPhoto[]> {
+    return apiRequest<BookingPhoto[]>(`/bookings/${bookingId}/photos`);
+  },
+  async addPhoto(
+    bookingId: string,
+    payload: { kind: BookingPhotoKind; url: string },
+  ): Promise<BookingPhoto> {
+    return apiRequest<BookingPhoto>(`/bookings/${bookingId}/photos`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+  async removePhoto(bookingId: string, photoId: string): Promise<void> {
+    await apiRequest<void>(`/bookings/${bookingId}/photos/${photoId}`, {
+      method: 'DELETE',
     });
   },
 };

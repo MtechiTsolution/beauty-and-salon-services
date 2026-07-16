@@ -10,17 +10,24 @@ function authHeaders(): Record<string, string> {
 
 export async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
   const url = API_BASE ? `${API_BASE}${path}` : path;
-  const res = await fetch(url, {
-    ...options,
-    cache: 'no-store',
-    headers: {
-      'Content-Type': 'application/json',
-      'Cache-Control': 'no-cache',
-      Pragma: 'no-cache',
-      ...authHeaders(),
-      ...(options.headers as Record<string, string>),
-    },
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      ...options,
+      cache: 'no-store',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
+        Pragma: 'no-cache',
+        ...authHeaders(),
+        ...(options.headers as Record<string, string>),
+      },
+    });
+  } catch {
+    throw new Error(
+      'Cannot reach the API. Make sure the backend is running on port 3001, then try again.',
+    );
+  }
   if (res.status === 204) return undefined as T;
   if (!res.ok) {
     const text = await res.text();
@@ -31,6 +38,13 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
     } catch {
       if (text.includes('Cannot POST') || text.includes('Cannot GET')) {
         message = 'API endpoint not found — restart the backend server and try again.';
+      } else if (
+        res.status >= 500 &&
+        (/ECONNREFUSED|ECONNRESET|proxy error|AggregateError/i.test(text) ||
+          message === 'Internal Server Error')
+      ) {
+        message =
+          'Cannot reach the API. Make sure the backend is running on port 3001, then try again.';
       }
     }
     throw new Error(message);

@@ -65,7 +65,7 @@ export default function BookingDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="customer-page flex items-center justify-center py-20">
+      <div className="customer-page flex items-center justify-center py-16">
         <p className="text-muted-foreground">Loading booking…</p>
       </div>
     );
@@ -74,10 +74,10 @@ export default function BookingDetailPage() {
   if (notFound) {
     return (
       <div className="customer-page">
-        <div className="customer-container-wide py-16 text-center">
-          <CalendarDays className="mx-auto h-12 w-12 text-muted-foreground" />
-          <p className="mt-4 text-lg text-muted-foreground">Booking not found.</p>
-          <Button asChild variant="outline" className="mt-6 rounded-full">
+        <div className="customer-container-wide py-12 text-center">
+          <CalendarDays className="mx-auto h-10 w-10 text-muted-foreground" />
+          <p className="mt-3 text-base text-muted-foreground">Booking not found.</p>
+          <Button asChild variant="outline" className="mt-5 rounded-full">
             <Link to="/my-bookings">All my bookings</Link>
           </Button>
         </div>
@@ -86,24 +86,28 @@ export default function BookingDetailPage() {
   }
 
   return (
-    <div className="customer-page">
-      <div className="customer-container-wide py-12 md:py-16">
-        <div className="mx-auto max-w-2xl">
+    <div className="customer-page customer-booking-detail-page">
+      <div className="customer-container-wide customer-booking-detail-shell">
+        <div className="customer-booking-detail-inner">
           <Button
             asChild
             variant="ghost"
             size="sm"
-            className="mb-6 gap-2 rounded-full"
+            className="mb-3 h-8 gap-1.5 rounded-full px-2.5 text-xs"
           >
             <Link to="/my-bookings">
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-3.5 w-3.5" />
               All bookings
             </Link>
           </Button>
 
-          <div className="mb-6 text-center">
-            <h1 className="font-heading text-3xl font-bold md:text-4xl">Booking details</h1>
-            <p className="mt-2 text-muted-foreground">Your appointment confirmation and status</p>
+          <div className="customer-booking-detail-heading mb-3">
+            <h1 className="font-heading text-xl font-bold tracking-tight md:text-2xl">
+              Booking details
+            </h1>
+            <p className="mt-0.5 text-xs text-muted-foreground md:text-sm">
+              Appointment confirmation and status
+            </p>
           </div>
 
           <BookingCard
@@ -113,6 +117,7 @@ export default function BookingDetailPage() {
             onReview={() => setReviewBooking(booking!)}
             onCancel={() => setCancelOpen(true)}
             isCancelling={cancelBooking.isPending}
+            dense
           />
         </div>
       </div>

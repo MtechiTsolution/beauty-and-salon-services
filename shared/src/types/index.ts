@@ -78,6 +78,16 @@ export interface Employee extends BaseEntity {
   status: 'active' | 'inactive' | 'blocked';
 }
 
+export type BookingPhotoKind = 'before' | 'after';
+
+export interface BookingPhoto extends BaseEntity {
+  booking_id: string;
+  kind: BookingPhotoKind;
+  url: string;
+  uploaded_by_user_id?: string | null;
+  uploaded_by_role?: string | null;
+}
+
 export interface Booking extends BaseEntity {
   customer_email: string;
   customer_name: string;
@@ -99,6 +109,8 @@ export interface Booking extends BaseEntity {
   payment_method?: string;
   notes?: string;
   cancellation_reason?: string;
+  /** Before/after visit photos (included when the API loads booking photos). */
+  photos?: BookingPhoto[];
 }
 
 export interface Coupon extends BaseEntity {

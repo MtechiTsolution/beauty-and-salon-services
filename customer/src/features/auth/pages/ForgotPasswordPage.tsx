@@ -1,11 +1,18 @@
 import { AppLogo } from '@mit-salon/shared/components/AppLogo';
+import { FormPasswordField, FormTextField } from '@mit-salon/shared/components/FormField';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@mit-salon/shared/components/ui/card';
 import { CoverImage } from '@mit-salon/shared/components/CoverImage';
-import { Input } from '@mit-salon/shared/components/ui/input';
-import { PasswordInput } from '@mit-salon/shared/components/ui/password-input';
-import { Label } from '@mit-salon/shared/components/ui/label';
 import { APP_NAME } from '@mit-salon/shared/lib/constants';
+import {
+  type FieldErrors,
+  hasFieldErrors,
+  normalizeEmail,
+  validateEmail,
+  validateOtp,
+  validatePassword,
+  MIN_PASSWORD_LENGTH,
+} from '@mit-salon/shared/lib/form-validation';
 import { IMAGES } from '@mit-salon/shared/lib/images';
 import { authApi } from '@mit-salon/shared/api';
 import { useState } from 'react';
@@ -13,6 +20,7 @@ import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
 type Step = 'email' | 'otp' | 'password' | 'done';
+type ForgotFields = 'email' | 'otp' | 'password' | 'confirmPassword';
 
 function maskEmail(email: string) {
   const [local, domain] = email.split('@');
@@ -29,14 +37,24 @@ export default function ForgotPasswordPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors<ForgotFields>>({});
+
+  const clearFieldError = (field: ForgotFields) => {
+    setFieldErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev));
+  };
 
   const sendOtp = async (e?: React.FormEvent) => {
     e?.preventDefault();
+    const errors: FieldErrors<ForgotFields> = { email: validateEmail(email) };
+    setFieldErrors(errors);
+    if (hasFieldErrors(errors)) return;
+
     setLoading(true);
     try {
-      const result = await authApi.forgotPassword(email.trim(), 'customer');
+      const result = await authApi.forgotPassword(normalizeEmail(email), 'customer');
       setStep('otp');
       setOtp('');
+      setFieldErrors({});
       toast.success(result.message);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not send verification code');
@@ -47,9 +65,13 @@ export default function ForgotPasswordPage() {
 
   const verifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+    const errors: FieldErrors<ForgotFields> = { otp: validateOtp(otp) };
+    setFieldErrors(errors);
+    if (hasFieldErrors(errors)) return;
+
     setLoading(true);
     try {
-      const result = await authApi.verifyPasswordResetOtp(email.trim(), otp.trim(), 'customer');
+      const result = await authApi.verifyPasswordResetOtp(normalizeEmail(email), otp.trim(), 'customer');
       setResetToken(result.resetToken);
       setStep('password');
       toast.success(result.message);
@@ -62,17 +84,27 @@ export default function ForgotPasswordPage() {
 
   const updatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      toast.error('Passwords do not match');
-      return;
+    const passwordError = validatePassword(password);
+    const errors: FieldErrors<ForgotFields> = {};
+    if (passwordError) {
+      errors.password = passwordError;
+    } else if (!confirmPassword.trim()) {
+      errors.confirmPassword = 'Confirm your password';
+    } else if (password !== confirmPassword) {
+      errors.password = 'Passwords do not match';
+      errors.confirmPassword = 'Passwords do not match';
     }
-    if (password.trim().length < 6) {
-      toast.error('Password must be at least 6 characters');
-      return;
-    }
+    setFieldErrors(errors);
+    if (hasFieldErrors(errors)) return;
+
     setLoading(true);
     try {
-      const result = await authApi.resetPasswordWithToken(email.trim(), resetToken, password.trim(), 'customer');
+      const result = await authApi.resetPasswordWithToken(
+        normalizeEmail(email),
+        resetToken,
+        password.trim(),
+        'customer',
+      );
       setStep('done');
       toast.success(result.message);
     } catch (err) {
@@ -121,19 +153,20 @@ export default function ForgotPasswordPage() {
                   Enter the email for your {APP_NAME} customer account. We&apos;ll send a one-time code to
                   verify it&apos;s you.
                 </p>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    className="h-11"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    required
-                    autoComplete="email"
-                  />
-                </div>
+                <FormTextField
+                  id="email"
+                  label="Email"
+                  type="email"
+                  className="h-11"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    clearFieldError('email');
+                  }}
+                  error={fieldErrors.email}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                />
                 <Button
                   type="submit"
                   className="customer-primary-btn customer-btn-glow h-11 w-full rounded-full"
@@ -150,22 +183,22 @@ export default function ForgotPasswordPage() {
                   Enter the 6-digit code sent to{' '}
                   <span className="font-medium text-foreground">{maskEmail(email)}</span>.
                 </p>
-                <div className="space-y-2">
-                  <Label htmlFor="otp">Verification code</Label>
-                  <Input
-                    id="otp"
-                    type="text"
-                    inputMode="numeric"
-                    pattern="\d{6}"
-                    maxLength={6}
-                    className="h-11 text-center text-lg tracking-[0.35em]"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    placeholder="000000"
-                    required
-                    autoComplete="one-time-code"
-                  />
-                </div>
+                <FormTextField
+                  id="otp"
+                  label="Verification code"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  className="h-11 text-center text-lg tracking-[0.35em]"
+                  value={otp}
+                  onChange={(e) => {
+                    setOtp(e.target.value.replace(/\D/g, '').slice(0, 6));
+                    clearFieldError('otp');
+                  }}
+                  error={fieldErrors.otp}
+                  placeholder="000000"
+                  autoComplete="one-time-code"
+                />
                 <Button
                   type="submit"
                   className="customer-primary-btn customer-btn-glow h-11 w-full rounded-full"
@@ -201,30 +234,30 @@ export default function ForgotPasswordPage() {
                 <p className="text-sm text-muted-foreground">
                   Email verified. Choose a new password for your account.
                 </p>
-                <div className="space-y-2">
-                  <Label htmlFor="password">New password</Label>
-                  <PasswordInput
-                    id="password"
-                    className="h-11"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    minLength={6}
-                    required
-                    autoComplete="new-password"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm password</Label>
-                  <PasswordInput
-                    id="confirmPassword"
-                    className="h-11"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    minLength={6}
-                    required
-                    autoComplete="new-password"
-                  />
-                </div>
+                <FormPasswordField
+                  id="password"
+                  label="New password"
+                  className="h-11"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    clearFieldError('password');
+                  }}
+                  error={fieldErrors.password}
+                  autoComplete="new-password"
+                />
+                <FormPasswordField
+                  id="confirmPassword"
+                  label="Confirm password"
+                  className="h-11"
+                  value={confirmPassword}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    clearFieldError('confirmPassword');
+                  }}
+                  error={fieldErrors.confirmPassword}
+                  autoComplete="new-password"
+                />
                 <Button
                   type="submit"
                   className="customer-primary-btn customer-btn-glow h-11 w-full rounded-full"

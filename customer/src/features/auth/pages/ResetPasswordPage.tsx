@@ -1,11 +1,14 @@
 import { AppLogo } from '@mit-salon/shared/components/AppLogo';
+import { FormPasswordField } from '@mit-salon/shared/components/FormField';
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@mit-salon/shared/components/ui/card';
 import { CoverImage } from '@mit-salon/shared/components/CoverImage';
-import { Input } from '@mit-salon/shared/components/ui/input';
-import { PasswordInput } from '@mit-salon/shared/components/ui/password-input';
-import { Label } from '@mit-salon/shared/components/ui/label';
 import { APP_NAME } from '@mit-salon/shared/lib/constants';
+import {
+  type FieldErrors,
+  hasFieldErrors,
+  validatePassword,
+} from '@mit-salon/shared/lib/form-validation';
 import { IMAGES } from '@mit-salon/shared/lib/images';
 import { authApi } from '@mit-salon/shared/api';
 import { useEffect, useState } from 'react';
@@ -13,6 +16,8 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
 type Step = 'loading' | 'invalid' | 'password' | 'done';
+
+type ResetFields = 'password' | 'confirmPassword';
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
@@ -26,6 +31,11 @@ export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors<ResetFields>>({});
+
+  const clearFieldError = (field: ResetFields) => {
+    setFieldErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev));
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -63,14 +73,18 @@ export default function ResetPasswordPage() {
 
   const updatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      toast.error('Passwords do not match');
-      return;
+    const passwordError = validatePassword(password);
+    const errors: FieldErrors<ResetFields> = {};
+    if (passwordError) {
+      errors.password = passwordError;
+    } else if (!confirmPassword.trim()) {
+      errors.confirmPassword = 'Confirm your password';
+    } else if (password !== confirmPassword) {
+      errors.password = 'Passwords do not match';
+      errors.confirmPassword = 'Passwords do not match';
     }
-    if (password.trim().length < 6) {
-      toast.error('Password must be at least 6 characters');
-      return;
-    }
+    setFieldErrors(errors);
+    if (hasFieldErrors(errors)) return;
 
     setLoading(true);
     try {
@@ -152,30 +166,30 @@ export default function ResetPasswordPage() {
                     <>Set a new password for your {APP_NAME} account ({accountEmail || email}).</>
                   )}
                 </p>
-                <div className="space-y-2">
-                  <Label htmlFor="password">New password</Label>
-                  <PasswordInput
-                    id="password"
-                    className="h-11"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    minLength={6}
-                    required
-                    autoComplete="new-password"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm password</Label>
-                  <PasswordInput
-                    id="confirmPassword"
-                    className="h-11"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    minLength={6}
-                    required
-                    autoComplete="new-password"
-                  />
-                </div>
+                <FormPasswordField
+                  id="password"
+                  label="New password"
+                  className="h-11"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    clearFieldError('password');
+                  }}
+                  error={fieldErrors.password}
+                  autoComplete="new-password"
+                />
+                <FormPasswordField
+                  id="confirmPassword"
+                  label="Confirm password"
+                  className="h-11"
+                  value={confirmPassword}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    clearFieldError('confirmPassword');
+                  }}
+                  error={fieldErrors.confirmPassword}
+                  autoComplete="new-password"
+                />
                 <Button
                   type="submit"
                   className="customer-primary-btn customer-btn-glow h-11 w-full rounded-full"

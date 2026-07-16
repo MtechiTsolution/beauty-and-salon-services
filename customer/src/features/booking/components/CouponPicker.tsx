@@ -138,28 +138,30 @@ export function CouponPicker({
       : null;
 
   return (
-    <div className="customer-coupon-picker space-y-3 border-t pt-4">
+    <div className="customer-coupon-picker flex flex-col gap-2.5 border-t pt-3">
       <div className="flex items-center gap-2">
-        <Tag className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+        <Tag className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
         <Label className="text-sm font-semibold">Coupon code</Label>
       </div>
 
       {!signedIn ? (
-        <p className="text-sm text-muted-foreground">
-          Enter your email in the contact section above to see and apply available coupons.
+        <p className="text-xs leading-snug text-muted-foreground">
+          Add your email above to unlock coupons.
         </p>
       ) : isLoading ? (
-        <div className="flex items-center gap-2 rounded-xl border border-border/70 bg-muted/30 px-4 py-4 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-muted/30 px-3 py-2.5 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />
           Loading your coupons…
         </div>
       ) : isApplied ? (
-        <div className="customer-coupon-applied flex flex-col gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3 dark:border-green-900/50 dark:bg-green-950/30 sm:flex-row sm:items-center sm:justify-between">
+        <div className="customer-coupon-applied flex flex-col gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 dark:border-green-900/50 dark:bg-green-950/30 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 items-start gap-2">
-            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-600 dark:text-green-400" />
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-600 dark:text-green-400" />
             <div className="min-w-0">
-              <p className="truncate font-mono text-sm font-bold text-green-900 dark:text-green-100">{selectedCode}</p>
-              <p className="text-sm text-green-700 dark:text-green-300">
+              <p className="truncate font-mono text-sm font-bold text-green-900 dark:text-green-100">
+                {selectedCode}
+              </p>
+              <p className="text-xs text-green-700 dark:text-green-300 sm:text-sm">
                 Applied — you save {formatMoney(appliedDiscount)}
                 {selectedCoupon ? ` (${formatCouponDiscountLabel(selectedCoupon, currency, rate)})` : ''}
               </p>
@@ -169,16 +171,16 @@ export function CouponPicker({
             type="button"
             variant="outline"
             size="sm"
-            className="shrink-0 rounded-full"
+            className="h-8 shrink-0 rounded-full"
             onClick={handleClear}
           >
             Remove
           </Button>
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="customer-coupon-picker__controls flex flex-col gap-2 sm:flex-row sm:items-center">
           <Select value={normalizedSelectValue} onValueChange={handleSelect} disabled={available.length === 0}>
-            <SelectTrigger className="h-11 w-full rounded-xl">
+            <SelectTrigger className="customer-coupon-select-trigger h-9 w-full min-w-0 flex-1 rounded-lg text-sm sm:h-10">
               <SelectValue placeholder={placeholder}>
                 {selectedSummary ?? placeholder}
               </SelectValue>
@@ -192,7 +194,7 @@ export function CouponPicker({
           </Select>
           <Button
             type="button"
-            className="h-11 w-full rounded-full px-6"
+            className="customer-coupon-apply-btn h-9 w-full shrink-0 rounded-full px-5 text-sm sm:h-10 sm:w-auto"
             disabled={!selectedCode.trim() || isApplying || orderAmount <= 0}
             onClick={() => onApply(selectedCode)}
           >

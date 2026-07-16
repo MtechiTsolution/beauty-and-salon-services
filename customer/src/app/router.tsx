@@ -10,6 +10,7 @@ import PackagesPage from '@/features/packages/pages/PackagesPage';
 import ServicesPage from '@/features/services/pages/ServicesPage';
 import { CustomerLayout } from '@/features/layout/CustomerLayout';
 import BookingDetailPage from '@/features/my-bookings/pages/BookingDetailPage';
+import BookingPhotosPage from '@/features/my-bookings/pages/BookingPhotosPage';
 import MyBookingsPage from '@/features/my-bookings/pages/MyBookingsPage';
 import BookingChatRedirectPage from '@/features/messages/pages/BookingChatRedirectPage';
 import MessageThreadPage from '@/features/messages/pages/MessageThreadPage';
@@ -52,6 +53,7 @@ export function AppRouter() {
             <Route path="/packages" element={<PackagesPage />} />
             <Route path="/services" element={<ServicesPage />} />
             <Route path="/my-bookings" element={<MyBookingsPage />} />
+            <Route path="/my-bookings/:bookingId/photos" element={<BookingPhotosPage />} />
             <Route path="/my-bookings/:bookingId" element={<BookingDetailPage />} />
             <Route path="/reviews" element={<Navigate to="/my-bookings" replace />} />
             <Route path="/messages" element={<MessagesPage />} />

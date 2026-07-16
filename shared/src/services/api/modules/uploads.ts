@@ -1,7 +1,14 @@
 import { getApiBase } from '../../../lib/api-base';
 import { getSessionUserId } from '../../../lib/session-storage';
 
-export const UPLOAD_KINDS = ['branches', 'categories', 'services', 'staff', 'packages'] as const;
+export const UPLOAD_KINDS = [
+  'branches',
+  'categories',
+  'services',
+  'staff',
+  'packages',
+  'booking-photos',
+] as const;
 export type UploadKind = (typeof UPLOAD_KINDS)[number];
 
 function authHeaders(): Record<string, string> {

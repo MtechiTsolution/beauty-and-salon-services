@@ -1,4 +1,4 @@
-import { bookingEndMinutes, intervalsOverlap, slotToMinutes } from './booking-slots';
+import { bookingEndMinutes, intervalsOverlap, slotToMinutes } from './booking-slot-time';
 
 export type StaffTimeOffBlock = {
   start_date: string;

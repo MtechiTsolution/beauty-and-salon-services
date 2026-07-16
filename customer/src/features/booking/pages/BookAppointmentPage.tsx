@@ -63,9 +63,18 @@ import { buildBranchReviewStats } from '@mit-salon/shared/lib/salon-review-stats
 import { Button } from '@mit-salon/shared/components/ui/button';
 import { Card, CardContent } from '@mit-salon/shared/components/ui/card';
 import { BookingDatePickerInput } from '@/features/booking/components/BookingDatePickerInput';
-import { Input } from '@mit-salon/shared/components/ui/input';
+import { FieldError, FormTextField } from '@mit-salon/shared/components/FormField';
 import { Label } from '@mit-salon/shared/components/ui/label';
 import { Textarea } from '@mit-salon/shared/components/ui/textarea';
+import {
+  EMAIL_RE,
+  type FieldErrors,
+  hasFieldErrors,
+  validateEmail,
+  validateFullName,
+  validateNotes,
+  validatePhone,
+} from '@mit-salon/shared/lib/form-validation';
 import {
   PAYMENT_METHODS,
   TIME_SLOTS,
@@ -176,6 +185,9 @@ export default function BookAppointmentPage() {
   const [guestName, setGuestName] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
+  const [guestFieldErrors, setGuestFieldErrors] = useState<
+    FieldErrors<'guestName' | 'guestEmail' | 'guestPhone' | 'notes'>
+  >({});
   const [done, setDone] = useState(false);
   const [confirmedBooking, setConfirmedBooking] = useState<Booking | null>(null);
   const [draftReady, setDraftReady] = useState(false);
@@ -197,8 +209,25 @@ export default function BookAppointmentPage() {
       }),
     [user?.email, guestEmail, isAuthenticated],
   );
-  const guestEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(bookingEmail);
+  const guestEmailValid = EMAIL_RE.test(bookingEmail);
   const guestDetailsValid = bookingName.length > 0 && guestEmailValid;
+
+  const clearGuestFieldError = (field: keyof typeof guestFieldErrors) => {
+    setGuestFieldErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev));
+  };
+
+  const validateGuestFields = (): boolean => {
+    const errors: FieldErrors<'guestName' | 'guestEmail' | 'guestPhone' | 'notes'> = {
+      notes: validateNotes(notes),
+    };
+    if (!isAuthenticated) {
+      errors.guestName = validateFullName(guestName);
+      errors.guestEmail = validateEmail(guestEmail);
+      errors.guestPhone = validatePhone(guestPhone);
+    }
+    setGuestFieldErrors(errors);
+    return !hasFieldErrors(errors);
+  };
 
   useEffect(() => {
     if (step !== 0 && salonSearchQuery) setSalonSearchQuery('');
@@ -1002,10 +1031,8 @@ export default function BookAppointmentPage() {
 
   const submit = async () => {
     if (!branch || !hasOffering || !employee || !date || !time || !paymentMethod) return;
-    if (!isAuthenticated && !guestDetailsValid) {
-      toast.error('Please enter your name and email');
-      return;
-    }
+    if (!validateGuestFields()) return;
+    if (!isAuthenticated && !guestDetailsValid) return;
 
     const serviceId =
       activeOfferingType === 'service' ? service?.id : packagePrimaryServiceId(selectedPackage!);
@@ -1065,46 +1092,48 @@ export default function BookAppointmentPage() {
         : time ?? '';
 
     return (
-      <div className="customer-page customer-booking-confirm-page flex justify-center px-4">
-        <Card className="customer-booking-confirm-card w-full max-w-lg border-0 shadow-xl">
-          <CardContent className="customer-booking-confirm-content p-8 text-center md:p-10">
-            <div className="customer-booking-confirm-hero">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-100 md:h-16 md:w-16">
-                <CheckCircle2 className="h-8 w-8 text-green-600 md:h-10 md:w-10" />
+      <div className="customer-page customer-booking-confirm-page flex w-full min-w-0 justify-center px-3 sm:px-4">
+        <Card className="customer-booking-confirm-card w-full min-w-0 max-w-lg border-0 shadow-lg sm:shadow-xl">
+          <CardContent className="customer-booking-confirm-content p-2.5 text-center sm:p-4 md:p-5">
+            <div className="customer-booking-confirm-hero min-w-0">
+              <div className="customer-booking-confirm-hero-icon mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-green-100 sm:h-9 sm:w-9">
+                <CheckCircle2 className="h-4 w-4 text-green-600 sm:h-5 sm:w-5" />
               </div>
-              <h1 className="font-heading mt-4 text-2xl font-bold md:mt-6 md:text-3xl">You&apos;re all set!</h1>
-              <p className="mt-2 text-sm text-muted-foreground md:mt-3 md:text-base">
+              <h1 className="font-heading mt-1.5 text-balance text-base font-bold sm:mt-2 sm:text-lg md:text-xl">
+                You&apos;re all set!
+              </h1>
+              <p className="customer-booking-confirm-hero-copy mx-auto mt-0.5 max-w-prose text-pretty text-[11px] text-muted-foreground sm:text-xs">
                 {isAuthenticated
                   ? 'Confirmation sent to your account and email.'
                   : `Confirmation will be sent to ${bookingEmail}.`}
               </p>
             </div>
 
-            <div className="customer-booking-confirm-details mt-5 md:mt-6">
+            <div className="customer-booking-confirm-details mt-2 min-w-0 sm:mt-2.5">
               <div className="customer-booking-confirm-detail-row">
                 <span className="customer-booking-confirm-detail-label">
-                  <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  <MapPin className="h-3 w-3 shrink-0" aria-hidden />
                   Salon
                 </span>
                 <span className="customer-booking-confirm-detail-value">{branch?.name}</span>
               </div>
               <div className="customer-booking-confirm-detail-row">
                 <span className="customer-booking-confirm-detail-label">
-                  <Scissors className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  <Scissors className="h-3 w-3 shrink-0" aria-hidden />
                   Service
                 </span>
                 <span className="customer-booking-confirm-detail-value">{lineTitle}</span>
               </div>
               <div className="customer-booking-confirm-detail-row">
                 <span className="customer-booking-confirm-detail-label">
-                  <User className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  <User className="h-3 w-3 shrink-0" aria-hidden />
                   Stylist
                 </span>
                 <span className="customer-booking-confirm-detail-value">{employee?.name}</span>
               </div>
               <div className="customer-booking-confirm-detail-row">
                 <span className="customer-booking-confirm-detail-label">
-                  <CalendarDays className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  <CalendarDays className="h-3 w-3 shrink-0" aria-hidden />
                   When
                 </span>
                 <span className="customer-booking-confirm-detail-value">
@@ -1123,38 +1152,47 @@ export default function BookAppointmentPage() {
             </div>
 
             {confirmedBooking && (
-              <div className="customer-booking-confirm-status mt-4 text-left md:mt-5">
+              <div className="customer-booking-confirm-status mt-2 min-w-0 text-left sm:mt-2.5">
                 <BookingStatusHighlights
                   bookingStatus={confirmedBooking.status}
                   paymentStatus={confirmedBooking.payment_status}
+                  compact
                 />
               </div>
             )}
 
-            <div className="customer-booking-confirm-price mt-5 md:mt-6">
-              <p className="text-2xl font-bold text-primary md:text-3xl">{formatMoney(finalPrice)}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{paymentLabel}</p>
+            <div className="customer-booking-confirm-price mt-2 min-w-0 sm:mt-2.5">
+              <p className="customer-booking-confirm-price-amount text-lg font-bold text-primary sm:text-xl">
+                {formatMoney(finalPrice)}
+              </p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground sm:text-xs">{paymentLabel}</p>
             </div>
 
-            <div className="customer-booking-confirm-actions mt-6 flex flex-row gap-2 md:mt-8 md:gap-3">
+            <div className="customer-booking-confirm-actions mt-2.5 flex flex-col gap-1.5 sm:mt-3 sm:flex-row sm:gap-2">
               {isAuthenticated && confirmedBooking && (
-                <Button asChild className="customer-booking-confirm-btn h-12 flex-1 rounded-full text-base" size="lg">
+                <Button
+                  asChild
+                  className="customer-booking-confirm-btn h-8 w-full flex-1 rounded-full text-xs sm:h-9 sm:text-sm"
+                  size="lg"
+                >
                   <Link to={`/messages/booking/${confirmedBooking.id}`}>
-                    <MessageCircle className="mr-2 h-4 w-4" />
-                    Chat with salon
+                    <MessageCircle className="mr-1.5 h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">Chat with salon</span>
                   </Link>
                 </Button>
               )}
               {isAuthenticated ? (
                 <Button
                   asChild={!!confirmedBooking}
-                  className="customer-booking-confirm-btn h-12 flex-1 rounded-full text-base"
+                  className="customer-booking-confirm-btn h-8 w-full flex-1 rounded-full text-xs sm:h-9 sm:text-sm"
                   size="lg"
                   variant={confirmedBooking ? 'outline' : 'default'}
                   onClick={confirmedBooking ? undefined : () => navigate('/my-bookings')}
                 >
                   {confirmedBooking ? (
-                    <Link to={`/my-bookings/${confirmedBooking.id}`}>View my booking</Link>
+                    <Link to={`/my-bookings/${confirmedBooking.id}`}>
+                      <span className="truncate">View my booking</span>
+                    </Link>
                   ) : (
                     'View my bookings'
                   )}
@@ -1163,15 +1201,17 @@ export default function BookAppointmentPage() {
                 <>
                   <Button
                     asChild
-                    className="customer-booking-confirm-btn h-12 flex-1 rounded-full text-base"
+                    className="customer-booking-confirm-btn h-8 w-full flex-1 rounded-full text-xs sm:h-9 sm:text-sm"
                     size="lg"
                   >
-                    <Link to="/login" state={{ from: { pathname: '/my-bookings' } }}>Sign in to manage</Link>
+                    <Link to="/login" state={{ from: { pathname: '/my-bookings' } }}>
+                      Sign in to manage
+                    </Link>
                   </Button>
                   <Button
                     asChild
                     variant="outline"
-                    className="customer-booking-confirm-btn h-12 flex-1 rounded-full text-base"
+                    className="customer-booking-confirm-btn h-8 w-full flex-1 rounded-full text-xs sm:h-9 sm:text-sm"
                     size="lg"
                   >
                     <Link to="/register">Create account</Link>
@@ -1181,7 +1221,7 @@ export default function BookAppointmentPage() {
             </div>
 
             {!isAuthenticated && confirmedBooking && (
-              <p className="customer-booking-confirm-ref mt-5 text-xs leading-relaxed text-muted-foreground md:mt-6">
+              <p className="customer-booking-confirm-ref mt-1.5 break-all text-[10px] leading-snug text-muted-foreground sm:mt-2 sm:text-[11px]">
                 Booking reference:{' '}
                 <span className="font-mono font-medium text-foreground">{confirmedBooking.id}</span>
                 <span className="customer-booking-confirm-ref-hint"> — save this if you need to contact the salon.</span>
@@ -1871,33 +1911,40 @@ export default function BookAppointmentPage() {
         )}
 
         {step === 4 && (
-          <div className="customer-booking-flow mx-auto max-w-2xl">
-            <h2 className="font-heading text-2xl font-semibold">Payment method</h2>
-            <p className="mt-2 text-muted-foreground">
-              Total: <span className="font-bold text-primary">{formatMoney(finalPrice)}</span>
-            </p>
-            <div className="mt-8 space-y-4 text-left">
+          <div className="customer-booking-flow customer-booking-step--payment mx-auto w-full max-w-3xl">
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 className="font-heading text-sm font-semibold sm:text-base">Payment method</h2>
+              <p className="shrink-0 text-xs text-muted-foreground sm:text-sm">
+                Total: <span className="font-bold text-primary">{formatMoney(finalPrice)}</span>
+              </p>
+            </div>
+            <div className="customer-booking-payment-grid mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
               {PAYMENT_METHODS.map((method) => {
                 const Icon = PAYMENT_ICONS[method.id];
                 return (
-                  <Card
+                  <button
                     key={method.id}
+                    type="button"
                     className={cn(
-                      'customer-card-hover cursor-pointer overflow-hidden shadow-md',
-                      paymentMethod === method.id && 'customer-card-selected',
+                      'customer-booking-payment-card flex w-full min-w-0 items-center gap-2.5 rounded-lg border border-border/70 bg-card px-3 py-2 text-left transition-colors',
+                      'hover:border-primary/35 hover:bg-muted/40',
+                      paymentMethod === method.id &&
+                        'border-primary bg-primary/5 shadow-[0_0_0_1px_hsl(var(--primary)/0.35)]',
                     )}
                     onClick={() => setPaymentMethod(method.id)}
                   >
-                    <CardContent className="flex items-center gap-5 p-6">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10">
-                        <Icon className="h-7 w-7 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-heading text-lg font-semibold">{method.label}</p>
-                        <p className="text-sm text-muted-foreground">{method.description}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10">
+                      <Icon className="h-3.5 w-3.5 text-primary" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[13px] font-semibold leading-tight">
+                        {method.label}
+                      </span>
+                      <span className="mt-0.5 block truncate text-[11px] leading-tight text-muted-foreground">
+                        {method.description}
+                      </span>
+                    </span>
+                  </button>
                 );
               })}
             </div>
@@ -1905,85 +1952,104 @@ export default function BookAppointmentPage() {
         )}
 
         {step === 5 && hasOffering && branch && employee && paymentMethod && (
-          <div className="customer-booking-flow mx-auto max-w-2xl">
-            <h2 className="font-heading text-2xl font-semibold">Review & confirm</h2>
-            {!isAuthenticated && (
-              <Card className="mt-6 border-primary/25 bg-primary/5 shadow-sm">
-                <CardContent className="space-y-4 p-6">
-                  <div>
-                    <h3 className="font-heading text-lg font-semibold">Your contact details</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      We&apos;ll send your confirmation to this email. No account required.
+          <div className="customer-booking-flow customer-booking-step--confirm mx-auto w-full max-w-5xl">
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 className="font-heading text-sm font-semibold sm:text-base">Review & confirm</h2>
+              <p className="shrink-0 font-heading text-sm font-bold text-primary sm:text-base">
+                Total: {formatMoney(finalPrice)}
+              </p>
+            </div>
+
+            <div className="customer-booking-confirm-layout mt-1.5">
+              {!isAuthenticated && (
+                <section className="customer-booking-confirm-guest min-w-0 rounded-lg border border-primary/20 bg-primary/5 p-2.5 sm:p-3">
+                  <div className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+                    <h3 className="font-heading text-sm font-semibold leading-snug">Your contact details</h3>
+                    <p className="min-w-0 flex-1 text-[11px] leading-snug text-muted-foreground sm:text-xs">
+                      Confirmation goes to this email.
                     </p>
                   </div>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2 sm:col-span-2">
-                      <Label htmlFor="guest-name">Full name</Label>
-                      <Input
-                        id="guest-name"
-                        className="h-11"
-                        value={guestName}
-                        onChange={(e) => setGuestName(e.target.value)}
-                        placeholder="Jane Smith"
-                        required
-                        autoComplete="name"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="guest-email">Email</Label>
-                      <Input
-                        id="guest-email"
-                        type="email"
-                        className="h-11"
-                        value={guestEmail}
-                        onChange={(e) => setGuestEmail(e.target.value)}
-                        placeholder="you@email.com"
-                        required
-                        autoComplete="email"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="guest-phone">Phone (optional)</Label>
-                      <Input
-                        id="guest-phone"
-                        type="tel"
-                        className="h-11"
-                        value={guestPhone}
-                        onChange={(e) => setGuestPhone(e.target.value)}
-                        placeholder="For salon to reach you"
-                        autoComplete="tel"
-                      />
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    <FormTextField
+                      id="guest-name"
+                      label="Full name"
+                      className="customer-booking-field h-9 text-sm"
+                      wrapperClassName="space-y-1 min-w-0"
+                      value={guestName}
+                      onChange={(e) => {
+                        setGuestName(e.target.value);
+                        clearGuestFieldError('guestName');
+                      }}
+                      error={guestFieldErrors.guestName}
+                      placeholder="Jane Smith"
+                      autoComplete="name"
+                    />
+                    <FormTextField
+                      id="guest-email"
+                      label="Email"
+                      type="email"
+                      className="customer-booking-field h-9 text-sm"
+                      wrapperClassName="space-y-1 min-w-0"
+                      value={guestEmail}
+                      onChange={(e) => {
+                        setGuestEmail(e.target.value);
+                        clearGuestFieldError('guestEmail');
+                      }}
+                      error={guestFieldErrors.guestEmail}
+                      placeholder="you@email.com"
+                      autoComplete="email"
+                    />
+                    <FormTextField
+                      id="guest-phone"
+                      label="Phone (optional)"
+                      type="tel"
+                      className="customer-booking-field h-9 text-sm"
+                      wrapperClassName="space-y-1 min-w-0"
+                      value={guestPhone}
+                      onChange={(e) => {
+                        setGuestPhone(e.target.value);
+                        clearGuestFieldError('guestPhone');
+                      }}
+                      error={guestFieldErrors.guestPhone}
+                      placeholder="For salon to reach you"
+                      autoComplete="tel"
+                    />
+                  </div>
+                </section>
+              )}
+
+              <section className="customer-booking-confirm-summary min-w-0 rounded-lg border border-border/60 bg-card p-2.5 text-left shadow-sm sm:p-3">
+                <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 rounded-md bg-muted/45 px-2.5 py-1.5">
+                  <div className="flex min-w-0 flex-1 items-center gap-2">
+                    <CalendarCheck className="h-4 w-4 shrink-0 text-primary" />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold leading-snug">
+                        {date}
+                        {time && lineDuration > 0
+                          ? ` · ${formatBookingTimeWindow(time, lineDuration)}`
+                          : time
+                            ? ` at ${time}`
+                            : ''}
+                      </p>
+                      {!time ? (
+                        <p className="text-xs font-medium text-destructive">
+                          Time slot required — pick a new time below.
+                        </p>
+                      ) : null}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            )}
-            <Card className="mt-8 min-w-0 overflow-hidden border-0 text-left shadow-lg">
-              <CardContent className="min-w-0 space-y-5 p-6 md:p-8">
-                <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-4">
-                  <CalendarCheck className="h-8 w-8 text-primary" />
-                  <div>
-                    <p className="font-semibold">
-                      {date}
-                      {time && lineDuration > 0
-                        ? ` · ${formatBookingTimeWindow(time, lineDuration)}`
-                        : time
-                          ? ` at ${time}`
-                          : ''}
-                    </p>
-                    {!time ? (
-                      <p className="mt-1 text-sm font-medium text-destructive">Time slot required — pick a new time below.</p>
-                    ) : null}
-                    <p className="text-sm text-muted-foreground">{branch.name}</p>
-                  </div>
+                  <p className="min-w-0 truncate text-xs text-muted-foreground sm:max-w-[42%]">
+                    {branch.name}
+                  </p>
                 </div>
-                <dl className="grid gap-3 text-sm sm:grid-cols-2">
-                  <div>
-                    <dt className="text-muted-foreground">
-                      {activeOfferingType === 'package' ? 'Package' : 'Service'}
-                    </dt>
-                    <dd className="flex flex-wrap items-center gap-2 font-medium">
-                      {lineTitle}
+
+                <div className="customer-booking-confirm-meta mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs sm:text-[13px]">
+                  <p className="min-w-0 leading-snug">
+                    <span className="text-muted-foreground">
+                      {activeOfferingType === 'package' ? 'Package' : 'Service'}:{' '}
+                    </span>
+                    <span className="inline-flex max-w-full items-center gap-1 font-medium">
+                      <span className="truncate">{lineTitle}</span>
                       {activeOfferingType === 'service' && service ? (
                         <CatalogPopularBadge
                           entityType="service"
@@ -2000,44 +2066,68 @@ export default function BookAppointmentPage() {
                           variant="chip"
                         />
                       ) : null}
-                    </dd>
+                    </span>
+                  </p>
+                  <p className="min-w-0 truncate leading-snug">
+                    <span className="text-muted-foreground">Stylist: </span>
+                    <span className="font-medium">{employee.name}</span>
+                  </p>
+                  {selectedPackage ? (
+                    <p className="min-w-0 leading-snug">
+                      <span className="text-muted-foreground">Sessions: </span>
+                      <span className="font-medium">
+                        {selectedPackage.total_sessions} · {selectedPackage.validity_days} days
+                      </span>
+                    </p>
+                  ) : null}
+                  <p className="min-w-0 leading-snug">
+                    <span className="text-muted-foreground">Duration: </span>
+                    <span className="font-medium">{lineDuration} min</span>
+                  </p>
+                  <p className="min-w-0 truncate leading-snug">
+                    <span className="text-muted-foreground">Payment: </span>
+                    <span className="font-medium">{paymentLabel}</span>
+                  </p>
+                </div>
+
+                <div className="customer-booking-confirm-footer mt-2 grid gap-2 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] lg:items-end">
+                  <CouponPicker
+                    options={couponOptions}
+                    isLoading={couponsLoading}
+                    orderAmount={linePrice}
+                    selectedCode={couponCode}
+                    appliedDiscount={discount}
+                    onCodeChange={setCouponCode}
+                    onApply={applyCoupon}
+                    onClear={() => setDiscount(0)}
+                    isApplying={couponApplying}
+                    signedIn={!!bookingEmail}
+                  />
+                  <div className="space-y-1 min-w-0">
+                    <Label htmlFor="notes" className="text-xs">
+                      Special requests (optional)
+                    </Label>
+                    <Textarea
+                      id="notes"
+                      rows={1}
+                      className={`customer-booking-field min-h-[2.25rem] resize-y px-3 py-1.5 text-sm${guestFieldErrors.notes ? ' border-destructive' : ''}`}
+                      placeholder="Any notes for your stylist..."
+                      value={notes}
+                      onChange={(e) => {
+                        setNotes(e.target.value);
+                        clearGuestFieldError('notes');
+                      }}
+                      aria-invalid={!!guestFieldErrors.notes}
+                    />
+                    <FieldError message={guestFieldErrors.notes} />
                   </div>
-                  {selectedPackage && (
-                    <div>
-                      <dt className="text-muted-foreground">Sessions</dt>
-                      <dd className="font-medium">
-                        {selectedPackage.total_sessions} · {selectedPackage.validity_days} days validity
-                      </dd>
-                    </div>
-                  )}
-                  <div>
-                    <dt className="text-muted-foreground">Stylist</dt>
-                    <dd className="font-medium">{employee.name}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">Duration</dt>
-                    <dd className="font-medium">{lineDuration} min</dd>
-                  </div>
-                  <div>
-                    <dt className="text-muted-foreground">Payment</dt>
-                    <dd className="font-medium">{paymentLabel}</dd>
-                  </div>
-                </dl>
-                <CouponPicker
-                  options={couponOptions}
-                  isLoading={couponsLoading}
-                  orderAmount={linePrice}
-                  selectedCode={couponCode}
-                  appliedDiscount={discount}
-                  onCodeChange={setCouponCode}
-                  onApply={applyCoupon}
-                  onClear={() => setDiscount(0)}
-                  isApplying={couponApplying}
-                  signedIn={!!bookingEmail}
-                />
-                {!canConfirm && confirmBlockReason ? (
+                </div>
+
+                {!canConfirm &&
+                confirmBlockReason &&
+                (isAuthenticated || guestDetailsValid) ? (
                   <div
-                    className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+                    className="mt-2 rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs leading-snug text-destructive"
                     role="alert"
                   >
                     <p>{confirmBlockReason}</p>
@@ -2046,7 +2136,7 @@ export default function BookAppointmentPage() {
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="mt-3 rounded-full border-destructive/30 text-destructive hover:bg-destructive/10"
+                        className="mt-1.5 h-7 rounded-full border-destructive/30 px-3 text-xs text-destructive hover:bg-destructive/10"
                         onClick={() => setStep(3)}
                       >
                         Choose a new time
@@ -2054,20 +2144,8 @@ export default function BookAppointmentPage() {
                     ) : null}
                   </div>
                 ) : null}
-                <p className="font-heading text-2xl font-bold">Total: {formatMoney(finalPrice)}</p>
-                <div className="space-y-2">
-                  <Label htmlFor="notes">Special requests (optional)</Label>
-                  <Textarea
-                    id="notes"
-                    rows={3}
-                    className="customer-booking-field min-h-[5.5rem] resize-y pl-4 pr-4 py-3"
-                    placeholder="Any notes for your stylist..."
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+              </section>
+            </div>
           </div>
         )}
 
