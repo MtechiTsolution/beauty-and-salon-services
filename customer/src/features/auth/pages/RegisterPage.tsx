@@ -37,7 +37,7 @@ export default function RegisterPage() {
     const errors: FieldErrors<RegisterFields> = {
       full_name: validateFullName(form.full_name),
       email: validateEmail(form.email),
-      phone: validatePhone(form.phone),
+      phone: validatePhone(form.phone, { required: true }),
       password: validatePassword(form.password),
     };
     setFieldErrors(errors);
@@ -49,7 +49,7 @@ export default function RegisterPage() {
         ...form,
         email: normalizeEmail(form.email),
         full_name: form.full_name.trim(),
-        phone: form.phone.trim() || undefined,
+        phone: form.phone.trim(),
       });
       toast.success('Account created!');
       navigate('/book');
@@ -104,7 +104,7 @@ export default function RegisterPage() {
               />
               <FormTextField
                 id="phone"
-                label="Phone (optional)"
+                label="Phone"
                 type="tel"
                 className="h-11"
                 value={form.phone}

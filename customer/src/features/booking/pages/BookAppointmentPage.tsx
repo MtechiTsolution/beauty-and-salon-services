@@ -210,7 +210,9 @@ export default function BookAppointmentPage() {
     [user?.email, guestEmail, isAuthenticated],
   );
   const guestEmailValid = EMAIL_RE.test(bookingEmail);
-  const guestDetailsValid = bookingName.length > 0 && guestEmailValid;
+  const guestPhoneValid = validatePhone(guestPhone, { required: true }) === null;
+  const guestDetailsValid =
+    bookingName.length > 0 && guestEmailValid && guestPhoneValid;
 
   const clearGuestFieldError = (field: keyof typeof guestFieldErrors) => {
     setGuestFieldErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev));
@@ -223,7 +225,7 @@ export default function BookAppointmentPage() {
     if (!isAuthenticated) {
       errors.guestName = validateFullName(guestName);
       errors.guestEmail = validateEmail(guestEmail);
-      errors.guestPhone = validatePhone(guestPhone);
+      errors.guestPhone = validatePhone(guestPhone, { required: true });
     }
     setGuestFieldErrors(errors);
     return !hasFieldErrors(errors);
@@ -1009,7 +1011,9 @@ export default function BookAppointmentPage() {
     if (!isAuthenticated && !guestDetailsValid) {
       return bookingName.length === 0
         ? 'Please enter your full name to continue.'
-        : 'Please enter a valid email address to continue.';
+        : !guestEmailValid
+          ? 'Please enter a valid email address to continue.'
+          : 'Please enter a valid phone number to continue.';
     }
     if (date && time && isSlotInPast(date, time, now)) return PAST_SLOT_MESSAGE;
     if (date && time && isSlotBlockedForNewBooking(time, lineDuration, staffDayBookings)) {
@@ -1023,6 +1027,7 @@ export default function BookAppointmentPage() {
     paymentMethod,
     isAuthenticated,
     guestDetailsValid,
+    guestEmailValid,
     bookingName.length,
     now,
     lineDuration,
@@ -2001,7 +2006,7 @@ export default function BookAppointmentPage() {
                     />
                     <FormTextField
                       id="guest-phone"
-                      label="Phone (optional)"
+                      label="Phone"
                       type="tel"
                       className="customer-booking-field h-9 text-sm"
                       wrapperClassName="space-y-1 min-w-0"

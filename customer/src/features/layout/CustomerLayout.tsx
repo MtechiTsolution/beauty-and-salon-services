@@ -12,7 +12,9 @@ export function CustomerLayout() {
     <BookingBranchProvider>
       <div
         className={cn(
-          'customer-app-shell flex min-h-screen min-h-[100dvh] w-full min-w-0 max-w-full flex-col overflow-x-hidden',
+          'customer-app-shell flex w-full min-w-0 max-w-full flex-col overflow-x-hidden',
+          // Booking uses a dedicated viewport lock in CSS (Safari-safe). Avoid min-h-screen here.
+          !isBookPage && 'min-h-screen min-h-[100dvh]',
           isChatThread && 'h-dvh max-h-dvh overflow-hidden',
           isBookPage && 'customer-app-shell--booking',
         )}

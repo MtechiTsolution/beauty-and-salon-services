@@ -803,11 +803,17 @@ body.customer-mobile-menu-open .customer-booking-nav {
   }
 }
 
-/* Booking page: viewport-locked so Back/Continue stay pinned while steps scroll */
+/* Booking page: viewport-locked so Back/Continue stay pinned while steps scroll.
+   Safari/macOS: avoid min-h-screen + background-attachment:fixed (creates phantom scroll). */
 .customer-app-shell--booking {
+  min-height: 100svh;
+  min-height: 100dvh;
+  height: 100svh;
   height: 100dvh;
+  max-height: 100svh;
   max-height: 100dvh;
   overflow: hidden;
+  overscroll-behavior: none;
 }
 
 .customer-app-shell--booking .customer-main-canvas {
@@ -815,6 +821,8 @@ body.customer-mobile-menu-open .customer-booking-nav {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  height: auto;
+  max-height: none;
   overflow: hidden;
 }
 
@@ -824,23 +832,28 @@ body.customer-mobile-menu-open .customer-booking-nav {
   flex: 1 1 auto;
   flex-direction: column;
   min-height: 0 !important;
-  height: 100%;
-  max-height: 100%;
+  height: auto;
+  max-height: none;
   padding-bottom: 0 !important;
   overflow: hidden;
+  /* Safari: fixed backgrounds inflate document scroll height */
+  background-attachment: scroll !important;
 }
 
 .customer-booking-page-header {
   flex: 0 0 auto;
 }
 
-/* Step content scrolls; sticky Back/Continue stay above scrolling footer */
+/* Step content scrolls; nav + salon footer are flex-pinned (not sticky — Safari-safe) */
 .customer-booking-main {
   position: relative;
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
   min-height: 0;
+  height: auto;
+  max-height: none;
+  overflow: hidden;
   background: transparent;
 }
 
@@ -863,11 +876,12 @@ body.customer-mobile-menu-open .customer-booking-nav {
   display: none;
 }
 
-/* Stick above footer in DOM order — never appears below footer while scrolling */
+/* Flex-pinned above salon footer — avoids Safari sticky scroll-height bugs */
 .customer-booking-nav {
-  position: sticky;
-  bottom: 0;
+  position: relative;
+  bottom: auto;
   z-index: 30;
+  flex: 0 0 auto;
   box-sizing: border-box;
   margin: 0;
   width: 100%;
@@ -987,6 +1001,7 @@ body.customer-mobile-menu-open .customer-booking-nav {
   .customer-booking-page.customer-page {
     min-height: 0 !important;
     padding-bottom: 0 !important;
+    background-attachment: scroll !important;
   }
 
   /* Step content scrolls in .customer-booking-scroll; avoid nested card scroll traps */
@@ -5318,15 +5333,16 @@ body.customer-mobile-menu-open .customer-booking-nav {
   border-top: 1px solid hsl(var(--border) / 0.55);
 }
 
-/* Booking flow — selected salon footer (rail + facts) */
+/* Booking flow — selected salon footer (rail + facts). Never flex-grow (Safari blank space). */
 .booking-salon-footer {
   position: relative;
   display: flex;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   flex-direction: column;
   width: 100%;
   max-width: none;
   margin: 0;
+  min-height: 0;
   border-top: 1px solid hsl(var(--border) / 0.65);
   background: hsl(var(--card));
 }
@@ -5347,7 +5363,7 @@ body.customer-mobile-menu-open .customer-booking-nav {
 
 .booking-salon-footer__body {
   display: flex;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   flex-direction: column;
   gap: 1.1rem;
   width: 100%;
@@ -5494,7 +5510,7 @@ body.customer-mobile-menu-open .customer-booking-nav {
   align-items: center;
   justify-content: space-between;
   gap: 0.65rem 1rem;
-  margin-top: auto;
+  margin-top: 0;
   width: 100%;
   padding-top: 0.75rem;
   padding-right: max(1rem, env(safe-area-inset-right, 0px));
@@ -5531,7 +5547,6 @@ body.customer-mobile-menu-open .customer-booking-nav {
   margin: 0;
   min-height: 0;
   padding: 0;
-  /* Scrolls with step content — not pinned while booking */
   position: relative;
 }
 
@@ -5540,7 +5555,7 @@ body.customer-mobile-menu-open .customer-booking-nav {
 }
 
 .customer-booking-page .booking-salon-footer__foot {
-  margin-top: auto;
+  margin-top: 0;
 }
 
 @media (min-width: 768px) {
